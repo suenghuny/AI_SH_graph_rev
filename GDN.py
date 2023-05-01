@@ -188,10 +188,11 @@ class NodeEmbedding(nn.Module):
         super(NodeEmbedding, self).__init__()
         self.feature_size = feature_size
         self.linears = OrderedDict()
+        last_layer = self.feature_size
         for i in range(len(layers)):
             layer = layers[i]
             if i != len(layers)-1:
-                self.linears['linear{}'.format(i)]= nn.Linear(self.feature_size, layer)
+                self.linears['linear{}'.format(i)]= nn.Linear(last_layer, layer)
                 self.linears['batchnorm{}'.format(i)] = nn.BatchNorm1d(layer)
                 self.linears['activation{}'.format(i)] = nn.ReLU()
                 last_layer = layer
