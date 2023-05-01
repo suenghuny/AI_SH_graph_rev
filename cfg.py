@@ -20,9 +20,9 @@ def get_cfg():
 
     parser.add_argument("--hidden_size_comm", type=int, default=64, help="GNN hidden layer")
 
-    parser.add_argument("--iqn_layers", type=list, default= '[72, 64, 56, 48, 32]', help="layer 구조")
-    parser.add_argument("--job_layers", type=list, default='[64,48]', help="layer 구조")
-    parser.add_argument("--machine_layers", type=list, default='[32, 32]', help="layer 구조")
+    parser.add_argument("--iqn_layers", type=str, default= '[72, 64, 56, 48, 32]', help="layer 구조")
+    parser.add_argument("--job_layers", type=str, default='[64,48]', help="layer 구조")
+    parser.add_argument("--machine_layers", type=str, default='[32, 32]', help="layer 구조")
     parser.add_argument("--n_representation_job", type=int, default=32, help="")
     parser.add_argument("--n_representation_machine", type=int, default=18, help="")
 
