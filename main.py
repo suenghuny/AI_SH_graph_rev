@@ -258,8 +258,11 @@ if __name__ == "__main__":
 
 
         episode_reward, epsilon, t, eval = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon, min_epsilon=min_epsilon, anneal_epsilon=0 , initializer=False, output_dir=None, vdn=True, n_step = n_step)
-        writer.add_scalar("episode", episode_reward, e)
+        if vessl_on == False:
+            writer.add_scalar("episode", episode_reward, e)
         reward_list.append(episode_reward)
+        if vessl_on == True:
+            vessl.log(step=e, payload={'reward': episode_reward})
         if e % 10 == 0:
             import os
             import pandas as pd

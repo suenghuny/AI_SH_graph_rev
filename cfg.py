@@ -4,7 +4,7 @@ import argparse
 # GNN = 'GAT'
 def get_cfg():
     parser = argparse.ArgumentParser(description="")
-    parser.add_argument("--vessl", type=bool, default=False, help="vessl AI 사용여부")
+    parser.add_argument("--vessl", type=bool, default=True, help="vessl AI 사용여부")
 
     parser.add_argument("--simtime_per_frame", type=int, default=2, help="framerate 관련")
     parser.add_argument("--decision_timestep", type=int, default=8, help="decision timestep 관련")
