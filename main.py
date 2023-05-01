@@ -12,11 +12,18 @@ import numpy as np
 def preprocessing(scenarios):
     scenario = scenarios[0]
     if mode == 'txt':
-        input_path = ["Data\{}\ship.txt".format(scenario),
-                      "Data\{}\patrol_aircraft.txt".format(scenario),
-                      "Data\{}\SAM.txt".format(scenario),
-                      "Data\{}\SSM.txt".format(scenario),
-                      "Data\{}\inception.txt".format(scenario)]
+        if vessl_on == True:
+            input_path = ["/root/AI_SH/Data/{}/ship.txt".format(scenario),
+                          "/root/AI_SH/Data/{}/patrol_aircraft.txt".format(scenario),
+                          "/root/AI_SH/Data/{}/SAM.txt".format(scenario),
+                          "/root/AI_SH/Data/{}/SSM.txt".format(scenario),
+                          "/root/AI_SH/Data/{}/inception.txt".format(scenario)]
+        else:
+            input_path = ["Data/{}/ship.txt".format(scenario),
+                          "Data/{}/patrol_aircraft.txt".format(scenario),
+                          "Data/{}/SAM.txt".format(scenario),
+                          "Data/{}/SSM.txt".format(scenario),
+                          "Data/{}/inception.txt".format(scenario)]
     else:
         input_path = "Data\input_data.xlsx"
 
