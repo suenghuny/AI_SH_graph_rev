@@ -1,0 +1,6 @@
+,lose,win_tag,ssm_destroying_from_lsam,ssm_destroying_from_msam,ssm_destroying_from_ciws,ssm_destroying_on_decoy,ssm_mishit,enemy_flying_ssms,enemy_remains,enemy_num_ssm
+0,0,,0,1,0,1,0,0,0,2
+1,1,,0,1,1,0,0,0,0,2
+2,0,,1,0,0,1,0,0,0,2
+3,0,lose,1,0,0,0,0,1,0,2
+4,0,,0,1,0,0,1,0,0,2
