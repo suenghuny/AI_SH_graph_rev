@@ -262,7 +262,7 @@ if __name__ == "__main__":
 
                   node_embedding_layers_ship=list(eval(cfg.job_layers)),
                   node_embedding_layers_missile=list(eval(cfg.machine_layers)),
-                  node_embedding_layers_enemy=list(eval(cfg.machine_layers)), #### t
+                  node_embedding_layers_enemy=list(eval(cfg.enemy_layers)), #### t
 
 
                   hidden_size_comm = cfg.hidden_size_comm,
