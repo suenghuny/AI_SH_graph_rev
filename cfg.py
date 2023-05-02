@@ -18,9 +18,10 @@ def get_cfg():
     parser.add_argument("--map_name", type=str, default='6h_vs_8z', help="map name")
     parser.add_argument("--GNN", type=str, default='GAT', help="map name")
 
-    parser.add_argument("--hidden_size_comm", type=int, default=72, help="GNN hidden layer")
+    parser.add_argument("--hidden_size_comm", type=int, default=64, help="GNN hidden layer")
+    parser.add_argument("--hidden_size_enemy", type=int, default=72, help="GNN hidden layer")
 
-    parser.add_argument("--iqn_layers", type=str, default= '[96, 64, 56, 48, 32]', help="layer 구조")
+    parser.add_argument("--iqn_layers", type=str, default= '[128, 96, 64, 56, 32]', help="layer 구조")
 
     parser.add_argument("--ship_layers", type=str, default='[64,48]', help="layer 구조")
     parser.add_argument("--missile_layers", type=str, default='[32, 32]', help="layer 구조")

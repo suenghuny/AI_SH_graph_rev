@@ -273,7 +273,7 @@ if __name__ == "__main__":
 
 
                   hidden_size_comm = cfg.hidden_size_comm,
-                  hidden_size_enemy =  cfg.hidden_size_comm,#### 수정요망
+                  hidden_size_enemy =  cfg.hidden_size_enemy,#### 수정요망
 
                   n_multi_head=cfg.n_multi_head,
                   n_representation_ship=cfg.n_representation_ship,
