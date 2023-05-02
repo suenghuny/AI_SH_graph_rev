@@ -200,10 +200,17 @@ if __name__ == "__main__":
         import vessl
         vessl.init()
         output_dir = "/output/"
+        import os
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
     else:
         from torch.utils.tensorboard import SummaryWriter
         output_dir = "../output_susceptibility/"
         writer = SummaryWriter('./logs2')
+        import os
+
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
 
 
 
@@ -260,8 +267,8 @@ if __name__ == "__main__":
 
                   iqn_layers=list(eval(cfg.iqn_layers)),
 
-                  node_embedding_layers_ship=list(eval(cfg.job_layers)),
-                  node_embedding_layers_missile=list(eval(cfg.machine_layers)),
+                  node_embedding_layers_ship=list(eval(cfg.ship_layers)),
+                  node_embedding_layers_missile=list(eval(cfg.missile_layers)),
                   node_embedding_layers_enemy=list(eval(cfg.enemy_layers)), #### t
 
 
@@ -315,9 +322,9 @@ if __name__ == "__main__":
         if e % 10 == 0:
             import os
             import pandas as pd
-            output_dir = "../output_dir_susceptibility/"
-            if not os.path.exists(output_dir):
-                os.makedirs(output_dir)
+            #output_dir = "../output_dir_susceptibility/"
+            # if not os.path.exists(output_dir):
+            #     os.makedirs(output_dir)
             df = pd.DataFrame(reward_list)
             df.to_csv(output_dir + 'episode_reward.csv')
 

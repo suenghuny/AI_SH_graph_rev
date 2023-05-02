@@ -40,7 +40,7 @@ def get_cfg():
     parser.add_argument("--n_multi_head", type=int, default=1, help="number of multi head")
 
     parser.add_argument("--num_episode", type=int, default=1000000, help="number of episode")
-    parser.add_argument("--train_start", type=int, default=10000, help="number of train start")
+    parser.add_argument("--train_start", type=int, default=1000, help="number of train start")
 
 
 
