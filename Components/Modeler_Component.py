@@ -483,10 +483,9 @@ class Environment:
                     py = enemy.position_y - ship.position_y
                     vx = enemy.v_x - ship.v_x
                     vy = enemy.v_y - ship.v_y
-                    ax = enemy.a_x - ship.a_x
-                    ay = enemy.a_y - ship.a_y
-                    node_features.append([px / enemy.attack_range, py / enemy.attack_range, vx / enemy.speed_m, vy / enemy.speed_m, ax, ay])
-
+                    ax = (enemy.a_x - ship.a_x)*10
+                    ay = (enemy.a_y - ship.a_y)*10
+                    node_features.append([px / enemy.attack_range, py / enemy.attack_range, vx / enemy.speed, vy / enemy.speed, ax, ay])
         if ship.surface_tracking_limit+1-len(node_features) >0:
             for _ in range(ship.surface_tracking_limit+1-len(node_features)):
                 node_features.append([0,0,0,0,0,0])
@@ -519,7 +518,7 @@ class Environment:
                 ax = missile.a_x - ship.a_x
                 ay = missile.a_y - ship.a_y
                 node_features.append([px/missile.attack_range, py/missile.attack_range, vx/missile.speed, vy/missile.speed, ax, ay])
-
+                #print(px/missile.attack_range, py/missile.attack_range, vx/missile.speed, vy/missile.speed, ax*10, ay*10)
         #print("전", len(node_features), ship.air_tracking_limit + 1 - len(node_features))
         if ship.air_tracking_limit+1-len(node_features) >0:
             for _ in range(ship.air_tracking_limit+1-len(node_features)):

@@ -43,7 +43,7 @@ def get_cfg():
     parser.add_argument("--teleport_probability", type=float, default=0.95, help="teleport_probability")
     parser.add_argument("--gtn_beta", type=float, default=0.05, help="teleport_probability")
     parser.add_argument("--gamma", type=float, default=.99 , help="discount ratio")
-    parser.add_argument("--lr", type=float, default=3e-5, help="learning rate")
+    parser.add_argument("--lr", type=float, default=4e-5, help="learning rate")
     parser.add_argument("--n_multi_head", type=int, default=1, help="number of multi head")
 
     parser.add_argument("--num_episode", type=int, default=1000000, help="number of episode")

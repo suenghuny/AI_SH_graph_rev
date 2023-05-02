@@ -779,6 +779,8 @@ class Agent:
         # import time
         # start = time.time()
         node_features_missile, ship_features, edge_indices_missile, actions, rewards, dones, node_features_missile_next, ship_features_next, edge_indices_missile_next, avail_actions_next, status, status_next,priority,batch_index, node_feature_enemy, edge_index_enemy, node_feature_enemy_next, edge_index_enemy_next = self.buffer.sample(vdn = vdn)
+
+        #print(ship)
         weight = (len(self.buffer.buffer[10])*torch.tensor(priority, dtype=torch.float, device = device))**(-self.beta)
         weight /= weight.max()
 
