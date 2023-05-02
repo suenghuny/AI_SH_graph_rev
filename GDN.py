@@ -30,15 +30,16 @@ def weight_init_xavier_uniform(submodule):
         submodule.bias.data.zero_()
 
 class IQN(nn.Module):
-    def __init__(self, state_size, action_size, batch_size, layer_size=128, N=12, layers = [128, 96, 64, 56, 48]):
+    def __init__(self, state_size, action_size, batch_size, layer_size=128, N=12, layers = [128, 96, 64, 56, 48], n_cos = 64):
         super(IQN, self).__init__()
         self.input_shape = state_size
         self.batch_size = batch_size
         # print(state_size)
         self.action_size = action_size
         self.N = N
-        self.n_cos = 64
+        self.n_cos = n_cos
         self.layer_size = layer_size
+        #print(self.N, self.n_cos)
         self.pis = torch.FloatTensor([np.pi * i for i in range(self.n_cos)]).view(1, 1, self.n_cos).to(device)
         self.head = NoisyLinear(self.input_shape, layer_size)  # cound be a cnn
         self.head_y = NoisyLinear(self.input_shape, layer_size)  # cound be a cnn
@@ -449,7 +450,12 @@ class Agent:
                  n_node_feature_missile,
                  n_node_feature_enemy,
                  n_step,
-                 beta):
+                 beta,
+                 iqn_layer_size,
+                 iqn_N,
+                 n_cos
+
+                 ):
         self.n_step = n_step
         self.num_agent = num_agent
 
@@ -526,9 +532,9 @@ class Agent:
                                          teleport_probability=self.teleport_probability).to(device)  # 수정사항
 
             self.Q = IQN(n_representation_ship+n_representation_missile + n_representation_enemy+10, self.action_size,
-                         batch_size=self.batch_size).to(device)
+                         batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos = n_cos).to(device)
             self.Q_tar = IQN(n_representation_ship+n_representation_missile + n_representation_enemy+10, self.action_size,
-                             batch_size=self.batch_size).to(device)
+                             batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos = n_cos).to(device)
 
             self.Q_tar.load_state_dict(self.Q.state_dict())
 

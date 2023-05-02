@@ -31,6 +31,12 @@ def get_cfg():
     parser.add_argument("--n_representation_missile", type=int, default=15, help="")
     parser.add_argument("--n_representation_enemy", type=int, default=15, help="")
 
+    parser.add_argument("--iqn_layer_size", type=int, default=128, help="")
+    parser.add_argument("--iqn_N", type=int, default=12, help="")
+    parser.add_argument("--n_cos", type=int, default=64, help="")
+    # iqn_layer_size = cfg.iqn_layer_size,
+    # iqn_N = cfg.iqn_N
+
     parser.add_argument("--buffer_size", type=int, default=50000, help="")
     parser.add_argument("--batch_size", type=int, default=32, help="")
     parser.add_argument("--teleport_probability", type=float, default=0.95, help="teleport_probability")
