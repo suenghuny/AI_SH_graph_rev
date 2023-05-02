@@ -30,13 +30,12 @@ def weight_init_xavier_uniform(submodule):
         submodule.bias.data.zero_()
 
 class IQN(nn.Module):
-    def __init__(self, state_size, action_size, batch_size, layer_size=64, N=12, layers = [72, 64, 56, 48, 32]):
+    def __init__(self, state_size, action_size, batch_size, layer_size=128, N=12, layers = [128, 96, 64, 56, 48]):
         super(IQN, self).__init__()
         self.input_shape = state_size
         self.batch_size = batch_size
         # print(state_size)
         self.action_size = action_size
-        self.K = 32
         self.N = N
         self.n_cos = 64
         self.layer_size = layer_size
@@ -204,20 +203,22 @@ class NodeEmbedding(nn.Module):
 
 
     def forward(self, node_feature, machine=False):
+
         node_representation = self.node_embedding(node_feature)
         return node_representation
 
 
 class Replay_Buffer:
-    def __init__(self, buffer_size, batch_size, num_agent, action_size, n_step):
+    def __init__(self, buffer_size, batch_size, n_node_feature_missile, n_node_feature_enemy, action_size, n_step):
         self.buffer = deque()
 
         self.step_count_list = list()
-        for _ in range(11):
+        for _ in range(13):
             self.buffer.append(deque(maxlen=buffer_size))
         self.buffer_size = buffer_size
-        self.num_agent = num_agent
-        self.agent_id = np.eye(self.num_agent).tolist()
+        self.n_node_feature_missile = n_node_feature_missile
+        self.n_node_feature_enemy = n_node_feature_enemy
+        #self.agent_id = np.eye(self.num_agent).tolist()
         self.one_hot_actions = np.eye(action_size).tolist()
         self.batch_size = batch_size
         self.step_count = 0
@@ -227,15 +228,18 @@ class Replay_Buffer:
     def pop(self):
         self.buffer.pop()
 
-    def memory(self, node_feature_machine, num_waiting_operations, edge_index_machine, action, reward, done,
-               avail_action, status):
+    def memory(self, node_feature_missile, ship_feature, edge_index_missile, action, reward, done,
+               avail_action,
+               node_feature_enemy,
+               edge_index_enemy, status
+               ):
 
 
-        self.buffer[1].append(node_feature_machine)
+        self.buffer[1].append(node_feature_missile)
         #print(self.buffer[1])
-        self.buffer[2].append(num_waiting_operations)
+        self.buffer[2].append(ship_feature)
 
-        self.buffer[3].append(edge_index_machine)
+        self.buffer[3].append(edge_index_missile)
         self.buffer[4].append(action)
 
 
@@ -252,23 +256,27 @@ class Replay_Buffer:
         else:
             self.buffer[10].append(max(self.buffer[10]))
 
+        self.buffer[11].append(node_feature_enemy)
+        self.buffer[12].append(edge_index_enemy)
+
+
         if self.step_count < self.buffer_size:
             self.step_count_list.append(self.step_count)
             self.step_count += 1
 
         #print(len(self.buffer[7]), len(self.buffer[10]), len(self.step_count_list))
 
-
+#ship_features
     def generating_mini_batch(self, datas, batch_idx, cat):
         for s in batch_idx:
             if cat == 'node_feature_machine':
                 yield datas[1][s]
-            if cat == 'num_waiting_operations':
+            if cat == 'ship_features':
                 yield datas[2][s]
             if cat == 'edge_index_machine':
                 yield torch.sparse_coo_tensor(datas[3][s],
                                               torch.ones(torch.tensor(datas[3][s]).shape[1]),
-                                              (self.num_agent, self.num_agent)).to_dense()
+                                              (self.n_node_feature_missile, self.n_node_feature_missile)).to_dense()
             if cat == 'action':
                 yield datas[4][s]
             if cat == 'reward':
@@ -277,12 +285,12 @@ class Replay_Buffer:
                 yield datas[6][s]
             if cat == 'node_feature_machine_next':
                 yield datas[1][s + self.n_step]
-            if cat == 'num_waiting_operations_next':
+            if cat == 'ship_features_next':
                 yield datas[2][s + self.n_step]
             if cat == 'edge_index_machine_next':
-                yield torch.sparse_coo_tensor(datas[3][s + 1],
-                                              torch.ones(torch.tensor(datas[3][s + 1]).shape[1]),
-                                              (self.num_agent, self.num_agent)).to_dense()
+                yield torch.sparse_coo_tensor(datas[3][s + self.n_step],
+                                              torch.ones(torch.tensor(datas[3][s + self.n_step]).shape[1]),
+                                              (self.n_node_feature_missile, self.n_node_feature_missile)).to_dense()
             if cat == 'avail_action_next':
                 yield datas[7][s + self.n_step]
             if cat == 'status':
@@ -293,10 +301,21 @@ class Replay_Buffer:
             if cat == 'priority':
                 yield datas[10][s]
 
+            if cat == 'node_feature_enemy':
+                yield datas[11][s]
+            if cat == 'edge_index_enemy':
+                yield torch.sparse_coo_tensor(datas[12][s],
+                                              torch.ones(torch.tensor(datas[12][s]).shape[1]),
+                                              (self.n_node_feature_enemy, self.n_node_feature_enemy)).to_dense()
+            if cat == 'node_feature_enemy_next':
+                yield datas[11][s]
+            if cat == 'edge_index_enemy_next':
+                yield torch.sparse_coo_tensor(datas[12][s + self.n_step],
+                                              torch.ones(torch.tensor(datas[12][s + self.n_step]).shape[1]),
+                                              (self.n_node_feature_enemy, self.n_node_feature_enemy)).to_dense()
     #def search_sample_space(self, sampled_batch_idx):
 
     def update_transition_priority(self, batch_index, delta):
-        #print(list(self.buffer[10]))
         copied_delta_store = deepcopy(list(self.buffer[10]))
         delta = np.abs(delta) + np.min(copied_delta_store)
         priority = np.array(copied_delta_store).astype(float)
@@ -332,12 +351,12 @@ class Replay_Buffer:
         action = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='action')
         actions = list(action)
 
-        num_waiting_operations = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='num_waiting_operations')
-        num_waiting_operations = list(num_waiting_operations)
+        ship_features = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='ship_features')
+        ship_features = list(ship_features)
 
-        num_waiting_operations_next = self.generating_mini_batch(self.buffer, sampled_batch_idx,
-                                                                 cat='num_waiting_operations_next')
-        num_waiting_operations_next = list(num_waiting_operations_next)
+        ship_features_next = self.generating_mini_batch(self.buffer, sampled_batch_idx,
+                                                                 cat='ship_features_next')
+        ship_features_next = list(ship_features_next)
 
         edge_index_machine = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='edge_index_machine')
 
@@ -350,15 +369,13 @@ class Replay_Buffer:
         dones = list(done)
 
         #
-        # node_feature_job_next = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='node_feature_job_next')
-        # node_features_job_next = list(node_feature_job_next)
+
 
         node_feature_machine_next = self.generating_mini_batch(self.buffer, sampled_batch_idx,
                                                                cat='node_feature_machine_next')
         node_features_machine_next = list(node_feature_machine_next)
 
-        # edge_index_job_next = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='edge_index_job_next')
-        # edge_indices_job_next = list(edge_index_job_next)
+
 
         edge_index_machine_next = self.generating_mini_batch(self.buffer, sampled_batch_idx,
                                                              cat='edge_index_machine_next')
@@ -377,27 +394,46 @@ class Replay_Buffer:
         priority = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='priority')
         priority = list(priority)
 
+        node_feature_enemy = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='node_feature_enemy')
+        node_feature_enemy = list(node_feature_enemy)
+
+        edge_index_enemy = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='edge_index_enemy')
+        edge_index_enemy = list(edge_index_enemy)
+
+        node_feature_enemy_next = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='node_feature_enemy_next')
+        node_feature_enemy_next = list(node_feature_enemy_next)
+
+        edge_index_enemy_next = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='edge_index_enemy_next')
+        edge_index_enemy_next = list(edge_index_enemy_next)
+
+#
+
+        return node_features_machine, ship_features, edge_indices_machine, actions, rewards, dones, node_features_machine_next, ship_features_next, edge_indices_machine_next, avail_actions_next, status, status_next,priority, sampled_batch_idx, node_feature_enemy, edge_index_enemy, node_feature_enemy_next, edge_index_enemy_next
 
 
-        return node_features_machine, num_waiting_operations, edge_indices_machine, actions, rewards, dones, node_features_machine_next, num_waiting_operations_next, edge_indices_machine_next, avail_actions_next, status, status_next,priority, sampled_batch_idx
-
-
-# iqn_layers = cfg.iqn_layers,
-# node_embedding_layers_job = cfg.job_layers,
-# node_embedding_layers_machine = cfg.machine_layers,
 class Agent:
     def __init__(self,
                  num_agent,
-                 feature_size_job,
-                 feature_size_machine,
+                 feature_size_ship,
+                 feature_size_missile,
+                 feature_size_enemy,
 
                  iqn_layers,
-                 node_embedding_layers_job,
-                 node_embedding_layers_machine,
-                 n_multi_head,
-                 n_representation_job,
-                 n_representation_machine,
 
+                 node_embedding_layers_ship,
+                 node_embedding_layers_missile,
+                 node_embedding_layers_enemy,
+
+                 n_multi_head,
+                 n_representation_ship,
+                 n_representation_missile,
+                 n_representation_enemy,
+
+
+
+
+
+                 hidden_size_enemy,
                  hidden_size_comm,
 
 
@@ -410,22 +446,24 @@ class Agent:
                  GNN,
                  teleport_probability,
                  gtn_beta,
-                 n_node_feature,
+                 n_node_feature_missile,
+                 n_node_feature_enemy,
                  n_step,
                  beta):
         self.n_step = n_step
         self.num_agent = num_agent
-        self.feature_size_job = feature_size_job
-        self.feature_size_machine = feature_size_machine
-        # self.hidden_size_meta_path = hidden_size_meta_path
-        # self.hidden_size_obs = hidden_size_obs
-        # self.hidden_size_comm = hidden_size_comm
+
+
+        self.feature_size_ship = feature_size_ship
+        self.feature_size_missile = feature_size_missile
+
         self.n_multi_head = n_multi_head
         self.teleport_probability = teleport_probability
         self.beta = beta
 
-        self.n_representation_job = n_representation_job
-        self.n_representation_machine = n_representation_machine
+        self.n_representation_ship = n_representation_ship
+        self.n_representation_missile = n_representation_missile
+        self.n_representation_enemy = n_representation_enemy
 
         self.action_size = action_size
 
@@ -440,9 +478,10 @@ class Agent:
         self.VDN_target.load_state_dict(self.VDN.state_dict())
         self.buffer_size = buffer_size
         self.batch_size = batch_size
-        self.buffer = Replay_Buffer(self.buffer_size, self.batch_size, n_node_feature, self.action_size, n_step = self.n_step
-                                    )
-        self.n_node_feature = n_node_feature
+        self.buffer = Replay_Buffer(self.buffer_size, self.batch_size, n_node_feature_missile,n_node_feature_enemy, self.action_size, n_step = self.n_step)
+        self.n_node_feature_missile = n_node_feature_missile
+        self.n_node_feature_enemy = n_node_feature_enemy
+
         self.action_space = [i for i in range(self.action_size)]
 
         self.GNN = GNN
@@ -452,38 +491,54 @@ class Agent:
 
         if self.GNN == 'GAT':
 
-            self.node_representation_job_obs = NodeEmbedding(feature_size=feature_size_job,
-                                                             n_representation_obs=n_representation_job,
-                                                             layers = node_embedding_layers_job).to(device)  # 수정사항
+            self.node_representation_ship_feature = NodeEmbedding(feature_size=feature_size_ship,
+                                                             n_representation_obs=n_representation_ship,
+                                                             layers = node_embedding_layers_ship).to(device)  # 수정사항
 
-            self.node_representation = NodeEmbedding(feature_size=feature_size_machine,
-                                                     n_representation_obs=n_representation_machine,
-                                                     layers = node_embedding_layers_machine).to(device)  # 수정사항
+            self.node_representation = NodeEmbedding(feature_size=feature_size_missile,
+                                                     n_representation_obs=n_representation_missile,
+                                                     layers = node_embedding_layers_missile).to(device)  # 수정사항
+
+            self.node_representation_enemy = NodeEmbedding(feature_size=feature_size_enemy,
+                                                     n_representation_obs=n_representation_enemy,
+                                                     layers = node_embedding_layers_enemy).to(device)  # 수정사항
 
 
-            self.func_machine_comm = GAT(nfeat=n_representation_machine,
+            self.func_missile_obs = GAT(nfeat=n_representation_missile,
                                          nhid=hidden_size_comm,
                                          nheads=n_multi_head,
-                                         nclass=n_representation_machine,
+                                         nclass=n_representation_missile+5,
                                          dropout=dropout,
                                          alpha=0.2,
                                          mode='observation',
                                          batch_size=self.batch_size,
                                          teleport_probability=self.teleport_probability).to(device)  # 수정사항
 
-            self.Q = IQN(n_representation_job + n_representation_machine, self.action_size,
+
+            self.func_enemy_obs = GAT(nfeat=n_representation_enemy,
+                                         nhid=hidden_size_enemy,
+                                         nheads=n_multi_head,
+                                         nclass=n_representation_enemy+5,
+                                         dropout=dropout,
+                                         alpha=0.2,
+                                         mode='observation',
+                                         batch_size=self.batch_size,
+                                         teleport_probability=self.teleport_probability).to(device)  # 수정사항
+
+            self.Q = IQN(n_representation_ship+n_representation_missile + n_representation_enemy+10, self.action_size,
                          batch_size=self.batch_size).to(device)
-            self.Q_tar = IQN(n_representation_job + n_representation_machine, self.action_size,
+            self.Q_tar = IQN(n_representation_ship+n_representation_missile + n_representation_enemy+10, self.action_size,
                              batch_size=self.batch_size).to(device)
-            # Network(n_representation_job+n_representation_machine+5, hidden_size_Q).to(device)
-            # self.Q_tar = Network(n_representation_job+n_representation_machine+5, hidden_size_Q, self.action_size).to(device)
+
             self.Q_tar.load_state_dict(self.Q.state_dict())
 
             self.eval_params = list(self.VDN.parameters()) + \
                                list(self.Q.parameters()) + \
-                               list(self.node_representation_job_obs.parameters()) + \
+                               list(self.node_representation_ship_feature.parameters()) + \
                                list(self.node_representation.parameters()) + \
-                               list(self.func_machine_comm.parameters())
+                                list(self.node_representation_enemy.parameters())+\
+                               list(self.func_missile_obs.parameters())+\
+                               list(self.func_enemy_obs.parameters())
 
         self.optimizer = optim.Adam(self.eval_params, lr=learning_rate)
         self.scheduler = StepLR(optimizer=self.optimizer, step_size=38000, gamma=0.1)
@@ -496,27 +551,34 @@ class Agent:
             'epsilon': epsilon,
             'Q': self.Q.state_dict(),
             'Q_tar': self.Q_tar.state_dict(),
-            'node_representation_job_obs': self.node_representation_job_obs.state_dict(),
+            'node_representation_ship_feature': self.node_representation_ship_feature.state_dict(),
+            'self.node_representation_enemy':self.node_representation_enemy.state_dict(),
             'node_representation': self.node_representation.state_dict(),
-            'func_machine_comm': self.func_machine_comm.state_dict(),
+            'func_missile_obs': self.func_missile_obs.state_dict(),
+            'func_enemy_obs': self.func_enemy_obs.state_dict(),
             'VDN': self.VDN.state_dict(),
             'VDN_target': self.VDN_target.state_dict(),
             'optimizer': self.optimizer.state_dict()}, "{}".format(path))
 
     def eval_check(self, eval):
         if eval == True:
-            self.node_representation_job_obs.eval()
+            self.node_representation_ship_feature.eval()
+            self.node_representation_enemy.eval()
             self.node_representation.eval()
-            self.func_machine_comm.eval()
+            self.func_missile_obs.eval()
+            self.func_enemy_obs.eval()
             self.Q.eval()
             self.Q_tar.eval()
         else:
-            self.node_representation_job_obs.train()
+            self.node_representation_ship_feature.train()
+            self.node_representation_enemy.train()
             self.node_representation.train()
-            self.func_machine_comm.train()
+            self.func_missile_obs.train()
+            self.func_enemy_obs.train()
             self.Q.train()
             self.Q_tar.train()
 
+    #node_feature_enemy, edge_index_enemy, node_feature_enemy_next, edge_index_enemy_next
     def load_model(self, path):
         checkpoint = torch.load(path)
         e = checkpoint["e"]
@@ -524,54 +586,87 @@ class Agent:
         epsilon = checkpoint["epsilon"]
         self.Q.load_state_dict(checkpoint["Q"])
         self.Q_tar.load_state_dict(checkpoint["Q_tar"])
-        self.node_representation_job_obs.load_state_dict(checkpoint["node_representation_job_obs"])
+        self.node_representation_ship_feature.load_state_dict(checkpoint["node_representation_ship_feature"])
+        self.node_representation_enemy.load_state_dict(checkpoint["node_representation_enemy"])
         self.node_representation.load_state_dict(checkpoint["node_representation"])
-        self.func_machine_comm.load_state_dict(checkpoint["func_machine_comm"])
+        self.func_missile_obs.load_state_dict(checkpoint["func_missile_obs"])
+        self.func_enemy_obs.load_state_dict(checkpoint["func_enemy_obs"])
         self.VDN.load_state_dict(checkpoint["VDN"])
         self.VDN_target.load_state_dict(checkpoint["VDN_target"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
         self.eval_params = list(self.VDN.parameters()) + \
                            list(self.Q.parameters()) + \
-                           list(self.node_representation_job_obs.parameters()) + \
+                           list(self.node_representation_ship_feature.parameters()) + \
                            list(self.node_representation.parameters()) + \
-                           list(self.func_machine_comm.parameters())
+                           list(self.node_representation_enemy.parameters()) + \
+                           list(self.func_missile_obs.parameters()) + \
+                           list(self.func_enemy_obs.parameters())
         return e, t, epsilon
 
-    def get_node_representation(self, node_feature_machine, num_waiting_operations, edge_index_machine,
-                                n_node_features_machine, mini_batch=False):
+    def get_node_representation(self, missile_node_feature, ship_features, edge_index_missile,
+                                n_node_features_missile,
+                                enemy_node_feature,
+                                enemy_edge_index,
+                                n_node_features_enemy,
+                                mini_batch=False):
         if self.GNN == 'GAT':
             if mini_batch == False:
                 with torch.no_grad():
-                    num_waiting_operations = torch.tensor(num_waiting_operations, dtype=torch.float, device=device)
-                    node_embedding_num_waiting_operation = self.node_representation_job_obs(num_waiting_operations)
 
-                    node_feature_machine = torch.tensor(node_feature_machine,dtype=torch.float,device=device).clone().detach()
-                    node_embedding_machine_obs = self.node_representation(node_feature_machine, machine=True)
-                    edge_index_machine = torch.tensor(edge_index_machine, dtype=torch.long, device=device)
-                    node_representation = self.func_machine_comm(node_embedding_machine_obs, edge_index_machine,
-                                                                 n_node_features_machine, mini_batch=mini_batch)
 
-                    node_representation = torch.cat([node_embedding_num_waiting_operation, node_representation[0].unsqueeze(0)], dim=1)
+                    enemy_node_features = torch.tensor(enemy_node_feature, dtype=torch.float, device=device)
+                    node_embedding_enemy = self.node_representation_enemy(enemy_node_features)
+                    enemy_edge_index = torch.tensor(enemy_edge_index, dtype = torch.long, device = device)
+                    node_embedding_enemy = self.func_enemy_obs(node_embedding_enemy,enemy_edge_index,  n_node_features_enemy, mini_batch = mini_batch)
+
+
+
+                    ship_features = torch.tensor(ship_features, dtype=torch.float, device=device)
+                    node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
+
+
+                    missile_node_feature = torch.tensor(missile_node_feature,dtype=torch.float,device=device).clone().detach()
+                    node_embedding_missile_node = self.node_representation(missile_node_feature, machine=True)
+                    edge_index_missile = torch.tensor(edge_index_missile, dtype=torch.long, device=device)
+                    node_representation = self.func_missile_obs(node_embedding_missile_node, edge_index_missile,
+                                                                 n_node_features_missile, mini_batch=mini_batch)
+
+                    node_representation = torch.cat([node_embedding_ship_features, node_representation[0].unsqueeze(0), node_embedding_enemy[0].unsqueeze(0)], dim=1)
             else:
-                node_feature_machine = torch.tensor(node_feature_machine, dtype=torch.float).to(device)
-                num_waiting_operations = torch.tensor(num_waiting_operations,dtype=torch.float).to(device).squeeze(1)
 
-                node_embedding_num_waiting_operation = self.node_representation_job_obs(num_waiting_operations)
+                enemy_node_features = torch.tensor(enemy_node_feature, dtype=torch.float, device=device)
 
+                empty0 = list()
+                for i in range(n_node_features_enemy):
+                    node_embedding_enemy = self.node_representation_enemy(enemy_node_features[:, i, :], machine = True)
+                    empty0.append(node_embedding_enemy)
+
+                node_embedding_enemy = torch.stack(empty0)
+                node_embedding_enemy = torch.einsum('ijk->jik', node_embedding_enemy)
+                enemy_edge_index = torch.stack(enemy_edge_index)
+
+
+
+                node_embedding_enemy = self.func_enemy_obs(node_embedding_enemy, enemy_edge_index,
+                                                           n_node_features_enemy, mini_batch=mini_batch)
+
+
+
+                ship_features = torch.tensor(ship_features,dtype=torch.float).to(device).squeeze(1)
+                node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
+
+                missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float).to(device)
                 empty = list()
-                for i in range(n_node_features_machine):
-                    node_embedding_machine_obs = self.node_representation(node_feature_machine[:, i, :], machine=True)
-                    empty.append(node_embedding_machine_obs)
-                node_embedding_machine_obs = torch.stack(empty)
-                node_embedding_machine_obs = torch.einsum('ijk->jik', node_embedding_machine_obs)
+                for i in range(n_node_features_missile):
+                    node_embedding_missile_node = self.node_representation(missile_node_feature[:, i, :], machine=True)
+                    empty.append(node_embedding_missile_node)
+                node_embedding_missile_node = torch.stack(empty)
+                node_embedding_missile_node = torch.einsum('ijk->jik', node_embedding_missile_node)
+                edge_index_missile = torch.stack(edge_index_missile)
+                node_representation = self.func_missile_obs(node_embedding_missile_node, edge_index_missile,
+                                                             n_node_features_missile, mini_batch=mini_batch)
 
-                edge_index_machine = torch.stack(edge_index_machine)
-
-                node_representation = self.func_machine_comm(node_embedding_machine_obs, edge_index_machine,
-                                                             n_node_features_machine, mini_batch=mini_batch)
-
-                node_representation = torch.cat(
-                    [node_embedding_num_waiting_operation, node_representation[:, 0, :]], dim=1)
+                node_representation = torch.cat([node_embedding_ship_features, node_representation[:, 0, :], node_embedding_enemy[:, 0, :]], dim=1)
 
         return node_representation
 
@@ -677,7 +772,7 @@ class Agent:
 
         # import time
         # start = time.time()
-        node_features_machine, num_waiting_operations, edge_indices_machine, actions, rewards, dones, node_features_machine_next, num_waiting_operations_next, edge_indices_machine_next, avail_actions_next, status, status_next,priority,batch_index = self.buffer.sample(vdn = vdn)
+        node_features_machine, ship_features, edge_indices_machine, actions, rewards, dones, node_features_machine_next, ship_features_next, edge_indices_machine_next, avail_actions_next, status, status_next,priority,batch_index, node_feature_enemy, edge_index_enemy, node_feature_enemy_next, edge_index_enemy_next = self.buffer.sample(vdn = vdn)
         weight = (len(self.buffer.buffer[10])*torch.tensor(priority, dtype=torch.float, device = device))**(-self.beta)
         weight /= weight.max()
 
@@ -687,19 +782,28 @@ class Agent:
         action_feature :     batch_size x action_size x action_feature_size
         avail_actions_next : batch_size x num_agents x action_size 
         """
-        n_node_features_machine = torch.tensor(node_features_machine).shape[1]
+        # node_feature_enemy, edge_index_enemy, node_feature_enemy_next, edge_index_enemy_next
+
+        n_node_features_machine = self.n_node_feature_missile
+        n_node_features_enemy = self.n_node_feature_enemy
         obs = self.get_node_representation(
             node_features_machine,
-            num_waiting_operations,
+            ship_features,
             edge_indices_machine,
             n_node_features_machine,
+            node_feature_enemy,
+            edge_index_enemy,
+            n_node_features_enemy,
             mini_batch=True)
 
         obs_next = self.get_node_representation(
             node_features_machine_next,
-            num_waiting_operations_next,
+            ship_features_next,
             edge_indices_machine_next,
             n_node_features_machine,
+            node_feature_enemy_next,
+            edge_index_enemy_next,
+            n_node_features_enemy,
             mini_batch=True)
 
         if vdn == True:
@@ -743,7 +847,7 @@ class Agent:
             loss = loss1
             self.optimizer.zero_grad()
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.eval_params, 1)
+            #torch.nn.utils.clip_grad_norm_(self.eval_params, 1)
             self.optimizer.step()
             tau = 1e-3
             for target_param, local_param in zip(self.Q_tar.parameters(), self.Q.parameters()):

@@ -54,6 +54,12 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_epsilon, i
     n_step_edge_index = deque(maxlen = n_step)
     n_step_action_blue =deque(maxlen = n_step)
     n_step_avail_action_blue = deque(maxlen = n_step)
+
+    n_step_enemy_feature = deque(maxlen = n_step)
+    n_step_enemy_edge_index = deque(maxlen = n_step)
+
+
+
     step_checker = 0
     while not done:
         if env.now % (decision_timestep) <= 0.00001:
@@ -63,10 +69,21 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_epsilon, i
             ship_feature = env.get_ship_feature()
             edge_index   = env.get_edge_index()
             missile_node_feature = env.get_missile_node_feature()
-            n_node_feature_machine =env.friendlies_fixed_list[0].surface_tracking_limit+ env.friendlies_fixed_list[0].air_tracking_limit+1
+
+            enemy_edge_index = env.get_enemy_edge_index()
+            enemy_node_feature = env.get_enemy_node_feature()
+
+            n_node_feature_missile = env.friendlies_fixed_list[0].air_tracking_limit+1
+            n_node_feature_enemy = env.friendlies_fixed_list[0].surface_tracking_limit + 1
 
             agent.eval_check(eval=True)
-            node_representation = agent.get_node_representation(missile_node_feature, ship_feature,edge_index,n_node_feature_machine,mini_batch=False)  # 차원 : n_agents X n_representation_comm
+            node_representation = agent.get_node_representation(missile_node_feature, ship_feature,edge_index,n_node_feature_missile,
+                                                                enemy_node_feature = enemy_node_feature,
+                                                                enemy_edge_index = enemy_edge_index,
+                                                                n_node_features_enemy = n_node_feature_enemy,
+
+
+                                                                mini_batch=False)  # 차원 : n_agents X n_representation_comm
             action_blue = agent.sample_action(node_representation, avail_action_blue, epsilon)
 
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
@@ -82,6 +99,9 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_epsilon, i
             n_step_dones.append(done)
             n_step_avail_action_blue.append(avail_action_blue)
 
+            n_step_enemy_feature.append(enemy_node_feature)
+            n_step_enemy_edge_index.append(enemy_edge_index)
+
             status = None
             step_checker += 1
             if step < (n_step-1):
@@ -95,6 +115,8 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_epsilon, i
                                     n_step_rewards,
                                     n_step_dones,
                                     n_step_avail_action_blue[idx],
+                                    n_step_enemy_feature[idx],
+                                    n_step_enemy_edge_index[idx],
                                     status)
 
 
@@ -124,6 +146,9 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_epsilon, i
                     n_step_ship_feature.append(np.zeros_like(ship_feature).tolist())
                     n_step_edge_index.append([[], []])
 
+                    n_step_enemy_feature.append(np.zeros_like(enemy_node_feature).tolist())
+                    n_step_enemy_edge_index.append([[], []])
+
                 agent.buffer.memory(n_step_missile_node_features[0],
                                     n_step_ship_feature[0],
                                     n_step_edge_index[0],
@@ -131,6 +156,9 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_epsilon, i
                                     n_step_rewards,
                                     n_step_dones,
                                     n_step_avail_action_blue[0],
+
+                                    n_step_enemy_feature[0],
+                                    n_step_enemy_edge_index[0],
                                     status)
 
 
@@ -139,7 +167,6 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_epsilon, i
 
                 n_step_dones.append(True)
                 n_step_rewards.append(0)
-                #print(n_step_avail_action_blue[0])
                 agent.buffer.memory(n_step_missile_node_features[0],
                                     n_step_ship_feature[0],
                                     n_step_edge_index[0],
@@ -147,6 +174,9 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_epsilon, i
                                     n_step_rewards,
                                     n_step_dones,
                                     n_step_avail_action_blue[0],
+
+                                    n_step_enemy_feature[0],
+                                    n_step_enemy_edge_index[0],
                                     status)
 
                 n_step_action_blue.append([0]*agent.num_agent)
@@ -154,6 +184,9 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_epsilon, i
                 n_step_missile_node_features.append(np.zeros_like(missile_node_feature).tolist())
                 n_step_ship_feature.append(np.zeros_like(ship_feature).tolist())
                 n_step_edge_index.append([[],[]])
+
+                n_step_enemy_feature.append(np.zeros_like(enemy_node_feature).tolist())
+                n_step_enemy_edge_index.append([[], []])
 
             break
     return episode_reward, epsilon, t, eval
@@ -165,7 +198,6 @@ if __name__ == "__main__":
     vessl_on = cfg.vessl
     if vessl_on == True:
         import vessl
-
         vessl.init()
         output_dir = "/output/"
     else:
@@ -221,17 +253,26 @@ if __name__ == "__main__":
                   tick=tick,
                   simtime_per_framerate=simtime_per_frame,
                   ciws_threshold=ciws_threshold)
-
     agent = Agent(num_agent=1,
-                  feature_size_job=env.get_env_info()["job_feature_shape"],
-                  feature_size_machine=env.get_env_info()["machine_feature_shape"],
+                  feature_size_ship=env.get_env_info()["ship_feature_shape"],
+                  feature_size_enemy=env.get_env_info()["enemy_feature_shape"],
+                  feature_size_missile=env.get_env_info()["missile_feature_shape"],
+
                   iqn_layers=list(eval(cfg.iqn_layers)),
-                  node_embedding_layers_job=list(eval(cfg.job_layers)),
-                  node_embedding_layers_machine=list(eval(cfg.machine_layers)),
+
+                  node_embedding_layers_ship=list(eval(cfg.job_layers)),
+                  node_embedding_layers_missile=list(eval(cfg.machine_layers)),
+                  node_embedding_layers_enemy=list(eval(cfg.machine_layers)), #### t
+
+
                   hidden_size_comm = cfg.hidden_size_comm,
+                  hidden_size_enemy =  cfg.hidden_size_comm,#### 수정요망
+
                   n_multi_head=cfg.n_multi_head,
-                  n_representation_job=cfg.n_representation_job,
-                  n_representation_machine=cfg.n_representation_machine,
+                  n_representation_ship=cfg.n_representation_ship,
+                  n_representation_missile=cfg.n_representation_missile,
+                  n_representation_enemy=cfg.n_representation_enemy,
+
                   dropout=0.6,
                   action_size=env.get_env_info()["n_actions"],
                   buffer_size=cfg.buffer_size,
@@ -241,7 +282,8 @@ if __name__ == "__main__":
                   GNN='GAT',
                   teleport_probability=cfg.teleport_probability,
                   gtn_beta=0.1,
-                  n_node_feature = env.friendlies_fixed_list[0].surface_tracking_limit+env.friendlies_fixed_list[0].air_tracking_limit+1,
+                  n_node_feature_missile = env.friendlies_fixed_list[0].air_tracking_limit + 1,
+                  n_node_feature_enemy =env.friendlies_fixed_list[0].surface_tracking_limit + 1,
                   n_step= n_step,
                   beta = cfg.per_beta)
     anneal_steps = 50000

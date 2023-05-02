@@ -71,8 +71,9 @@ class GraphAttentionLayer(nn.Module):
             #print(adj)
             # zero_vec = -9e15 * torch.ones_like(e)
             # attention = torch.where(adj > 0, e, zero_vec)
-            #print(adj.shape, e.shape)
+
             attention = adj * e
+
 
             attention = F.softmax(attention, dim=1)                                     # attention : (n_node, n_node)
             #print('왜안되지2', attention.shape)

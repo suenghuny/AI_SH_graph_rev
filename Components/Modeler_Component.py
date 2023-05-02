@@ -199,8 +199,10 @@ class Environment:
 
     def get_env_info(self):
         env_info = {"n_agents" : 1,
-                    "job_feature_shape": 10+(1 + self.ship_friendly_action_space + self.air_friendly_action_space),  # + self.n_agents,
-                    "machine_feature_shape" : 6, #9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
+                    "ship_feature_shape": 10+(1 + self.ship_friendly_action_space + self.air_friendly_action_space),  # + self.n_agents,
+                    "missile_feature_shape" : 6,  #9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
+                    "enemy_feature_shape": 6,
+                    # 9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
                     "n_actions": (1 + self.ship_friendly_action_space + self.air_friendly_action_space)
                     }
         return env_info
@@ -457,21 +459,45 @@ class Environment:
     def get_edge_index(self):
         edge_index = [[],[]]
         for ship in self.friendlies_fixed_list:
-            # k = 1
-            # for enemy in self.enemies_fixed_list:
-            #     if enemy.status != 'destroyed':
-            #         edge_index[0].append(0)
-            #         edge_index[1].append(k)
-            #         k += 1
-            #     else:
-            #         pass
             for j in range(len(ship.ssm_detections)):
                 edge_index[0].append(0)
                 edge_index[1].append(j+1)
         return edge_index
+
+    def get_enemy_edge_index(self):
+        edge_index = [[],[]]
+        for ship in self.friendlies_fixed_list:
+            for j in range(len(self.enemies_fixed_list)):
+                enemy= self.enemies_fixed_list[j]
+                if enemy.status != 'destroyed':
+                    edge_index[0].append(0)
+                    edge_index[1].append(j+1)
+        return edge_index
+
+    def get_enemy_node_feature(self):
+        node_features = [[0, 0, 0, 0, 0, 0]]
+        for ship in self.friendlies_fixed_list:
+            for enemy in self.enemies_fixed_list:
+                if enemy.status != 'destroyed':
+                    px = enemy.position_x - ship.position_x
+                    py = enemy.position_y - ship.position_y
+                    vx = enemy.v_x - ship.v_x
+                    vy = enemy.v_y - ship.v_y
+                    ax = enemy.a_x - ship.a_x
+                    ay = enemy.a_y - ship.a_y
+                    node_features.append([px / enemy.attack_range, py / enemy.attack_range, vx / enemy.speed_m, vy / enemy.speed_m, ax, ay])
+
+        if ship.surface_tracking_limit+1-len(node_features) >0:
+            for _ in range(ship.surface_tracking_limit+1-len(node_features)):
+                node_features.append([0,0,0,0,0,0])
+        return node_features
+
+
+
+
+
     def get_missile_node_feature(self):
         node_features = [[0,0,0,0,0,0]]
-
         for ship in self.friendlies_fixed_list:
 
             # for enemy in self.enemies_fixed_list:
@@ -495,8 +521,8 @@ class Environment:
                 node_features.append([px/missile.attack_range, py/missile.attack_range, vx/missile.speed, vy/missile.speed, ax, ay])
 
         #print("전", len(node_features), ship.air_tracking_limit + 1 - len(node_features))
-        if ship.surface_tracking_limit+ship.air_tracking_limit+1-len(node_features) >0:
-            for _ in range(ship.surface_tracking_limit+ship.air_tracking_limit+1-len(node_features)):
+        if ship.air_tracking_limit+1-len(node_features) >0:
+            for _ in range(ship.air_tracking_limit+1-len(node_features)):
                 node_features.append([0,0,0,0,0,0])
         #print("후", len(node_features), ship.air_tracking_limit + 1 - len(node_features))
 
