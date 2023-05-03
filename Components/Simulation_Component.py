@@ -199,31 +199,18 @@ class Missile:
         self.a_y = 0
 
     def destroying(self, enemies, ships, flying_ssms_friendly, flying_ssms_enemy, flying_sams_friendly, flying_sams_enemy):
-        #print(self.id, self.cla)
-
         if self.env.temp_termination != True:
             r = cal_distance(self.target, self)
             r_est_hitting_point = self.cal_distance_estimated_hitting_point()
 
-            if self.target.status != 'destroyed':  # target의 상태가 destroy가 아니라면 계속적으로 비행을 수행한다.
-
-                if r <= self.env.epsilon:  # 표적과의 실제 거리가 가까워졌고,
-
+            if self.target.status != 'destroyed':    # target의 상태가 destroy가 아니라면 계속적으로 비행을 수행한다.
+                if r <= self.env.epsilon:            # 표적과의 실제 거리가 가까워졌고,
                     if self.seeker.on == 'lock_on':  # seeker 상태가 lock_on 일때 정상적인 파괴 로직을 수행한다.
                         self.status = 'destroyed'
                         if self.target.cla == 'ship':
                             if np.random.uniform(0, 1) < self.p_h:  # probability of hitting에 따른 명중여부 판단
-                                #print('sksksk', self.target.side)
-                                """
-                                state feature 만들기
-                                """
-
                                 self.launcher.ship_destroying_history += 1
                                 self.original_target.missile_destroying_history += 1
-
-
-
-
                                 enemies.remove(self.target)  # self.target은 yellow의 ship
                                 self.target.monitors['enemy_flying_ssms'] = len(flying_ssms_friendly)
                                 """
@@ -342,22 +329,17 @@ class Missile:
                                     for ship in ships:  # self.target은 yellow의 ssm -> self.target을 detecting하는 주체는 blue
                                         if self.target in ship.ssm_detections:
                                             ship.ssm_detections.remove(self.target)
-                    else:  # 표적과의 실제 거리는 가깝지만 lock-on 상태가 아닐 경우는 그냥 자폭해버린다.
-                        self.status = 'destroyed'  # 나(유도탄)의 상태를 파괴 상태로 전환
+                    else: # 확인완료(이상없음 / 23. 5. 3.)
+                        """
+                        표적과의 실제 거리는 가깝지만 lock-on 상태가 아닐 경우는 그냥 자폭해버린다.
+                        self.target.cla가 'decoy'인 경우는 lock on이 아닐 수 없으므로 이부분은 생략해도 됨
+                        -> 그러니까 이부분은 자폭에 관한 이야기만 적으면 됨
+                        """
+                        self.status = 'destroyed'      # 나(유도탄)의 상태를 파괴 상태로 전환
                         if self.target.cla == 'ship':  # 표적이 함정일 경우
-
-                            """
-                            state feature 만들기
-                            자신은 SSM : 자기는 파괴
-                            표적은 SHIP : 표적은 미파괴
-                            """
                             self.original_target.missile_destroying_history += 1 # 표적(ship)의 입장에서는 하나가 격추된 느낌이다.
-
-
-
                             flying_ssms_friendly.remove(self)  # self는 blue의 ssm
                             self.target.monitors["ssm_mishit"] += 1
-                            # print('ssm_mishit', self.id)
                             self.env.event_log.append({"time": self.env.now, "friend_or_foe": self.launcher.side,
                                                        "launcher_id": self.launcher.id, "missile_id": self.id,
                                                        "object": self.cla, "id": self.id,
@@ -366,7 +348,6 @@ class Missile:
                             for ship in enemies:
                                 if self in ship.ssm_detections:
                                     ship.ssm_detections.remove(self)  # self는 blue의 ssm -> self를 detecting하는 주체는 yellow
-
                         else:
 
                             self.env.event_log.append({"time": self.env.now, "friend_or_foe": self.launcher.side,
@@ -376,40 +357,17 @@ class Missile:
                                                                                                 self.target.id) + "misfire"})
                             flying_sams_friendly.remove(self)  # self는 blue의 sam
                             if self.cla == 'LSAM':
-
                                 """
-                                state feature 만들기
-                                자신은 LSAM인데 자폭하는 상황
-                                표적은 SSM인데 표적을 격추하지 못한 상황
+                                LSAM 자폭에 관해 기술
                                 """
-
-                                self.launcher.air_engagement_managing_list.remove(
-                                    [self, self.target])  # LSAM인 경우 지령 유도 리스트에서 공격 관리(내가 어떤 표적을 공격중이다)를 종료한다.
+                                self.launcher.air_engagement_managing_list.remove([self, self.target])  # LSAM인 경우 지령 유도 리스트에서 공격 관리(내가 어떤 표적을 공격중이다)를 종료한다.
                             else:
+                                pass
 
-                                if self.cla == 'SSM':
-                                    if self.target.cla == 'decoy':
-                                        """
-                                        state feature 만들기
-                                        자신은 SSM
-                                        표적은 DECOY
-                                        -> 자신은 DECOY에 부딪혀서 폭발
-                                        """
-
-                                        self.original_target.launcher.missile_destroying_history += 1  # 표적(ship)의 입장에서는 하나가 격추된 느낌이다.
-                                if self.cla == 'MSAM':
-                                    """
-                                    state feature 만들기
-                                    자신은 MSAM
-                                    표적은 SSM
-                                    ->자신은 자폭, 표적은 SSM인데 표적을 격추하지 못하는 상황
-                                    """
-                                    self.original_target.launcher.missile_destroying_history += 1  # 표적(ship)의 입장에서는 하나가 격추된 느낌이다.
-
-
-                    #print("11")
-                else:
-                    #print("22")
+                else: # 확인완료(이상없음 / 23. 5. 3.)
+                    """
+                    표적과 유도탄과의 실제 거리가 먼 경우
+                    """
                     if self.fly_mode == 'ccm':
                         if r_est_hitting_point <= self.env.epsilon:  # estimation은 가까운데 실제 표적 거리는 먼 상황(seeker의 작동 또는 lock on 여부와 상관없이 자폭로직을 수행)
                             self.status = 'destroyed'  # 나(유도탄)의 상태를 파괴 상태로 전환
@@ -451,43 +409,52 @@ class Missile:
                                         [self, self.target])  # LSAM인 경우 지령 유도 리스트에서 공격 관리(내가 어떤 표적을 공격중이다)를 종료한다.
                                 else:
                                     pass
-
                         else:
                             pass  # estmation도 멀고 실제 표적거리도 멀면 파괴되지 않는다
                     else:
+                        """
+                        비행모드가 BRM인 경우
+                        """
                         if self.seeker.on == 'lock_on':
+                            """
+                            일단 lock on을 했다면 표적으로 무조건 직행한다.
+                            """
                             pass
                         else:
-                            if r_est_hitting_point <= self.env.epsilon:  # estimation은 가까운데 실제 표적 거리는 먼 상황(seeker의 작동 또는 lock on 여부와 상관없이 자폭로직을 수행)
+                            """
+                            일단 lock on을 하지 않은 상태라면 (발생가능성이 매우 희박)
+                            """
+                            if r_est_hitting_point <= self.env.epsilon:
+                                """
+                                표적의 실제거리도 멀고
+                                표적의 예상거리는 가까운 상황
+                                그러나 lock on은 아닌 상황
+                                (즉, 표적이 있을거라 생각하는 위치에 도착했는데 아무것도 없음. 또한, 그때까지 아무것도 접촉하지 않았음)
+                                (재탐색은 가정하지 않음)  
+                            
+                                -> 일단, 나는 무조건 자폭을 해버린다.      
+                                """
                                 self.status = 'destroyed'  # 나(유도탄)의 상태를 파괴 상태로 전환
                                 if self.target.cla != 'decoy':
                                     if self.target.cla == 'ship':
-
-                                        """
-                                        state feature 만들기
-                                        자신은 SSM  : 자기는 파괴
-                                        표적은 SHIP : 표적은 미파괴
-                                        """
                                         self.original_target.missile_destroying_history += 1  # 표적(ship)의 입장에서는 하나가 격추된 느낌이다.
-
                                         self.target.monitors["ssm_mishit"] += 1
-                                    if self.target.cla == 'SSM':
-                                        """
-                                        state feature 만들기
-                                        자신은 LSAM/MSAM : 자기는 파괴
-                                        표적은 SSM : 표적은 미파괴
-                                        """
+                                    if self.target.cla == 'SSM':pass
                                 else:
-
                                     """
-                                    state feature 만들기
-                                    자신은 SSM  : 자기는 파괴
-                                    표적은 DECOY : 표적은 미파괴
+                                    표적의 실제거리도 멀고
+                                    표적의 예상거리는 가까운 상황
+                                    그러나 lock on은 아닌 상황
+                                    (즉, 표적이 있을거라 생각하는 위치에 도착했는데 아무것도 없음. 또한, 그때까지 아무것도 접촉하지 않았음)
+                                    (재탐색은 가정하지 않음)     
+                                    그런데, 이때 표적은 decoy인 상황은 발생하지 않음(decoy가 target화 되었다는 것은 이미    
                                     """
                                     self.original_target.missile_destroying_history += 1  # 표적(ship)의 입장에서는 하나가 격추된 느낌이다.
-
                                     self.target.launcher.monitors["ssm_mishit"] += 1
-                                if self.target.cla == 'ship' or self.target.cla == 'decoy':  # 표적이 함정일 경우
+
+
+                                if self.cla == 'SSM':
+                                    "이 부분은 자폭로직에 대한 세부 절차를 기술한 부분임"
                                     flying_ssms_friendly.remove(self)  # self는 blue의 ssm
                                     for ship in enemies:
                                         if self in ship.ssm_detections:
@@ -499,24 +466,32 @@ class Missile:
                                             [self, self.target])  # LSAM인 경우 지령 유도 리스트에서 공격 관리(내가 어떤 표적을 공격중이다)를 종료한다.
                                     else:
                                         pass
-                # if self.id == '53.0-3282.0':
-                #     print("파괴1", self.status, self.fly_mode, r_est_hitting_point, r, self.target.cla,
-                #           self.target.status)
-            else:  # target의 상태가 destroy 상태라면 자폭로직을 수행한다.
+                            else:
+                                """
+                                표적의 실제거리도 멀고
+                                표적의 예상거리도 멀고
+                                그러면 아무일도 일어나지 않음
+                                """
+                                pass
 
-
-                self.status = 'destroyed'  # 나(유도탄)의 상태를 파괴 상태로 전환
-                if self.target.cla == 'ship':  # 표적이 함정일 경우
-                    flying_ssms_friendly.remove(self)  # self는 blue의 ssm
+            else:
+                """
+                target의 상태가 destroyed 상태라면 자폭로직을 수행한다.
+                (더이상 표적을 추적하는 의미가 없음 -> 다른 표적을 탐지해서 공격하는 재공격 로직은 없음)
+                
+                """
+                self.status = 'destroyed'                     # 나(SSM)의 상태를 파괴 상태로 전환
+                if self.target.cla == 'ship':                 # 표적이 함정일 경우
+                    flying_ssms_friendly.remove(self)         # self는 blue의 ssm
                     for ship in enemies:
                         if self in ship.ssm_detections:
-                            ship.ssm_detections.remove(self)
-                            # self는 blue의 ssm -> self를 detecting하는 주체는 yellow
+                            ship.ssm_detections.remove(self)  # 나(ssm)를 탐지하고 있는 함재기의 추적목록에서 나를 제외한다.
+                                                              # self는 blue의 ssm -> self를 detecting하는 주체는 yellow
                 else:
-                    flying_sams_friendly.remove(self)  # self는 blue의 sam
-                    if self.cla == 'LSAM':
+                    flying_sams_friendly.remove(self)         # self는 blue의 sam
+                    if self.cla == 'LSAM':                    # lsam일 경우
                         self.launcher.air_engagement_managing_list.remove([self, self.target])
-                        # LSAM인 경우 지령 유도 리스트에서 공격 관리(내가 어떤 표적을 공격중이다)를 종료한다.
+                                                              # LSAM인 경우 지령 유도 리스트에서 공격 관리(내가 어떤 표적을 공격중이다)를 종료한다.
                     else:
                         pass
 
@@ -526,7 +501,7 @@ class Missile:
 
     def flying(self):
 
-        #print(self.id)
+
         r_est_hitting_point = self.cal_distance_estimated_hitting_point()
         r = cal_distance(self.target, self)
 
@@ -633,31 +608,11 @@ class Missile:
 
     def get_angle_of_incidence(self, contact):
 
-
-
-
-
-        # normalizer = (self.v_x**2+self.v_y**2)**0.5
-        # my_vx = self.v_x/normalizer
-        # my_vy = self.v_y/normalizer
-        #
-        # normalizer_con = (contact.v_x ** 2 + contact.v_y ** 2) ** 0.5
-        # con_vx = contact.v_x / normalizer_con
-        # con_vy = contact.v_y / normalizer_con
-        #
-        # dot_product = my_vx * con_vx + my_vy * con_vy
-        # angle = math.acos(dot_product / (math.sqrt(my_vx ** 2 + my_vy ** 2) * math.sqrt(con_vx ** 2 + con_vy ** 2)))
-        # angle_degrees = math.degrees(angle)
-        # print(self.id, self.launcher.side, angle_degrees)
-
         my_course = math.atan2(self.v_y, -self.v_x)
         target_course = math.atan2(-contact.v_y, contact.v_x)
         angle_of_incidence = np.abs(my_course - target_course)
-        # if angle_of_incidence >= 0.5*pi:
-        #     angle_of_incidence = np.abs(angle_of_incidence - 1.5 * pi)
-        # else:
-        #     angle_of_incidence = np.abs(angle_of_incidence - 0.5 * pi)
-        #print(self.launcher.side, math.degrees(angle_of_incidence))
+
+
         return angle_of_incidence
 
     def get_lock_on_target(self):

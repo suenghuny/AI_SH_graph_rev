@@ -727,10 +727,11 @@ class Agent:
                     avail_actions_next = torch.tensor(avail_actions_next, device=device).bool()
                     mask = avail_actions_next[:, agent_id]
 
-                    q = self.Q_tar(obs_next, cos, mini_batch=True)
-
+                    q = self.Q(obs_next, cos, mini_batch=True)
                     q = q.masked_fill(mask == 0, float('-inf'))
                     act_n = torch.max(q, dim=1)[1].unsqueeze(1)
+
+
                     q_tar = self.Q_tar(obs_next, cos, mini_batch=True)
                     q_tar_max = torch.gather(q_tar, 1, act_n).squeeze(1)  # q.shape :      (batch_size, 1)
 
@@ -776,11 +777,15 @@ class Agent:
 
     def learn(self, regularizer, vdn = False):
 
-        # import time
-        # start = time.time()
-        node_features_missile, ship_features, edge_indices_missile, actions, rewards, dones, node_features_missile_next, ship_features_next, edge_indices_missile_next, avail_actions_next, status, status_next,priority,batch_index, node_feature_enemy, edge_index_enemy, node_feature_enemy_next, edge_index_enemy_next = self.buffer.sample(vdn = vdn)
-
-        #print(ship)
+        node_features_missile, \
+        ship_features, edge_indices_missile, \
+        actions, \
+        rewards, \
+        dones, \
+        node_features_missile_next, \
+        ship_features_next, \
+        edge_indices_missile_next, \
+        avail_actions_next, status, status_next,priority,batch_index, node_feature_enemy, edge_index_enemy, node_feature_enemy_next, edge_index_enemy_next = self.buffer.sample(vdn = vdn)
         weight = (len(self.buffer.buffer[10])*torch.tensor(priority, dtype=torch.float, device = device))**(-self.beta)
         weight /= weight.max()
 
@@ -815,8 +820,6 @@ class Agent:
             mini_batch=True)
 
         if vdn == True:
-            #print(avail_actions_next)
-
             dones = torch.tensor(dones, device=device, dtype=torch.float)
             rewards = torch.tensor(rewards, device=device, dtype=torch.float)
             cos, taus = self.Q.calc_cos(self.batch_size)
@@ -844,7 +847,7 @@ class Agent:
             q_tot_tar = q_tot_tar#* status_next/status_next.sum(dim = 1, keepdims = True)
             q_tot = self.VDN(q_tot)
             q_tot_tar = self.VDN_target(q_tot_tar)
-            rewards_1_step = rewards[:,0].unsqueeze(1)
+            rewards_1_step = rewards[:, 0].unsqueeze(1)
             rewards_k_step = rewards[:, 1:]
             masked_n_step_bootstrapping = dones*torch.cat([rewards_k_step, q_tot_tar.unsqueeze(1)], dim = 1)
             discounted_n_step_bootstrapping = self.gamma_n_step*torch.cat([rewards_1_step, masked_n_step_bootstrapping], dim = 1)

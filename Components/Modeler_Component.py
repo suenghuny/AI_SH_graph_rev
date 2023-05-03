@@ -456,6 +456,7 @@ class Environment:
             f11 = self.f11
             ship_feature.append(np.concatenate([[f1,f2,f3,f4,f5,f6,f7,f8,f9,f10], f11]).tolist())
         return ship_feature
+
     def get_edge_index(self):
         edge_index = [[],[]]
         for ship in self.friendlies_fixed_list:
