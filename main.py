@@ -6,6 +6,8 @@ from cfg import get_cfg
 from GDN import Agent
 import numpy as np
 
+from scipy.stats import randint
+
 
 
 
@@ -34,7 +36,8 @@ def preprocessing(scenarios):
     return data
 
 def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, initializer, output_dir, vdn, n_step):
-    agent_yellow = Policy(env, rule='rule2', temperatures=temperature)
+    temp = random.randint(1, 500)
+    agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
     done = False
     episode_reward = 0
     step = 0

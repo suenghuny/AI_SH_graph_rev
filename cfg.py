@@ -24,6 +24,9 @@ def get_cfg():
     parser.add_argument("--n_representation_ship", type=int, default=32, help="")
     parser.add_argument("--n_representation_missile", type=int, default=15, help="")
     parser.add_argument("--n_representation_enemy", type=int, default=15, help="")
+
+    parser.add_argument("--temperature", type=int, default=15, help="")
+
     parser.add_argument("--iqn_layer_size", type=int, default=128, help="")
     parser.add_argument("--iqn_N", type=int, default=12, help="")
     parser.add_argument("--n_cos", type=int, default=64, help="")

@@ -5,6 +5,7 @@ from collections import deque
 from cfg import get_cfg
 from GDN import Agent
 import numpy as np
+import scipy
 
 
 def preprocessing(scenarios):
@@ -33,8 +34,10 @@ def preprocessing(scenarios):
 
 
 def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, initializer, output_dir, vdn, n_step):
-    agent_blue = Policy(env, rule='rule2', temperatures=[20, 20])
-    agent_yellow = Policy(env, rule='rule2', temperatures=[10, 20])
+    temp = random.randint(1, 500)
+    #print(temp)
+    agent_blue = Policy(env, rule='rule2', temperatures=[cfg.temperature, cfg.temperature])
+    agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
     done = False
     episode_reward = 0
     step = 0
@@ -109,7 +112,7 @@ if __name__ == "__main__":
     환경 시스템 관련 변수들
 
     """
-    visualize = True  # 가시화 기능 사용 여부 / True : 가시화 적용, False : 가시화 미적용
+    visualize = False # 가시화 기능 사용 여부 / True : 가시화 적용, False : 가시화 미적용
     size = [600, 600]  # 화면 size / 600, 600 pixel
     tick = 500  # 가시화 기능 사용 시 빠르기
     n_step = cfg.n_step
