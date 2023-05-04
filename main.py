@@ -36,7 +36,7 @@ def preprocessing(scenarios):
     return data
 
 def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, initializer, output_dir, vdn, n_step):
-    temp = random.randint(1, 500)
+    temp = random.randint(1, 50)
     agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
     done = False
     episode_reward = 0
