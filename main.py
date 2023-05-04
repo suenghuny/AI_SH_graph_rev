@@ -90,7 +90,8 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
 
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
             reward, win_tag, done = env.step(action_blue, action_yellow)
-            #step+=1
+            # if e == 28:
+            #     print(reward)
             episode_reward += reward
 
             n_step_missile_node_features.append(missile_node_feature)
@@ -292,6 +293,7 @@ if __name__ == "__main__":
                   n_cos = cfg.n_cos
 
                   )
+
     anneal_episode = cfg.anneal_episode
     anneal_step = (cfg.per_beta - 1) / anneal_episode
 
@@ -303,6 +305,7 @@ if __name__ == "__main__":
     reward_list = list()
 
     for e in range(num_iteration):
+
         start = time.time()
 
 

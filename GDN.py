@@ -75,20 +75,29 @@ class IQN(nn.Module):
         self.v_layer = nn.Sequential(self.noisylinears_for_v)
         self.advantage_layer.apply(weight_init_xavier_uniform)
         self.v_layer.apply(weight_init_xavier_uniform)
-        # for layer in self.v_layer:
-        #     print(layer)
         self.reset_noise_net()
 
 
     def reset_noise_net(self):
+        self.head.sample_noise()
+        self.head_y.sample_noise()
         for layer in self.v_layer:
             if type(layer) is NoisyLinear:
                 layer.sample_noise()
-
         for layer in self.advantage_layer:
             if type(layer) is NoisyLinear:
                 layer.sample_noise()
 
+    def remove_noise_net(self):
+        self.head.remove_noise()
+        self.head_y.remove_noise()
+        for layer in self.v_layer:
+            if type(layer) is NoisyLinear:
+                layer.remove_noise()
+
+        for layer in self.advantage_layer:
+            if type(layer) is NoisyLinear:
+                layer.sample_noise().remove_noise()
 
 
 
@@ -122,15 +131,19 @@ class IQN(nn.Module):
         cos = cos.view(batch_size * N, self.n_cos)
         cos_x = torch.relu(self.cos_embedding(cos)).view(batch_size, N, self.layer_size)  # (batch, n_tau, layer)
         x = (x.unsqueeze(1) * cos_x).view(batch_size * N, self.layer_size)  # 이부분이 phsi * phi에 해당하는 부분
-        out = self.advantage_layer(x)
-        quantiles = out.view(batch_size, N, self.action_size)
-        a = quantiles.mean(dim=1)
+        out_a = self.advantage_layer(x)
+        quantiles_a = out_a.view(batch_size, N, self.action_size)
+        a = quantiles_a.mean(dim=1)
+
         y = torch.relu(self.head_y(input.to(device)))  # x의 shape는 batch_size, layer_size
         cos_y = cos_x
         y = (y.unsqueeze(1) * cos_y).view(batch_size * N, self.layer_size)  # 이부분이 phsi * phi에 해당하는 부분
-        out = self.v_layer(y)
-        quantiles = out.view(batch_size, N, 1)
-        v = quantiles.mean(dim=1)
+        out_v = self.v_layer(y)
+        quantiles_v = out_v.view(batch_size, N, 1)
+        v = quantiles_v.mean(dim=1)
+
+        #print(v.shape, a.shape, a.mean(dim= 1, keepdims = True).shape)
+
         q = v + a-a.mean(dim= 1, keepdims = True)
         return q
 
@@ -600,13 +613,25 @@ class Agent:
         self.Q.load_state_dict(checkpoint["Q"])
         self.Q_tar.load_state_dict(checkpoint["Q_tar"])
         self.node_representation_ship_feature.load_state_dict(checkpoint["node_representation_ship_feature"])
-        self.node_representation_enemy.load_state_dict(checkpoint["node_representation_enemy"])
+        self.node_representation_enemy.load_state_dict(checkpoint["self.node_representation_enemy"])
         self.node_representation.load_state_dict(checkpoint["node_representation"])
         self.func_missile_obs.load_state_dict(checkpoint["func_missile_obs"])
         self.func_enemy_obs.load_state_dict(checkpoint["func_enemy_obs"])
         self.VDN.load_state_dict(checkpoint["VDN"])
         self.VDN_target.load_state_dict(checkpoint["VDN_target"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
+
+        # self.Q.head.remove_noise()
+        # self.Q.head_y.remove_noise()
+
+        for layer in self.Q.v_layer:
+            if type(layer) is NoisyLinear:
+                layer.remove_noise()
+
+        for layer in self.Q.advantage_layer:
+            if type(layer) is NoisyLinear:
+                layer.remove_noise()
+
         self.eval_params = list(self.VDN.parameters()) + \
                            list(self.Q.parameters()) + \
                            list(self.node_representation_ship_feature.parameters()) + \

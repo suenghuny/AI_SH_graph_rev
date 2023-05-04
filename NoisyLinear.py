@@ -5,6 +5,7 @@ from torch.nn import init, Parameter
 from torch.nn import functional as F
 from torch.autograd import Variable
 # Noisy linear layer with independent Gaussian noise
+device =torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 class NoisyLinear(nn.Linear):
   def __init__(self, in_features, out_features, sigma_init=0.5, bias=True):
     super(NoisyLinear, self).__init__(in_features, out_features, bias=True)  # TODO: Adapt for no bias
@@ -31,5 +32,5 @@ class NoisyLinear(nn.Linear):
     self.epsilon_bias = torch.randn(self.out_features)
 
   def remove_noise(self):
-    self.epsilon_weight = torch.zeros(self.out_features, self.in_features)
-    self.epsilon_bias = torch.zeros(self.out_features)
+    self.epsilon_weight = torch.zeros(self.out_features, self.in_features).to(device)
+    self.epsilon_bias = torch.zeros(self.out_features).to(device)
