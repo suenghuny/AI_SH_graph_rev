@@ -1131,7 +1131,7 @@ class Ship:
 
         self.last_v_x = 0
         self.last_v_y = 0
-        if self.env.now % (self.simtime_per_framerate*6)== 0:
+        if self.env.now % (self.env.simtime_per_framerate*6)== 0:
             self.course_input = self.course_input + np.random.uniform(-40, 40)
             #zigzag = np.random.uniform(-40, 40)
         else:
