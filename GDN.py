@@ -229,15 +229,19 @@ class Replay_Buffer:
     def pop(self):
         self.buffer.pop()
 
-    def memory(self, node_feature_missile, ship_feature, edge_index_missile, action, reward, done,
+    def memory(self,
+               node_feature_missile,
+               ship_feature,
+               edge_index_missile,
+               action,
+               reward,
+               done,
                avail_action,
                node_feature_enemy,
                edge_index_enemy, status
                ):
 
-
         self.buffer[1].append(node_feature_missile)
-        #print(self.buffer[1])
         self.buffer[2].append(ship_feature)
 
         self.buffer[3].append(edge_index_missile)
@@ -317,11 +321,13 @@ class Replay_Buffer:
     #def search_sample_space(self, sampled_batch_idx):
 
     def update_transition_priority(self, batch_index, delta):
+
         copied_delta_store = deepcopy(list(self.buffer[10]))
         delta = np.abs(delta) + np.min(copied_delta_store)
         priority = np.array(copied_delta_store).astype(float)
         batch_index = batch_index.astype(int)
         priority[batch_index] = delta
+        #print("후", self.buffer[1][d])
         self.buffer[10]= deque(priority, maxlen=self.buffer_size)
 
 
@@ -343,7 +349,8 @@ class Replay_Buffer:
         else:
             priority = list(deepcopy(self.buffer[10]))[:-self.n_step]
             p = (np.array(priority)/np.array(priority).sum()).tolist()
-            #print(p)
+            #print(step_count_list[:-self.n_step+1], len(p), len(priority))
+
             sampled_batch_idx = np.random.choice(step_count_list[:-self.n_step+1], size=self.batch_size, p = p)
 
         node_feature_missile = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='node_feature_missile')
@@ -731,7 +738,6 @@ class Agent:
                     q = q.masked_fill(mask == 0, float('-inf'))
                     act_n = torch.max(q, dim=1)[1].unsqueeze(1)
 
-
                     q_tar = self.Q_tar(obs_next, cos, mini_batch=True)
                     q_tar_max = torch.gather(q_tar, 1, act_n).squeeze(1)  # q.shape :      (batch_size, 1)
 
@@ -788,6 +794,9 @@ class Agent:
         avail_actions_next, status, status_next,priority,batch_index, node_feature_enemy, edge_index_enemy, node_feature_enemy_next, edge_index_enemy_next = self.buffer.sample(vdn = vdn)
         weight = (len(self.buffer.buffer[10])*torch.tensor(priority, dtype=torch.float, device = device))**(-self.beta)
         weight /= weight.max()
+        # print("전", priority)
+        # print("후", weight.detach().tolist())
+
 
         """
         node_features : batch_size x num_nodes x feature_size
@@ -795,7 +804,6 @@ class Agent:
         action_feature :     batch_size x action_size x action_feature_size
         avail_actions_next : batch_size x num_agents x action_size 
         """
-        # node_feature_enemy, edge_index_enemy, node_feature_enemy_next, edge_index_enemy_next
 
         n_node_features_missile = self.n_node_feature_missile
         n_node_features_enemy = self.n_node_feature_enemy
@@ -840,22 +848,23 @@ class Agent:
                                 target=True,
                                 cos=cos, vdn = vdn) for agent_id in range(self.num_agent)]
 
-
             q_tot_tar = torch.stack(q_tar, dim=1)
 
-            q_tot = q_tot #* status/status.sum(dim = 1, keepdims = True)
-            q_tot_tar = q_tot_tar#* status_next/status_next.sum(dim = 1, keepdims = True)
-            q_tot = self.VDN(q_tot)
+            q_tot = q_tot          # status/status.sum(dim = 1, keepdims = True)
+            q_tot_tar = q_tot_tar  # status_next/status_next.sum(dim = 1, keepdims = True)
+            q_tot     = self.VDN(q_tot)
             q_tot_tar = self.VDN_target(q_tot_tar)
             rewards_1_step = rewards[:, 0].unsqueeze(1)
+
             rewards_k_step = rewards[:, 1:]
             masked_n_step_bootstrapping = dones*torch.cat([rewards_k_step, q_tot_tar.unsqueeze(1)], dim = 1)
             discounted_n_step_bootstrapping = self.gamma_n_step*torch.cat([rewards_1_step, masked_n_step_bootstrapping], dim = 1)
             td_target = discounted_n_step_bootstrapping.sum(dim=1)
+
             delta = (td_target - q_tot).detach().tolist()
             self.buffer.update_transition_priority(batch_index = batch_index, delta = delta)
-            loss1 = F.huber_loss(weight*q_tot, weight*td_target.detach())
-            loss = loss1
+
+            loss = F.huber_loss(weight*q_tot, weight*td_target.detach())#
             self.optimizer.zero_grad()
             loss.backward()
             #torch.nn.utils.clip_grad_norm_(self.eval_params, 1)
@@ -871,6 +880,8 @@ class Agent:
             actions = torch.gather(torch.tensor(actions), 1, torch.tensor(sampled_indexes).long().unsqueeze(1))
             avail_actions_next = torch.tensor([avail_actions_next[b][sampled_indexes[b]] for b in range(self.batch_size)])
             cos, taus = self.Q.calc_cos(self.batch_size)
+
+
             q_tot =self.cal_Q(obs=obs,
                        actions=actions,
                        avail_actions_next=None,

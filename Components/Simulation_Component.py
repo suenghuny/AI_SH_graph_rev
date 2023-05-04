@@ -550,20 +550,15 @@ class Missile:
             if self.fly_mode == 'ccm':
                 past_position_x = self.position_x
                 past_position_y = self.position_y
-
                 self.v_x = self.speed * (self.estimated_hitting_point_x - self.position_x) / r_est_hitting_point
                 self.v_y = self.speed * (self.estimated_hitting_point_y - self.position_y) / r_est_hitting_point
-
                 self.position_x += self.v_x
                 self.position_y += self.v_y
             elif self.fly_mode == 'brm':
                 past_position_x = self.position_x
                 past_position_y = self.position_y
-
                 self.v_x = self.speed * (self.target.position_x - self.position_x) / r
                 self.v_y = self.speed * (self.target.position_y - self.position_y) / r
-
-
                 self.position_x += self.v_x
                 self.position_y += self.v_y
             else:
@@ -577,14 +572,10 @@ class Missile:
                 self.position_y += self.v_y
             self.course = get_own_course(past_position_x, past_position_y, self.position_x, self.position_y)
             self.fly_mode = 'destroyed'
-            # if self.id == '53.0-3282.0':
-            #     print("여기 걸렸나?", self.status, self.target.status)
-            # except UnboundLocalError:
-            #     pass
+
+
         self.a_x = (self.v_x - self.last_v_x)/self.env.simtime_per_framerate
         self.a_y = (self.v_y - self.last_v_y) / self.env.simtime_per_framerate
-
-
         self.last_v_x = self.v_x
         self.last_v_y = self.v_y
 
@@ -611,8 +602,6 @@ class Missile:
         my_course = math.atan2(self.v_y, -self.v_x)
         target_course = math.atan2(-contact.v_y, contact.v_x)
         angle_of_incidence = np.abs(my_course - target_course)
-
-
         return angle_of_incidence
 
     def get_lock_on_target(self):
@@ -635,6 +624,8 @@ class Missile:
             else:
                 self.target = detection
                 self.seeker.on = 'lock_on'
+                # if self.cla == 'SSM':
+                #     print(self.target.cla)
                 if self.target.cla == 'decoy':
                     self.target.launcher.monitors['ssm_decoying'] += 1
                     self.env.event_log.append({"time": self.env.now, "friend_or_foe": self.launcher.side,
@@ -654,7 +645,6 @@ class Missile:
     def get_in_arc_list(self):
         in_arc_list = []
         probabilities = []
-
         if self.launcher.side == 'blue':
             bearing, distance = self.get_bearing_and_distance(self.target)
             #print(self.arc_beam_angle, bearing, self.arc_beam_angle_n,distance, self.maximum_detection_range, distance)
@@ -662,13 +652,8 @@ class Missile:
                     distance <= self.maximum_detection_range):
                 in_arc_list.append(self.target)
                 if self.target.cla == 'ship':
-
-
                     theta = self.get_angle_of_incidence(self.target)
-
-
                     sigma = self.target.get_sigma(theta)
-
                     R = 10 * math.log10((cal_distance(self, self.target) / 10) * 1.852 * 10 ** 5)  # [km]
                     S_N = get_signal_to_noise(self.P, self.G, sigma, self.c, R, self.N)
                     T_N = get_threshold_to_noise(self.env.P_fa)
@@ -676,7 +661,6 @@ class Missile:
                     probabilities.append(p_d)
                 else:
                     sigma = self.target.sigma
-
                     R = 10 * math.log10((cal_distance(self, self.target) / 10) * 1.852 * 10 ** 5)  # [km]
                     S_N = get_signal_to_noise(self.P, self.G, sigma, self.c, R, self.N)
                     T_N = get_threshold_to_noise(self.env.P_fa)
@@ -687,8 +671,7 @@ class Missile:
             if self.cla == 'SSM':
                 for decoy in self.env.decoys_enemy:
                     bearing, distance = self.get_bearing_and_distance(decoy)
-                    if (bearing <= self.arc_beam_angle_n) and (bearing >= self.arc_beam_angle) and (
-                            distance <= self.maximum_detection_range):
+                    if (bearing <= self.arc_beam_angle_n) and (bearing >= self.arc_beam_angle) and (distance <= self.maximum_detection_range):
                         in_arc_list.append(decoy)
                         sigma = decoy.sigma
                         R = 10 * math.log10((cal_distance(self, decoy) / 10) * 1.852 * 10 ** 5)  # [km]
@@ -704,15 +687,11 @@ class Missile:
                 if self.target.cla == 'ship':
                     theta = self.get_angle_of_incidence(self.target)
                     sigma = self.target.get_sigma(theta)
-
-                    #self.env.temp_rcs.append(sigma)
-
                     R = 10 * math.log10((cal_distance(self, self.target) / 10) * 1.852 * 10 ** 5)  # [km]
                     S_N = get_signal_to_noise(self.P, self.G, sigma, self.c, R, self.N)
                     T_N = get_threshold_to_noise(self.env.P_fa)
                     p_d = get_probability_of_detection(S_N, T_N)
                     probabilities.append(p_d)
-
                 else:
                     sigma = self.target.sigma
                     R = 10 * math.log10((cal_distance(self, self.target) / 10) * 1.852 * 10 ** 5)  # [km]
@@ -1070,6 +1049,7 @@ class Ship:
             [Missile(env=env, launcher=self, spec=type_l_sam) for _ in range(num_l_sam)]
         self.ssm_launcher = \
             [Missile(env=env, launcher=self, spec=type_ssm) for _ in range(num_ssm)]
+
         self.attack_range = self.ssm_launcher[0].attack_range
         self.speed_m = self.ssm_launcher[0].speed
         self.num_m_sam = num_m_sam
@@ -1151,9 +1131,16 @@ class Ship:
 
         self.last_v_x = 0
         self.last_v_y = 0
-        zigzag = np.random.uniform(-40, 40)
-        self.v_y = -self.speed * math.cos((self.course_input+zigzag) * pi / 180)
-        self.v_x = self.speed * math.sin((self.course_input+zigzag) * pi / 180)
+        if self.env.now % 28== 0:
+            self.course_input = self.course_input + np.random.uniform(-40, 40)
+            #zigzag = np.random.uniform(-40, 40)
+        else:
+            pass
+
+        #print("지그재그", self.course_input )
+
+        self.v_y = -self.speed * math.cos((self.course_input ) * pi / 180)
+        self.v_x = self.speed * math.sin((self.course_input ) * pi / 180)
 
 
         self.position_x += self.v_x
@@ -1178,6 +1165,7 @@ class Ship:
                 launching_bearing = math.atan2(ssm.position_y - deepcopy(self.position_y),
                                                ssm.position_x - deepcopy(self.position_x)) + \
                                     self.decoy_launching_bearing * pi / 180
+                #print(launching_bearing)
                 launching_distance_x = self.decoy_launching_distance * math.cos(launching_bearing)
                 launching_distance_y = self.decoy_launching_distance * math.sin(launching_bearing)
                 launching_position_x = deepcopy(self.position_x) + launching_distance_x
@@ -1353,7 +1341,8 @@ class Ship:
             noise_x = target.position_x + np.random.normal(0, norm)
             #print(noise_x, noise_y)
         else:
-            distance = ((target.position_y-self.position_y)**2+(target.position_x-self.position_x)**2)/2000
+            distance = ((target.position_y-self.position_y)**2+(target.position_x-self.position_x)**2)/6000
+            #print(distance)
             noise_y = target.position_y+np.random.normal(0, distance)
             noise_x = target.position_x+np.random.normal(0, distance)
 

@@ -33,7 +33,7 @@ def preprocessing(scenarios):
                    polar_chart_visualize=polar_chart_visualize)
     return data
 
-def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_epsilon, initializer, output_dir, vdn, n_step):
+def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, initializer, output_dir, vdn, n_step):
     agent_yellow = Policy(env, rule='rule2', temperatures=temperature)
     done = False
     episode_reward = 0
@@ -62,7 +62,9 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_epsilon, i
 
     step_checker = 0
     while not done:
+        #print(env.now % (decision_timestep))
         if env.now % (decision_timestep) <= 0.00001:
+            #print("다다다", env.now)
             avail_action_yellow, target_distance_yellow, air_alert_yellow = env.get_avail_actions_temp(side='yellow')
             avail_action_blue, target_distance_blue, air_alert_blue = env.get_avail_actions_temp(side='blue')
 
@@ -98,16 +100,17 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_epsilon, i
             n_step_rewards.append(reward)
             n_step_dones.append(done)
             n_step_avail_action_blue.append(avail_action_blue)
-
             n_step_enemy_feature.append(enemy_node_feature)
             n_step_enemy_edge_index.append(enemy_edge_index)
-
             status = None
             step_checker += 1
             if step < (n_step-1):
                 step += 1
             else:
+
                 idx = (n_step-1)-step
+                # print("전", n_step_rewards)
+                # print("전", n_step_dones)
                 agent.buffer.memory(n_step_missile_node_features[idx],
                                     n_step_ship_feature[idx],
                                     n_step_edge_index[idx],
@@ -124,7 +127,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_epsilon, i
             if e >= train_start:
                 t += 1
                 if agent.beta <= 1:
-                    agent.beta += 0.0005
+                    agent.beta -= anneal_step
                 agent.eval_check(eval=False)
                 agent.learn(regularizer=0, vdn=vdn)
         else:
@@ -134,19 +137,18 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_epsilon, i
 
         if done == True:
             if step_checker < n_step:
-
-
-
                 while len(n_step_rewards) < n_step:
                     n_step_dones.append(True)
                     n_step_rewards.append(0)
                     n_step_action_blue.append([0] * agent.num_agent)
                     n_step_avail_action_blue.append(dummy_avail_action)
+
+
                     n_step_missile_node_features.append(np.zeros_like(missile_node_feature).tolist())
                     n_step_ship_feature.append(np.zeros_like(ship_feature).tolist())
-                    n_step_edge_index.append([[], []])
-
                     n_step_enemy_feature.append(np.zeros_like(enemy_node_feature).tolist())
+
+                    n_step_edge_index.append([[], []])
                     n_step_enemy_edge_index.append([[], []])
 
                 agent.buffer.memory(n_step_missile_node_features[0],
@@ -160,33 +162,29 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_epsilon, i
                                     n_step_enemy_feature[0],
                                     n_step_enemy_edge_index[0],
                                     status)
+            else:
+                for i in range(step-1):
+                    n_step_dones.append(True)
+                    n_step_rewards.append(0)
+                    agent.buffer.memory(n_step_missile_node_features[0],
+                                        n_step_ship_feature[0],
+                                        n_step_edge_index[0],
+                                        n_step_action_blue[0],
+                                        n_step_rewards,
+                                        n_step_dones,
+                                        n_step_avail_action_blue[0],
+                                        n_step_enemy_feature[0],
+                                        n_step_enemy_edge_index[0],
+                                        status)
 
+                    n_step_action_blue.append([0]*agent.num_agent)
+                    n_step_avail_action_blue.append(dummy_avail_action)
+                    n_step_missile_node_features.append(np.zeros_like(missile_node_feature).tolist())
+                    n_step_ship_feature.append(np.zeros_like(ship_feature).tolist())
+                    n_step_edge_index.append([[],[]])
 
-
-            for i in range(step-1):
-
-                n_step_dones.append(True)
-                n_step_rewards.append(0)
-                agent.buffer.memory(n_step_missile_node_features[0],
-                                    n_step_ship_feature[0],
-                                    n_step_edge_index[0],
-                                    n_step_action_blue[0],
-                                    n_step_rewards,
-                                    n_step_dones,
-                                    n_step_avail_action_blue[0],
-
-                                    n_step_enemy_feature[0],
-                                    n_step_enemy_edge_index[0],
-                                    status)
-
-                n_step_action_blue.append([0]*agent.num_agent)
-                n_step_avail_action_blue.append(dummy_avail_action)
-                n_step_missile_node_features.append(np.zeros_like(missile_node_feature).tolist())
-                n_step_ship_feature.append(np.zeros_like(ship_feature).tolist())
-                n_step_edge_index.append([[],[]])
-
-                n_step_enemy_feature.append(np.zeros_like(enemy_node_feature).tolist())
-                n_step_enemy_edge_index.append([[], []])
+                    n_step_enemy_feature.append(np.zeros_like(enemy_node_feature).tolist())
+                    n_step_enemy_edge_index.append([[], []])
 
             break
     return episode_reward, epsilon, t, eval
@@ -211,17 +209,16 @@ if __name__ == "__main__":
 
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
-
-
-
     import time
+
     """
+    
     환경 시스템 관련 변수들
-    환경 시스템 관련 변수들
+    
     """
-    visualize = True           # 가시화 기능 사용 여부 / True : 가시화 적용, False : 가시화 미적용
-    size = [600, 600]              # 화면 size / 600, 600 pixel
-    tick = 500                     # 가시화 기능 사용 시 빠르기
+    visualize = False                 # 가시화 기능 사용 여부 / True : 가시화 적용, False : 가시화 미적용
+    size = [600, 600]                # 화면 size / 600, 600 pixel
+    tick = 500                       # 가시화 기능 사용 시 빠르기
     n_step = cfg.n_step
     simtime_per_frame = cfg.simtime_per_frame
     decision_timestep = cfg.decision_timestep
@@ -233,17 +230,13 @@ if __name__ == "__main__":
     ciws_threshold = 1
     polar_chart_visualize = False
     scenarios = ['scenario1', 'scenario2', 'scenario3']
-
     lose_ratio = list()
     remains_ratio = list()
-
     polar_chart_scenario1 = [33, 29, 25, 33, 30, 30, 55, 27, 27, 35, 25, 30, 40]  # RCS의 polarchart 적용
 
     polar_chart = [polar_chart_scenario1]
     df_dict = {}
-
     #scenario = np.random.choice(scenarios)
-
     episode_polar_chart = polar_chart[0]
     records = list()
     import torch, random
@@ -297,11 +290,16 @@ if __name__ == "__main__":
                   iqn_layer_size = cfg.iqn_layer_size,
                   iqn_N=cfg.iqn_N,
                   n_cos = cfg.n_cos
+
                   )
-    anneal_steps = 50000
+    anneal_episode = cfg.anneal_episode
+    anneal_step = (cfg.per_beta - 1) / anneal_episode
+
+
+
     epsilon = 1
     min_epsilon = 0.01
-    #anneal_epsilon = (epsilon - min_epsilon) / anneal_steps
+
     reward_list = list()
 
     for e in range(num_iteration):
@@ -318,7 +316,7 @@ if __name__ == "__main__":
                       ciws_threshold=ciws_threshold)
 
 
-        episode_reward, epsilon, t, eval = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon, min_epsilon=min_epsilon, anneal_epsilon=0 , initializer=False, output_dir=None, vdn=True, n_step = n_step)
+        episode_reward, epsilon, t, eval = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon, min_epsilon=min_epsilon, anneal_step=anneal_step , initializer=False, output_dir=None, vdn=True, n_step = n_step)
         if vessl_on == False:
             writer.add_scalar("episode", episode_reward, e)
         reward_list.append(episode_reward)
