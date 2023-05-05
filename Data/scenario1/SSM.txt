@@ -1,9 +1,9 @@
 type					1	2
 speed					0.8	0.8
-beam_width				30	30
-angular_velocity			7	7
-rotation_range			50	50
-seeker_on_distance			10	10
+beam_width				20	20
+angular_velocity		0.5	0.5
+rotation_range			30	30
+seeker_on_distance		5	5
 range					10	10
 attack_range			80	80
 length					4	4
