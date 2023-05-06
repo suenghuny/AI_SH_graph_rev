@@ -567,9 +567,8 @@ class Agent:
                                list(self.func_enemy_obs.parameters())
 
         self.optimizer = optim.Adam(self.eval_params, lr=learning_rate)
-        self.scheduler = StepLR(optimizer=self.optimizer, step_size=38000, gamma=0.1)
+        self.scheduler = StepLR(optimizer=self.optimizer, step_size=21000, gamma=0.2)
         self.time_check = [[], []]
-
     def save_model(self, e, t, epsilon, path):
         torch.save({
             'e': e,
