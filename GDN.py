@@ -894,6 +894,7 @@ class Agent:
             loss.backward()
             #torch.nn.utils.clip_grad_norm_(self.eval_params, 1)
             self.optimizer.step()
+            self.scheduler.step()
             tau = 1e-3
             for target_param, local_param in zip(self.Q_tar.parameters(), self.Q.parameters()):
                 target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
