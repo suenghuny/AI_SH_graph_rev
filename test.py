@@ -33,7 +33,8 @@ def preprocessing(scenarios):
 
 
 def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, initializer, output_dir, vdn, n_step):
-    agent_yellow = Policy(env, rule='rule2', temperatures=temperature)
+    temp = random.randint(30, 31)
+    agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
     done = False
     episode_reward = 0
     step = 0
@@ -208,7 +209,7 @@ if __name__ == "__main__":
 
 
 
-    agent.load_model(output_dir+"1500.pt")
+    agent.load_model(output_dir+"1500_.pt")
     anneal_episode = cfg.anneal_episode
     anneal_step = (cfg.per_beta - 1) / anneal_episode
 

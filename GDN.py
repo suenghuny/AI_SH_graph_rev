@@ -94,7 +94,6 @@ class IQN(nn.Module):
         for layer in self.v_layer:
             if type(layer) is NoisyLinear:
                 layer.remove_noise()
-
         for layer in self.advantage_layer:
             if type(layer) is NoisyLinear:
                 layer.sample_noise().remove_noise()
@@ -567,7 +566,7 @@ class Agent:
                                list(self.func_enemy_obs.parameters())
 
         self.optimizer = optim.Adam(self.eval_params, lr=learning_rate)
-        self.scheduler = StepLR(optimizer=self.optimizer, step_size=24575, gamma=0.1)
+        self.scheduler = StepLR(optimizer=self.optimizer, step_size=24575, gamma=0.01)
         self.time_check = [[], []]
     def save_model(self, e, t, epsilon, path):
         torch.save({
@@ -622,14 +621,17 @@ class Agent:
 
         # self.Q.head.remove_noise()
         # self.Q.head_y.remove_noise()
-
-        for layer in self.Q.v_layer:
-            if type(layer) is NoisyLinear:
-                layer.remove_noise()
-
-        for layer in self.Q.advantage_layer:
-            if type(layer) is NoisyLinear:
-                layer.remove_noise()
+        # print("푸릇 셀러드?")
+        #
+        # for layer in self.Q.v_layer:
+        #     if type(layer) is NoisyLinear:
+        #         print("??? 되는겨?")
+        #         layer.remove_noise()
+        #
+        # for layer in self.Q.advantage_layer:
+        #     if type(layer) is NoisyLinear:
+        #         print("??? 된겨?")
+        #         layer.remove_noise()
 
         self.eval_params = list(self.VDN.parameters()) + \
                            list(self.Q.parameters()) + \

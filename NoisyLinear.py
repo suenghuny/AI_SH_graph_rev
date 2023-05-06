@@ -7,7 +7,7 @@ from torch.autograd import Variable
 # Noisy linear layer with independent Gaussian noise
 device =torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 class NoisyLinear(nn.Linear):
-  def __init__(self, in_features, out_features, sigma_init=0.5, bias=True):
+  def __init__(self, in_features, out_features, sigma_init=0.017, bias=True):
     super(NoisyLinear, self).__init__(in_features, out_features, bias=True)  # TODO: Adapt for no bias
     # µ^w and µ^b reuse self.weight and self.bias
     self.sigma_init = sigma_init
