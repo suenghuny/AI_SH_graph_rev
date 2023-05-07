@@ -8,7 +8,11 @@ def get_cfg():
     parser.add_argument("--simtime_per_frame", type=int, default=2, help="framerate 관련")
     parser.add_argument("--decision_timestep", type=int, default=4, help="decision timestep 관련")
     parser.add_argument("--ciws_threshold", type=float, default=1, help="ciws threshold")
+    parser.add_argument("--per_alpha", type=float, default=0.4, help="PER_alpha")
     parser.add_argument("--per_beta", type=float, default=0.6, help="PER_beta")
+
+    parser.add_argument("--sigma_init", type=float, default=0.4, help="sigma_init")
+
     parser.add_argument("--n_step", type=int, default=5, help="n_step")
     parser.add_argument("--anneal_episode", type=int, default=1500, help="episode")
 

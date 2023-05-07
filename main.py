@@ -291,6 +291,7 @@ if __name__ == "__main__":
                   n_node_feature_enemy =env.friendlies_fixed_list[0].surface_tracking_limit + 1,
                   n_step= n_step,
                   beta = cfg.per_beta,
+                  per_alpha = cfg.per_alpha,
                   iqn_layer_size = cfg.iqn_layer_size,
                   iqn_N=cfg.iqn_N,
                   n_cos = cfg.n_cos

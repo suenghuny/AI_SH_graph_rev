@@ -79,14 +79,14 @@ class IQN(nn.Module):
 
 
     def reset_noise_net(self):
-        self.head.sample_noise()
-        self.head_y.sample_noise()
+        self.head.reset_noise()
+        self.head_y.reset_noise()
         for layer in self.v_layer:
             if type(layer) is NoisyLinear:
-                layer.sample_noise()
+                layer.reset_noise()
         for layer in self.advantage_layer:
             if type(layer) is NoisyLinear:
-                layer.sample_noise()
+                layer.reset_noise()
 
     def remove_noise_net(self):
         self.head.remove_noise()
@@ -222,9 +222,9 @@ class NodeEmbedding(nn.Module):
 
 
 class Replay_Buffer:
-    def __init__(self, buffer_size, batch_size, n_node_feature_missile, n_node_feature_enemy, action_size, n_step):
+    def __init__(self, buffer_size, batch_size, n_node_feature_missile, n_node_feature_enemy, action_size, n_step, per_alpha):
         self.buffer = deque()
-
+        self.alpha = per_alpha
         self.step_count_list = list()
         for _ in range(13):
             self.buffer.append(deque(maxlen=buffer_size))
@@ -360,7 +360,9 @@ class Replay_Buffer:
                 sampled_batch_idx = np.random.choice(step_count_list, size=self.batch_size)
         else:
             priority = list(deepcopy(self.buffer[10]))[:-self.n_step]
-            p = (np.array(priority)/np.array(priority).sum()).tolist()
+            p = np.array(priority)**self.alpha#/np.array(priority).sum()).tolist()
+            p /= p.sum()
+            p = p.tolist()
             #print(step_count_list[:-self.n_step+1], len(p), len(priority))
 
             sampled_batch_idx = np.random.choice(step_count_list[:-self.n_step+1], size=self.batch_size, p = p)
@@ -470,6 +472,7 @@ class Agent:
                  n_node_feature_enemy,
                  n_step,
                  beta,
+                 per_alpha,
                  iqn_layer_size,
                  iqn_N,
                  n_cos
@@ -503,7 +506,7 @@ class Agent:
         self.VDN_target.load_state_dict(self.VDN.state_dict())
         self.buffer_size = buffer_size
         self.batch_size = batch_size
-        self.buffer = Replay_Buffer(self.buffer_size, self.batch_size, n_node_feature_missile,n_node_feature_enemy, self.action_size, n_step = self.n_step)
+        self.buffer = Replay_Buffer(self.buffer_size, self.batch_size, n_node_feature_missile,n_node_feature_enemy, self.action_size, n_step = self.n_step, per_alpha = per_alpha)
         self.n_node_feature_missile = n_node_feature_missile
         self.n_node_feature_enemy = n_node_feature_enemy
 
