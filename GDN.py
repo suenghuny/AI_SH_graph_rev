@@ -79,14 +79,14 @@ class IQN(nn.Module):
 
 
     def reset_noise_net(self):
-        self.head.reset_noise()
-        self.head_y.reset_noise()
+        self.head.sample_noise()
+        self.head_y.sample_noise()
         for layer in self.v_layer:
             if type(layer) is NoisyLinear:
-                layer.reset_noise()
+                layer.sample_noise()
         for layer in self.advantage_layer:
             if type(layer) is NoisyLinear:
-                layer.reset_noise()
+                layer.sample_noise()
 
     def remove_noise_net(self):
         self.head.remove_noise()
@@ -569,7 +569,7 @@ class Agent:
                                list(self.func_enemy_obs.parameters())
 
         self.optimizer = optim.Adam(self.eval_params, lr=learning_rate)
-        self.scheduler = StepLR(optimizer=self.optimizer, step_size=24575, gamma=0.01)
+        self.scheduler = StepLR(optimizer=self.optimizer, step_size=24000, gamma=0.2)
         self.time_check = [[], []]
     def save_model(self, e, t, epsilon, path):
         torch.save({
@@ -607,6 +607,7 @@ class Agent:
 
     #node_feature_enemy, edge_index_enemy, node_feature_enemy_next, edge_index_enemy_next
     def load_model(self, path):
+
         checkpoint = torch.load(path)
         e = checkpoint["e"]
         t = checkpoint["t"]
@@ -797,7 +798,7 @@ class Agent:
         action = []
         utility = list()
         cos, taus = self.Q.calc_cos(1)
-
+        self.Q.reset_noise_net()
         for n in range(self.num_agent):
             obs = node_representation[n]
             obs = obs.unsqueeze(0)
@@ -898,7 +899,7 @@ class Agent:
             loss.backward()
             #torch.nn.utils.clip_grad_norm_(self.eval_params, 1)
             self.optimizer.step()
-            #self.scheduler.step()
+            self.scheduler.step()
             tau = 1e-3
             for target_param, local_param in zip(self.Q_tar.parameters(), self.Q.parameters()):
                 target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)

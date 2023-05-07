@@ -155,7 +155,7 @@ if __name__ == "__main__":
     records = list()
     import torch, random
 
-    seed = 1234
+    seed = 42
     np.random.seed(seed)
     torch.manual_seed(seed)
     random.seed(seed)
@@ -203,13 +203,14 @@ if __name__ == "__main__":
                   beta=cfg.per_beta,
                   iqn_layer_size=cfg.iqn_layer_size,
                   iqn_N=cfg.iqn_N,
-                  n_cos=cfg.n_cos
+                  n_cos=cfg.n_cos,
+                  per_alpha = cfg.per_alpha
 
                   )
 
 
 
-    agent.load_model(output_dir+"1500_.pt")
+    agent.load_model(output_dir+"1500 (4).pt")
     anneal_episode = cfg.anneal_episode
     anneal_step = (cfg.per_beta - 1) / anneal_episode
 
@@ -254,11 +255,11 @@ if __name__ == "__main__":
 
         # print(len(agent.buffer.buffer[2]))
         print(
-            "Total reward in episode {} = {}, epsilon : {}, time_step : {}, episode_duration : {}".format(
+            "Total reward in episode {} = {}, epsilon : {}, time_step : {}, episode_duration : {}, mean reward : {}".format(
                 e,
                 np.round(episode_reward, 3),
                 np.round(epsilon, 3),
-                t, np.round(time.time() - start, 3)))
+                t, np.round(time.time() - start, 3), np.mean(reward_list)))
 
         # del data
         # del env
