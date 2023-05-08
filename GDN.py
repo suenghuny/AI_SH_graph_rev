@@ -51,7 +51,7 @@ class IQN(nn.Module):
         last_layer = layer_size
         for i in range(len(layers)):
             layer = layers[i]
-            if i != len(layers)-1:
+            if i <= len(layers)-2:
                 self.noisylinears_for_advantage['linear{}'.format(i)]= NoisyLinear(last_layer, layer)
                 self.noisylinears_for_advantage['batchnorm{}'.format(i)] = nn.BatchNorm1d(layer)
                 self.noisylinears_for_advantage['activation{}'.format(i)] = nn.ReLU()
@@ -63,7 +63,7 @@ class IQN(nn.Module):
         last_layer = layer_size
         for i in range(len(layers)):
             layer = layers[i]
-            if i != len(layers) - 1:
+            if i <= len(layers) - 2:
                 self.noisylinears_for_v['linear{}'.format(i)]= NoisyLinear(last_layer, layer)
                 self.noisylinears_for_v['batchnorm{}'.format(i)] = nn.BatchNorm1d(layer)
                 self.noisylinears_for_v['activation{}'.format(i)] = nn.ReLU()
@@ -72,7 +72,9 @@ class IQN(nn.Module):
                 self.noisylinears_for_v['linear{}'.format(i)] = NoisyLinear(last_layer, 1)
 
         self.advantage_layer = nn.Sequential(self.noisylinears_for_advantage)
+
         self.v_layer = nn.Sequential(self.noisylinears_for_v)
+        print(self.advantage_layer)
         self.advantage_layer.apply(weight_init_xavier_uniform)
         self.v_layer.apply(weight_init_xavier_uniform)
         self.reset_noise_net()
@@ -203,7 +205,7 @@ class NodeEmbedding(nn.Module):
         last_layer = self.feature_size
         for i in range(len(layers)):
             layer = layers[i]
-            if i != len(layers)-1:
+            if i <= len(layers)-2:
                 self.linears['linear{}'.format(i)]= nn.Linear(last_layer, layer)
                 self.linears['batchnorm{}'.format(i)] = nn.BatchNorm1d(layer)
                 self.linears['activation{}'.format(i)] = nn.ReLU()
@@ -554,9 +556,9 @@ class Agent:
                                          teleport_probability=self.teleport_probability).to(device)  # 수정사항
 
             self.Q = IQN(n_representation_ship+n_representation_missile + n_representation_enemy+10, self.action_size,
-                         batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos = n_cos).to(device)
+                         batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos = n_cos, layers = iqn_layers).to(device)
             self.Q_tar = IQN(n_representation_ship+n_representation_missile + n_representation_enemy+10, self.action_size,
-                             batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos = n_cos).to(device)
+                             batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos = n_cos, layers = iqn_layers).to(device)
 
             self.Q_tar.load_state_dict(self.Q.state_dict())
 
