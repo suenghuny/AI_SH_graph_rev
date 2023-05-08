@@ -64,7 +64,10 @@ class IQN(nn.Module):
                 self.noisylinears_for_advantage['activation{}'.format(i)] = nn.ReLU()
                 last_layer = layer
             else:
-                self.noisylinears_for_advantage['linear{}'.format(i)] = NoisyLinear(last_layer, self.action_size)
+                if cfg.epsilon_greedy == False:
+                    self.noisylinears_for_advantage['linear{}'.format(i)] = NoisyLinear(last_layer, self.action_size)
+                else:
+                    self.noisylinears_for_advantage['linear{}'.format(i)] = nn.Linear(last_layer, self.action_size)
 
         self.noisylinears_for_v = OrderedDict()
         last_layer = layer_size
@@ -80,7 +83,10 @@ class IQN(nn.Module):
                 self.noisylinears_for_v['activation{}'.format(i)] = nn.ReLU()
                 last_layer = layer
             else:
-                self.noisylinears_for_v['linear{}'.format(i)] = NoisyLinear(last_layer, 1)
+                if cfg.epsilon_greedy == False:
+                    self.noisylinears_for_v['linear{}'.format(i)] = NoisyLinear(last_layer, 1)
+                else:
+                    self.noisylinears_for_v['linear{}'.format(i)] = nn.Linear(last_layer, 1)
         self.advantage_layer = nn.Sequential(self.noisylinears_for_advantage)
         self.v_layer = nn.Sequential(self.noisylinears_for_v)
         if cfg.epsilon_greedy == False:
