@@ -35,7 +35,7 @@ def preprocessing(scenarios):
                    polar_chart_visualize=polar_chart_visualize)
     return data
 
-def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, initializer, output_dir, vdn, n_step):
+def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, initializer, output_dir, vdn, n_step, anneal_epsilon):
     temp = random.randint(30, 31)
     agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
     done = False
@@ -108,6 +108,12 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
             n_step_enemy_edge_index.append(enemy_edge_index)
             status = None
             step_checker += 1
+            if e >= train_start:
+                if epsilon >= min_epsilon:
+                    epsilon = epsilon - anneal_epsilon
+                else:
+                    epsilon = min_epsilon
+
             if step < (n_step-1):
                 step += 1
             else:
@@ -300,11 +306,11 @@ if __name__ == "__main__":
 
 
 
-    epsilon = 1
-    min_epsilon = 0.01
+    epsilon = cfg.epsilon
+    min_epsilon = cfg.min_epsilon
 
     reward_list = list()
-
+    anneal_epsilon = (epsilon - min_epsilon) / cfg.anneal_step
     for e in range(num_iteration):
 
         start = time.time()
@@ -320,7 +326,7 @@ if __name__ == "__main__":
                       ciws_threshold=ciws_threshold)
 
 
-        episode_reward, epsilon, t, eval = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon, min_epsilon=min_epsilon, anneal_step=anneal_step , initializer=False, output_dir=None, vdn=True, n_step = n_step)
+        episode_reward, epsilon, t, eval = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon, min_epsilon=min_epsilon, anneal_step=anneal_step , initializer=False, output_dir=None, vdn=True, n_step = n_step, anneal_epsilon = anneal_epsilon)
         if vessl_on == False:
             writer.add_scalar("episode", episode_reward, e)
         reward_list.append(episode_reward)

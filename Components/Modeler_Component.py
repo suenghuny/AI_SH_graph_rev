@@ -634,10 +634,6 @@ class Environment:
                 ship.air_prelaunching_process()
                 ship.surface_prelaunching_process()
                 ship.maneuvering()
-                # if self.now % 60 <=0.001:
-                #     course = ship.course_input + np.random.randint(-30, 30)
-                #     ship.v_y = -ship.speed * np.cos(course * np.pi / 180)
-                #     ship.v_x = ship.speed * np.sin(course * np.pi / 180)
                 ship.launch_decoy()
                 if self.visualize == True:
                     ship.show()

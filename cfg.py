@@ -40,6 +40,9 @@ def get_cfg():
     parser.add_argument("--scheduler_step", type =int, default=50000, help= "scheduler step")
     parser.add_argument("--scheduler_ratio", type=float, default=0.2, help= "scheduler ratio")
     parser.add_argument("--train_start", type=int, default=1000, help="number of train start")
-
+    parser.add_argument("--epsilon_greedy", type=bool, default=True, help="epsilon_greedy")
+    parser.add_argument("--epsilon", type=float, default=0.5, help="epsilon")
+    parser.add_argument("--min_epsilon", type=float, default=0.01, help="epsilon")
+    parser.add_argument("--anneal_step", type=int, default=50000, help="epsilon")
 
     return parser.parse_args()

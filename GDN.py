@@ -18,6 +18,9 @@ from scipy.sparse import csr_matrix
 from collections import OrderedDict
 from NoisyLinear import NoisyLinear
 
+from cfg import get_cfg
+
+cfg = get_cfg()
 
 def weight_init_xavier_uniform(submodule):
     if isinstance(submodule, torch.nn.Conv2d):
@@ -41,8 +44,9 @@ class IQN(nn.Module):
         self.layer_size = layer_size
         #print(self.N, self.n_cos)
         self.pis = torch.FloatTensor([np.pi * i for i in range(self.n_cos)]).view(1, 1, self.n_cos).to(device)
-        self.head = NoisyLinear(self.input_shape, layer_size)  # cound be a cnn
-        self.head_y = NoisyLinear(self.input_shape, layer_size)  # cound be a cnn
+
+        self.head = nn.Linear(self.input_shape, layer_size)  # cound be a cnn
+        self.head_y = nn.Linear(self.input_shape, layer_size)  # cound be a cnn
         self.cos_embedding = nn.Linear(self.n_cos, layer_size)
 
 
@@ -52,7 +56,10 @@ class IQN(nn.Module):
         for i in range(len(layers)):
             layer = layers[i]
             if i <= len(layers)-2:
-                self.noisylinears_for_advantage['linear{}'.format(i)]= NoisyLinear(last_layer, layer)
+                if cfg.epsilon_greedy == False:
+                    self.noisylinears_for_advantage['linear{}'.format(i)]= NoisyLinear(last_layer, layer)
+                else:
+                    self.noisylinears_for_advantage['linear{}'.format(i)] = nn.Linear(last_layer, layer)
                 self.noisylinears_for_advantage['batchnorm{}'.format(i)] = nn.BatchNorm1d(layer)
                 self.noisylinears_for_advantage['activation{}'.format(i)] = nn.ReLU()
                 last_layer = layer
@@ -64,25 +71,23 @@ class IQN(nn.Module):
         for i in range(len(layers)):
             layer = layers[i]
             if i <= len(layers) - 2:
-                self.noisylinears_for_v['linear{}'.format(i)]= NoisyLinear(last_layer, layer)
+                if cfg.epsilon_greedy == False:
+                    self.noisylinears_for_v['linear{}'.format(i)]= NoisyLinear(last_layer, layer)
+                else:
+                    self.noisylinears_for_v['linear{}'.format(i)] = nn.Linear(last_layer, layer)
+
                 self.noisylinears_for_v['batchnorm{}'.format(i)] = nn.BatchNorm1d(layer)
                 self.noisylinears_for_v['activation{}'.format(i)] = nn.ReLU()
                 last_layer = layer
             else:
                 self.noisylinears_for_v['linear{}'.format(i)] = NoisyLinear(last_layer, 1)
-
         self.advantage_layer = nn.Sequential(self.noisylinears_for_advantage)
-
         self.v_layer = nn.Sequential(self.noisylinears_for_v)
-        print(self.advantage_layer)
-        self.advantage_layer.apply(weight_init_xavier_uniform)
-        self.v_layer.apply(weight_init_xavier_uniform)
-        self.reset_noise_net()
+        if cfg.epsilon_greedy == False:
+            self.reset_noise_net()
 
 
     def reset_noise_net(self):
-        self.head.sample_noise()
-        self.head_y.sample_noise()
         for layer in self.v_layer:
             if type(layer) is NoisyLinear:
                 layer.sample_noise()
@@ -211,7 +216,7 @@ class NodeEmbedding(nn.Module):
                 self.linears['activation{}'.format(i)] = nn.ReLU()
                 last_layer = layer
             else:
-                self.linears['linear{}'.format(i)] = NoisyLinear(last_layer, n_representation_obs)
+                self.linears['linear{}'.format(i)] = nn.Linear(last_layer, n_representation_obs)
 
         self.node_embedding = nn.Sequential(self.linears)
         print(self.node_embedding)
@@ -810,9 +815,22 @@ class Agent:
             Q = self.Q(obs, cos, mini_batch=False)
             Q = Q.masked_fill(mask[n, :] == 0, float('-inf'))
             greedy_u = torch.argmax(Q)
-            u = greedy_u.detach().item()
-            utility.append(Q[0][u].detach().item())
-            action.append(u)
+
+            if cfg.epsilon_greedy == True:
+
+                if np.random.uniform(0, 1) >= epsilon:
+                    u = greedy_u
+                    utility.append(Q[0][u].detach().item())
+                    action.append(u)
+                else:
+                    mask_n = np.array(avail_action[n], dtype=np.float64)
+                    u = np.random.choice(self.action_space, p=mask_n / np.sum(mask_n))
+                    utility.append(Q[0][u].detach().item())
+                    action.append(u)
+            else:
+                u = greedy_u
+                utility.append(Q[0][u].detach().item())
+                action.append(u)
 
         return action
 
@@ -948,8 +966,8 @@ class Agent:
             tau = 1e-3
             for target_param, local_param in zip(self.Q_tar.parameters(), self.Q.parameters()):
                 target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
-
-            self.Q.reset_noise_net()
-            self.Q_tar.reset_noise_net()
+            if cfg.epsilon_greedy == False:
+                self.Q.reset_noise_net()
+                self.Q_tar.reset_noise_net()
 
         return loss
