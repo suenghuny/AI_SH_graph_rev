@@ -81,6 +81,8 @@ class Environment:
 
         inception_data = self.data.inception_data
         noise = np.random.uniform(-10, 10)
+        self.missile_speed_list = list()
+
         for key, value in data.ship_data.items():
             if key == 1:
                 speed = 25
@@ -107,7 +109,8 @@ class Environment:
 
             type_ssm = data.SSM_data[
                 int(value['type_ssm'])]
-
+            self.missile_speed_list.append(type_ssm['speed'])
+            #print()
             self.ships.append(Ship(env=self,
                                    id=key,
                                    speed=speed,
@@ -162,7 +165,7 @@ class Environment:
 
         self.friendlies = [ship for ship in self.ships if ship.side == 'blue']  # 모든 함정은 접촉을 유지하고 있다고 가정함
         self.enemies = [ship for ship in self.ships if ship.side == 'yellow']  # 모든 함정은 접촉을 유지하고 있다고 가정함
-
+        self.missile_speed_scaler = np.max(self.missile_speed_list)
         self.friendlies_fixed_list = [ship for ship in self.ships if ship.side == 'blue']
         self.enemies_fixed_list = [ship for ship in self.ships if ship.side == 'yellow']
 
@@ -207,7 +210,7 @@ class Environment:
         env_info = {"n_agents" : 1,
                     "ship_feature_shape": 10+(1 + self.ship_friendly_action_space + self.air_friendly_action_space),  # + self.n_agents,
                     "missile_feature_shape" : 6,  #9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
-                    "enemy_feature_shape": 8,
+                    "enemy_feature_shape": 6,
                     # 9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
                     "n_actions": (1 + self.ship_friendly_action_space + self.air_friendly_action_space)
                     }
@@ -488,27 +491,22 @@ class Environment:
         return edge_index
 
     def get_enemy_node_feature(self, rad_coordinate = True):
-        node_features = [[0, 0, 0, 0, 0, 0, 0, 0]]
+        node_features = [[0, 0, 0, 0, 0, 0]]
         for ship in self.friendlies_fixed_list:
             for enemy in self.enemies_fixed_list:
                 if enemy.status != 'destroyed':
                     if rad_coordinate == True:
-                        r = ((enemy.position_x - ship.position_x) ** 2 + (
-                                    enemy.position_y - ship.position_y) ** 2) ** 0.5 / (
-                                        enemy.attack_range - ship.detection_range)
-                        theta = math.atan2(enemy.position_y - ship.position_y,
-                                           enemy.position_x - ship.position_x) / (2 / 3 * np.pi)
-                        v = ((enemy.v_x - ship.v_x) ** 2 + (enemy.v_y - ship.v_y) ** 2) ** 0.5 / (
-                                    enemy.speed)
+                        r = ((enemy.position_x - ship.position_x) ** 2 + (enemy.position_y - ship.position_y) ** 2) ** 0.5 / (enemy.attack_range)
+                        theta = math.atan2(enemy.position_y - ship.position_y, enemy.position_x - ship.position_x) / (2 / 3 * np.pi)
+                        v = ((enemy.v_x - ship.v_x) ** 2 + (enemy.v_y - ship.v_y) ** 2) ** 0.5 / (enemy.speed)
                         theta_v = math.atan2(enemy.v_y - ship.v_y, enemy.v_x - ship.v_x) / (2 / 3 * np.pi)
                         a = ((enemy.a_x - ship.a_x) ** 2 + (enemy.a_y - ship.a_y) ** 2) ** 0.5
                         theta_a = math.atan2(enemy.a_y - ship.a_y, enemy.a_x - ship.a_x) / (2 / 3 * np.pi)
-                        if enemy.num_l_sam == 4:
-                            node_features.append([r, theta, v, theta_v, a, theta_a, 0, 1])
-                            #print('자')
+
+                        if enemy.type_ssm['speed'] == 1.2:
+                            node_features.append([r, theta, v, theta_v, 0, 1])
                         else:
-                            node_features.append([r, theta, v, theta_v, a, theta_a, 1, 0])
-                            #print('파')
+                            node_features.append([r, theta, v, theta_v, 1, 0])
                     else:
                         px = enemy.position_x - ship.position_x
                         py = enemy.position_y - ship.position_y
@@ -517,9 +515,10 @@ class Environment:
                         ax = (enemy.a_x - ship.a_x)*10
                         ay = (enemy.a_y - ship.a_y)*10
                         node_features.append([px / enemy.attack_range, py / enemy.attack_range, vx / enemy.speed, vy / enemy.speed, ax, ay])
-        if ship.surface_tracking_limit+1-len(node_features) >0:
+        if ship.surface_tracking_limit+1-len(node_features)>0:
             for _ in range(ship.surface_tracking_limit+1-len(node_features)):
-                node_features.append([0,0,0,0,0,0, 0, 0])
+                node_features.append([0,0,0,0,0,0])
+        #print(node_features)
         return node_features
 
 
@@ -528,17 +527,49 @@ class Environment:
 
     def get_missile_node_feature(self, rad_coordinate = True):
         node_features = [[0,0,0,0,0,0]]
+
         for ship in self.friendlies_fixed_list:
 
 
             for missile in ship.ssm_detections:
+                #print(missile.v_x - ship.v_x, missile.speed,ship.speed)
                 if rad_coordinate == True:
-                    r = ((missile.position_x - ship.position_x)**2+(missile.position_y - ship.position_y)**2)**0.5/(missile.attack_range-ship.detection_range)
+                    r = ((missile.position_x - ship.position_x)**2+(missile.position_y - ship.position_y)**2)**0.5/(missile.attack_range)
                     theta = math.atan2(missile.position_y - ship.position_y, missile.position_x - ship.position_x)/(2/3*np.pi)
-                    v = ((missile.v_x - ship.v_x) ** 2 + (missile.v_y - ship.v_y) ** 2) ** 0.5 / (missile.speed - ship.speed)
-                    theta_v = math.atan2(missile.v_y - ship.v_y, missile.v_x - ship.v_x) / (2 / 3 * np.pi)
-                    a = ((missile.a_x - ship.a_x) ** 2 + (missile.a_y - ship.a_y) ** 2) ** 0.5
-                    theta_a = math.atan2(missile.a_y - ship.a_y, missile.a_x - ship.a_x) / (2 / 3 * np.pi)
+
+
+
+
+                    # v = ((missile.v_x - ship.v_x) ** 2 + (missile.v_y - ship.v_y) ** 2) ** 0.5 / (self.missile_speed_scaler - ship.speed)
+                    # theta_v = math.atan2(missile.v_y - ship.v_y, missile.v_x - ship.v_x) / (2 / 3 * np.pi)
+
+                    missile_v_x = (missile.position_x - missile.last_position_x)/self.simtime_per_framerate
+                    missile_v_y = (missile.position_y - missile.last_position_y)/self.simtime_per_framerate
+
+                    ship_v_x = (ship.position_x - ship.last_position_x) / self.simtime_per_framerate
+                    ship_v_y = (ship.position_y - ship.last_position_y) / self.simtime_per_framerate
+
+                    v = ((missile_v_x - ship_v_x) ** 2 + (missile_v_y - ship_v_y) ** 2) ** 0.5 / (self.missile_speed_scaler - ship.speed)
+                    theta_v = math.atan2(missile_v_y - ship_v_y, missile_v_x - ship_v_x) / (2 / 3 * np.pi)
+
+                    missile_a_x = (missile_v_x-missile.last_missile_v_x)/self.simtime_per_framerate
+                    missile_a_y = (missile_v_y-missile.last_missile_v_y)/self.simtime_per_framerate
+
+                    ship_a_x = (ship_v_x - ship.last_ship_v_x) / self.simtime_per_framerate
+                    ship_a_y = (ship_v_y - ship.last_ship_v_y) / self.simtime_per_framerate
+
+                    a = ((missile_a_x - ship_a_x) ** 2 + (missile_a_y - ship_a_y) ** 2) ** 0.5
+                    theta_a = math.atan2(missile_a_y - ship_a_y, missile_a_x - ship_a_x) / (2 / 3 * np.pi)
+
+                    # if a>0.01:
+                    #     print(a, missile.fly_mode, missile.last_missile_v_x, missile.last_missile_v_y)
+                    missile.last_missile_v_x = missile_v_x
+                    missile.last_missile_v_y = missile_v_y
+                    ship.last_ship_v_x = ship_v_x
+                    ship.last_ship_v_y = ship_v_y
+                    if a <=0.01:
+                        a = 0
+                        theta_a = 0
                     node_features.append([r, theta, v, theta_v, a, theta_a])
                 else:
                     px = missile.position_x - ship.position_x
@@ -603,10 +634,10 @@ class Environment:
                 ship.air_prelaunching_process()
                 ship.surface_prelaunching_process()
                 ship.maneuvering()
-                if self.now % 60 <=0.001:
-                    course = ship.course_input + np.random.randint(-30, 30)
-                    ship.v_y = -ship.speed * np.cos(course * np.pi / 180)
-                    ship.v_x = ship.speed * np.sin(course * np.pi / 180)
+                # if self.now % 60 <=0.001:
+                #     course = ship.course_input + np.random.randint(-30, 30)
+                #     ship.v_y = -ship.speed * np.cos(course * np.pi / 180)
+                #     ship.v_x = ship.speed * np.sin(course * np.pi / 180)
                 ship.launch_decoy()
                 if self.visualize == True:
                     ship.show()
@@ -626,10 +657,10 @@ class Environment:
                 ship.air_prelaunching_process()
                 ship.surface_prelaunching_process()
                 ship.maneuvering()
-                if self.now % 60 <=0.001:
-                    course = ship.course_input + np.random.randint(-30, 30)
-                    ship.v_y = -ship.speed * np.cos(course * np.pi / 180)
-                    ship.v_x = ship.speed * np.sin(course * np.pi / 180)
+                # if self.now % 60 <=0.001:
+                #     course = ship.course_input + np.random.randint(-30, 30)
+                #     ship.v_y = -ship.speed * np.cos(course * np.pi / 180)
+                #     ship.v_x = ship.speed * np.sin(course * np.pi / 180)
                 ship.launch_decoy()
                 if self.visualize == True:
                     ship.show()

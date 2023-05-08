@@ -131,7 +131,7 @@ if __name__ == "__main__":
     """
     visualize = False  # 가시화 기능 사용 여부 / True : 가시화 적용, False : 가시화 미적용
     size = [600, 600]  # 화면 size / 600, 600 pixel
-    tick = 500         # 가시화 기능 사용 시 빠르기
+    tick = 500  # 가시화 기능 사용 시 빠르기
     n_step = cfg.n_step
     simtime_per_frame = cfg.simtime_per_frame
     decision_timestep = cfg.decision_timestep
@@ -146,6 +146,7 @@ if __name__ == "__main__":
     lose_ratio = list()
     remains_ratio = list()
     polar_chart_scenario1 = [33, 29, 25, 33, 30, 30, 55, 27, 27, 35, 25, 30, 40]  # RCS의 polarchart 적용
+
 
     polar_chart = [polar_chart_scenario1]
     df_dict = {}

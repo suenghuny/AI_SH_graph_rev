@@ -138,12 +138,15 @@ class Missile:
         self.env = env
         self.launcher = launcher
         self.speed = spec['speed'] * self.env.mach_scaler
+
         self.angular_velocity = spec['angular_velocity'] * pi / 180 * self.env.simtime_per_framerate
         self.rotation_range = spec['rotation_range']
 
         self.length = spec['length']
         self.radius = spec['radius']
 
+        self.last_missile_v_x = 0
+        self.last_missile_v_y = 0
 
         self.maximum_detection_range = spec['range'] * 10
         self.attack_range = spec['attack_range'] * 10
@@ -513,6 +516,8 @@ class Missile:
                 self.fly_mode = 'ccm'  # 비행상태를 변화시킴
                 past_position_x = self.position_x
                 past_position_y = self.position_y
+                self.last_position_x = self.position_x
+                self.last_position_y = self.position_y
 
                 self.v_x = self.speed * (self.estimated_hitting_point_x - self.position_x) / r_est_hitting_point
                 self.v_y = self.speed * (self.estimated_hitting_point_y - self.position_y) / r_est_hitting_point
@@ -528,6 +533,8 @@ class Missile:
                 if self.seeker.on != 'lock_on':
                     past_position_x = self.position_x
                     past_position_y = self.position_y
+                    self.last_position_x = self.position_x
+                    self.last_position_y = self.position_y
 
                     self.v_x = self.speed * (self.estimated_hitting_point_x - self.position_x) / r_est_hitting_point
                     self.v_y = self.speed * (self.estimated_hitting_point_y - self.position_y) / r_est_hitting_point
@@ -538,6 +545,8 @@ class Missile:
                 else:
                     past_position_x = self.position_x
                     past_position_y = self.position_y
+                    self.last_position_x = self.position_x
+                    self.last_position_y = self.position_y
 
                     self.v_x = self.speed * (self.target.position_x - self.position_x) / r
                     self.v_y = self.speed * (self.target.position_y - self.position_y) / r
@@ -550,6 +559,8 @@ class Missile:
             if self.fly_mode == 'ccm':
                 past_position_x = self.position_x
                 past_position_y = self.position_y
+                self.last_position_x = self.position_x
+                self.last_position_y = self.position_y
                 self.v_x = self.speed * (self.estimated_hitting_point_x - self.position_x) / r_est_hitting_point
                 self.v_y = self.speed * (self.estimated_hitting_point_y - self.position_y) / r_est_hitting_point
                 self.position_x += self.v_x
@@ -557,6 +568,8 @@ class Missile:
             elif self.fly_mode == 'brm':
                 past_position_x = self.position_x
                 past_position_y = self.position_y
+                self.last_position_x = self.position_x
+                self.last_position_y = self.position_y
                 self.v_x = self.speed * (self.target.position_x - self.position_x) / r
                 self.v_y = self.speed * (self.target.position_y - self.position_y) / r
                 self.position_x += self.v_x
@@ -564,6 +577,8 @@ class Missile:
             else:
                 past_position_x = self.launcher.position_x
                 past_position_y = self.launcher.position_y
+                self.last_position_x = self.launcher.position_x
+                self.last_position_y = self.launcher.position_y
 
                 self.v_x = self.speed * (self.target.position_x - self.position_x) / r
                 self.v_y = self.speed * (self.target.position_y - self.position_y) / r
@@ -578,6 +593,8 @@ class Missile:
         self.a_y = (self.v_y - self.last_v_y) / self.env.simtime_per_framerate
         self.last_v_x = self.v_x
         self.last_v_y = self.v_y
+
+
 
 
     def seeker_operation(self):
@@ -598,7 +615,6 @@ class Missile:
             self.seeker.on == 'destroyed'
 
     def get_angle_of_incidence(self, contact):
-
         my_course = math.atan2(self.v_y, -self.v_x)
         target_course = math.atan2(-contact.v_y, contact.v_x)
         angle_of_incidence = np.abs(my_course - target_course)
@@ -624,8 +640,9 @@ class Missile:
             else:
                 self.target = detection
                 self.seeker.on = 'lock_on'
-                # if self.cla == 'SSM':
-                #     print(self.target.cla)
+#                print(self.target.cla, self.launcher.side)
+#                 if self.cla == 'SSM' and self.launcher.side=='yellow':
+#                     print(self.target.cla )
                 if self.target.cla == 'decoy':
                     self.target.launcher.monitors['ssm_decoying'] += 1
                     self.env.event_log.append({"time": self.env.now, "friend_or_foe": self.launcher.side,
@@ -979,8 +996,10 @@ class Ship:
         self.id = id
         self.env = env
         self.speed = speed * self.env.nautical_mile_scaler
-        self.course_input = course
+        self.course_input = course+np.random.uniform(-30,30)
 
+        self.last_ship_v_x = 0
+        self.last_ship_v_y = 0
 
         self.ship_destroying_history = 0
         self.missile_destroying_history = 0
@@ -991,6 +1010,9 @@ class Ship:
 
         self.position_x = initial_position_x
         self.position_y = initial_position_y
+        self.last_position_x = initial_position_x
+        self.last_position_y = initial_position_y
+
         self.position_z = 0
 
         self.length = length
@@ -1042,7 +1064,7 @@ class Ship:
         self.surface_engagement_num = 0
         self.air_engagement_num = 0
         self.ssm_detections = []
-
+        self.type_ssm = type_ssm
         self.m_sam_launcher = \
             [Missile(env=env, launcher=self, spec=type_m_sam) for _ in range(num_m_sam)]
         self.l_sam_launcher = \
@@ -1128,18 +1150,23 @@ class Ship:
         if self.position_x != None:
             past_position_x = self.position_x
             past_position_y = self.position_y
+            self.last_position_x = deepcopy(self.position_x)
+            self.last_position_y = deepcopy(self.position_y)
 
-        self.last_v_x = 0
-        self.last_v_y = 0
-        if self.env.now % (self.env.simtime_per_framerate*6)== 0:
-            self.course_input = self.course_input
-        else:
-            pass
+            # self.last_position_x = deepcopy(self.position_x)
+            # self.last_position_y = deepcopy(self.position_y)
+
+
+        # if self.env.now % (self.env.simtime_per_framerate*6)== 0:
+        #     self.course_input = self.course_input
+        # else:
+        #     pass
 
         #print("지그재그", self.course_input )
 
         self.v_y = -self.speed * math.cos((self.course_input ) * pi / 180)
         self.v_x = self.speed * math.sin((self.course_input ) * pi / 180)
+
 
 
         self.position_x += self.v_x
@@ -1335,12 +1362,12 @@ class Ship:
         #print(self.cla)
         #rint(self.env.now)
         if missile.cla == 'SSM':
-            norm = 2000*1/self.env.now
+            norm = 500*1/self.env.now
             noise_y = target.position_y + np.random.normal(0, norm)
             noise_x = target.position_x + np.random.normal(0, norm)
             #print(noise_x, noise_y)
         else:
-            distance = ((target.position_y-self.position_y)**2+(target.position_x-self.position_x)**2)/2000
+            distance = ((target.position_y-self.position_y)**2+(target.position_x-self.position_x)**2)/6000
             #print(distance)
             noise_y = target.position_y+np.random.normal(0, distance)
             noise_x = target.position_x+np.random.normal(0, distance)

@@ -214,6 +214,7 @@ class NodeEmbedding(nn.Module):
                 self.linears['linear{}'.format(i)] = NoisyLinear(last_layer, n_representation_obs)
 
         self.node_embedding = nn.Sequential(self.linears)
+        print(self.node_embedding)
         self.node_embedding.apply(weight_init_xavier_uniform)
 
 
