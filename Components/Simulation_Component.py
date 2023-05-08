@@ -1362,12 +1362,12 @@ class Ship:
         #print(self.cla)
         #rint(self.env.now)
         if missile.cla == 'SSM':
-            norm = 500*1/self.env.now
+            norm = 2000*1/self.env.now
             noise_y = target.position_y + np.random.normal(0, norm)
             noise_x = target.position_x + np.random.normal(0, norm)
             #print(noise_x, noise_y)
         else:
-            distance = ((target.position_y-self.position_y)**2+(target.position_x-self.position_x)**2)/6000
+            distance = ((target.position_y-self.position_y)**2+(target.position_x-self.position_x)**2)/2000
             #print(distance)
             noise_y = target.position_y+np.random.normal(0, distance)
             noise_x = target.position_x+np.random.normal(0, distance)
