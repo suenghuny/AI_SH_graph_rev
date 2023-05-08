@@ -68,12 +68,13 @@ class IQN(nn.Module):
                     self.noisylinears_for_advantage['linear{}'.format(i)] = NoisyLinear(last_layer, self.action_size)
                 else:
                     self.noisylinears_for_advantage['linear{}'.format(i)] = nn.Linear(last_layer, self.action_size)
-
+        #print("/&/&/&",self.noisylinears_for_advantage)
         self.noisylinears_for_v = OrderedDict()
         last_layer = layer_size
         for i in range(len(layers)):
             layer = layers[i]
             if i <= len(layers) - 2:
+                print(cfg.epsilon_greedy)
                 if cfg.epsilon_greedy == False:
                     self.noisylinears_for_v['linear{}'.format(i)]= NoisyLinear(last_layer, layer)
                 else:
@@ -88,6 +89,7 @@ class IQN(nn.Module):
                 else:
                     self.noisylinears_for_v['linear{}'.format(i)] = nn.Linear(last_layer, 1)
         self.advantage_layer = nn.Sequential(self.noisylinears_for_advantage)
+        print(self.advantage_layer)
         self.v_layer = nn.Sequential(self.noisylinears_for_v)
         if cfg.epsilon_greedy == False:
             self.reset_noise_net()
@@ -102,8 +104,6 @@ class IQN(nn.Module):
                 layer.sample_noise()
 
     def remove_noise_net(self):
-        self.head.remove_noise()
-        self.head_y.remove_noise()
         for layer in self.v_layer:
             if type(layer) is NoisyLinear:
                 layer.remove_noise()
@@ -154,7 +154,7 @@ class IQN(nn.Module):
         quantiles_v = out_v.view(batch_size, N, 1)
         v = quantiles_v.mean(dim=1)
 
-        #print(v.shape, a.shape, a.mean(dim= 1, keepdims = True).shape)
+       # print(quantiles_v.shape, quantiles_a.shape, a.shape)
 
         q = v + a-a.mean(dim= 1, keepdims = True)
         return q
@@ -225,7 +225,7 @@ class NodeEmbedding(nn.Module):
                 self.linears['linear{}'.format(i)] = nn.Linear(last_layer, n_representation_obs)
 
         self.node_embedding = nn.Sequential(self.linears)
-        print(self.node_embedding)
+       # print(self.node_embedding)
         self.node_embedding.apply(weight_init_xavier_uniform)
 
 
@@ -814,7 +814,7 @@ class Agent:
         action = []
         utility = list()
         cos, taus = self.Q.calc_cos(1)
-        self.Q.reset_noise_net()
+
         for n in range(self.num_agent):
             obs = node_representation[n]
             obs = obs.unsqueeze(0)
@@ -826,16 +826,17 @@ class Agent:
 
                 if np.random.uniform(0, 1) >= epsilon:
                     u = greedy_u
-                    utility.append(Q[0][u].detach().item())
+                    #utility.append(Q[0][u].detach().item())
                     action.append(u)
                 else:
                     mask_n = np.array(avail_action[n], dtype=np.float64)
                     u = np.random.choice(self.action_space, p=mask_n / np.sum(mask_n))
-                    utility.append(Q[0][u].detach().item())
+                   # utility.append(Q[0][u].detach().item())
                     action.append(u)
             else:
+
                 u = greedy_u
-                utility.append(Q[0][u].detach().item())
+               # utility.append(Q[0][u].detach().item())
                 action.append(u)
 
         return action
