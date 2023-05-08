@@ -131,7 +131,7 @@ if __name__ == "__main__":
     """
     visualize = False  # 가시화 기능 사용 여부 / True : 가시화 적용, False : 가시화 미적용
     size = [600, 600]  # 화면 size / 600, 600 pixel
-    tick = 500  # 가시화 기능 사용 시 빠르기
+    tick = 500         # 가시화 기능 사용 시 빠르기
     n_step = cfg.n_step
     simtime_per_frame = cfg.simtime_per_frame
     decision_timestep = cfg.decision_timestep
@@ -139,8 +139,7 @@ if __name__ == "__main__":
     num_iteration = cfg.num_episode  # 시뮬레이션 반복횟수
     mode = 'txt'  # 전처리 모듈 / 'excel' : input_data.xlsx 파일 적용, 'txt' "Data\ship.txt", "Data\patrol_aircraft.txt", "Data\SAM.txt", "Data\SSM.txt"를 적용
     rule = 'rule2'  # rule1 : 랜덤 정책 / rule2 : 거리를 기반 합리성에 기반한 정책(softmax policy)
-    temperature = [10,
-                   20]  # rule = 'rule2'인 경우만 적용 / 의사결정의 flexibility / 첫번째 index : 공중 위험이 낮은 상태, 두번째 index : 공중 위험이 높은 상태
+    temperature = [10, 20]  # rule = 'rule2'인 경우만 적용 / 의사결정의 flexibility / 첫번째 index : 공중 위험이 낮은 상태, 두번째 index : 공중 위험이 높은 상태
     ciws_threshold = 1
     polar_chart_visualize = False
     scenarios = ['scenario1', 'scenario2', 'scenario3']
@@ -210,7 +209,7 @@ if __name__ == "__main__":
 
 
 
-    agent.load_model(output_dir+"1500 (4).pt")
+    agent.load_model(output_dir+"2000 (1).pt")
     anneal_episode = cfg.anneal_episode
     anneal_step = (cfg.per_beta - 1) / anneal_episode
 

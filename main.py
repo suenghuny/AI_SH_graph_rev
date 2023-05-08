@@ -92,9 +92,9 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
             action_blue = agent.sample_action(node_representation, avail_action_blue, epsilon)
 
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
+
             reward, win_tag, done = env.step(action_blue, action_yellow)
-            # if e == 28:
-            #     print(reward)
+
             episode_reward += reward
 
             n_step_missile_node_features.append(missile_node_feature)
@@ -111,10 +111,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
             if step < (n_step-1):
                 step += 1
             else:
-
                 idx = (n_step-1)-step
-                # print("전", n_step_rewards)
-                # print("전", n_step_dones)
                 agent.buffer.memory(n_step_missile_node_features[idx],
                                     n_step_ship_feature[idx],
                                     n_step_edge_index[idx],

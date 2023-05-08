@@ -80,6 +80,7 @@ class Environment:
         #ship_data, enemy_data = self.get_position_inception(self, self.data.inception_data, num_enemy)
 
         inception_data = self.data.inception_data
+        noise = np.random.uniform(-10, 10)
         for key, value in data.ship_data.items():
             if key == 1:
                 speed = 25
@@ -90,15 +91,13 @@ class Environment:
                 if mode == True:
                     speed = 25
                     course = 90
-                    initial_position_x = 50 + 10*inception_data['inception_distance'] * np.cos(inception_data['inception_angle'] * np.pi / 180)+10*np.random.normal(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                    initial_position_x = 50 + 10*inception_data['inception_distance'] * np.cos(inception_data['inception_angle'] * np.pi / 180)+ 10*np.random.normal(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
                     initial_position_y = 50 + 10*inception_data['inception_distance'] * np.sin(inception_data['inception_angle'] * np.pi / 180) + 10*np.random.normal(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
                 else:
-
                     speed = 25
                     course = 90
-
-                    initial_position_x = 50 + 10*inception_data['inception_distance'] * np.cos((inception_data['inception_angle']+np.random.uniform(-50, 50)) * np.pi / 180)+10*np.random.normal(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
-                    initial_position_y = 50 + 10*inception_data['inception_distance'] * np.sin((inception_data['inception_angle']+np.random.uniform(-50, 50)) * np.pi / 180)+10*np.random.normal(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                    initial_position_x = 50 + 10*inception_data['inception_distance'] * np.cos((inception_data['inception_angle']+noise) * np.pi / 180)+10*np.random.normal(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                    initial_position_y = 50 + 10*inception_data['inception_distance'] * np.sin((inception_data['inception_angle']+noise) * np.pi / 180)+10*np.random.normal(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
 
 
 
@@ -452,11 +451,17 @@ class Environment:
         for ship in self.friendlies_fixed_list:
             f1 = len(ship.air_engagement_managing_list)/ship.air_engagement_limit
             f2 = len(ship.air_prelaunching_managing_list)/ship.air_engagement_limit
+
             f3 = len(ship.surface_prelaunching_managing_list)/ship.surface_engagement_limit
+
             f4 = len(ship.m_sam_launcher)/ship.num_m_sam
+
             f5 = len(ship.l_sam_launcher) /ship.num_l_sam
+
             f6 = len(ship.ssm_launcher)/ship.num_ssm
+            #print(self.f7, enemy_ssm)
             f7 = self.f7 / enemy_ssm
+
             f8 = self.f8 / enemy_ship
             f9 = self.f9 / self.simtime_per_framerate
             f10 = self.f10 / self.simtime_per_framerate
@@ -741,21 +746,18 @@ class Environment:
             for i in range(len(self.enemies_fixed_list)):
                 ship = self.enemies_fixed_list[i]
                 missile_destroyed_cal += sum([1 for ssm in ship.debug_ssm_launcher if ssm.status == 'destroyed'])
-
                 if ship.status != 'destroyed':pass
                 else:
                     enemy_destroyed_cal += 1
-
-
             self.f7 = missile_destroyed_cal
             self.f8 = enemy_destroyed_cal
             self.f9 = missile_destroyed_cal - self.last_destroyed_missile
             self.f10 = enemy_destroyed_cal - self.last_destroyed_enemy
             #self.f12 = ship_destroyed_cal - self.last_destroyed_ship
-            reward = 1500 * (enemy_destroyed_cal - self.last_destroyed_enemy) + \
-                     -3000 * (ship_destroyed_cal - self.last_destroyed_ship) + \
+            reward = 2000 * (enemy_destroyed_cal - self.last_destroyed_enemy) + \
+                     -6000 * (ship_destroyed_cal - self.last_destroyed_ship) + \
                      50 * (missile_destroyed_cal - self.last_destroyed_missile)
-            reward = reward / 100
+            reward = reward / 200
             self.last_destroyed_missile = missile_destroyed_cal
             self.last_destroyed_enemy = enemy_destroyed_cal
             self.last_destroyed_ship = ship_destroyed_cal

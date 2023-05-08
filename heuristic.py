@@ -44,12 +44,8 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
     losses = []
     epi_r = list()
     eval = False
-
-
     enemy_action_for_transition = [0] * len(env.enemies_fixed_list)
     friendly_action_for_transition = [0] * len(env.friendlies_fixed_list)
-
-
     step_checker = 0
     while not done:
         # print(env.now % (decision_timestep))
@@ -63,6 +59,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
 
             action_blue = agent_blue.get_action(avail_action_blue, target_distance_blue, air_alert_blue)
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
+
             reward, win_tag, done = env.step(action_blue, action_yellow)
 
             episode_reward += reward
@@ -112,18 +109,17 @@ if __name__ == "__main__":
     환경 시스템 관련 변수들
 
     """
-    visualize = False# 가시화 기능 사용 여부 / True : 가시화 적용, False : 가시화 미적용
+    visualize = False # 가시화 기능 사용 여부 / True : 가시화 적용, False : 가시화 미적용
     size = [600, 600]  # 화면 size / 600, 600 pixel
     tick = 500  # 가시화 기능 사용 시 빠르기
     n_step = cfg.n_step
     simtime_per_frame = cfg.simtime_per_frame
     decision_timestep = cfg.decision_timestep
-    detection_by_height = False  # 고도에 의한
+    detection_by_height = False      # 고도에 의한
     num_iteration = cfg.num_episode  # 시뮬레이션 반복횟수
-    mode = 'txt'  # 전처리 모듈 / 'excel' : input_data.xlsx 파일 적용, 'txt' "Data\ship.txt", "Data\patrol_aircraft.txt", "Data\SAM.txt", "Data\SSM.txt"를 적용
-    rule = 'rule2'  # rule1 : 랜덤 정책 / rule2 : 거리를 기반 합리성에 기반한 정책(softmax policy)
-    temperature = [10,
-                   20]  # rule = 'rule2'인 경우만 적용 / 의사결정의 flexibility / 첫번째 index : 공중 위험이 낮은 상태, 두번째 index : 공중 위험이 높은 상태
+    mode = 'txt'                     # 전처리 모듈 / 'excel' : input_data.xlsx 파일 적용, 'txt' "Data\ship.txt", "Data\patrol_aircraft.txt", "Data\SAM.txt", "Data\SSM.txt"를 적용
+    rule = 'rule2'                   # rule1 : 랜덤 정책 / rule2 : 거리를 기반 합리성에 기반한 정책(softmax policy)
+    temperature = [10, 20]           # rule = 'rule2'인 경우만 적용 / 의사결정의 flexibility / 첫번째 index : 공중 위험이 낮은 상태, 두번째 index : 공중 위험이 높은 상태
     ciws_threshold = 1
     polar_chart_visualize = False
     scenarios = ['scenario1', 'scenario2', 'scenario3']
