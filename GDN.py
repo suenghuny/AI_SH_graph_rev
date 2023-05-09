@@ -79,7 +79,6 @@ class IQN(nn.Module):
                     self.noisylinears_for_v['linear{}'.format(i)]= NoisyLinear(last_layer, layer)
                 else:
                     self.noisylinears_for_v['linear{}'.format(i)] = nn.Linear(last_layer, layer)
-
                 self.noisylinears_for_v['batchnorm{}'.format(i)] = nn.BatchNorm1d(layer)
                 self.noisylinears_for_v['activation{}'.format(i)] = nn.ReLU()
                 last_layer = layer
@@ -89,7 +88,6 @@ class IQN(nn.Module):
                 else:
                     self.noisylinears_for_v['linear{}'.format(i)] = nn.Linear(last_layer, 1)
         self.advantage_layer = nn.Sequential(self.noisylinears_for_advantage)
-        print(self.advantage_layer)
         self.v_layer = nn.Sequential(self.noisylinears_for_v)
         if cfg.epsilon_greedy == False:
             self.reset_noise_net()

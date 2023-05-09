@@ -503,8 +503,6 @@ class Missile:
                     self.position_y - self.estimated_hitting_point_y) ** 2) ** 0.5
 
     def flying(self):
-
-
         r_est_hitting_point = self.cal_distance_estimated_hitting_point()
         r = cal_distance(self.target, self)
 
@@ -512,30 +510,25 @@ class Missile:
         if self.status != 'destroyed' and self.target.status != 'destroyed':
             self.distance_fly = cal_distance(self, self.launcher)
 
-            if r_est_hitting_point >= self.seeker_on_distance:
+            if r_est_hitting_point >= self.seeker_on_distance and self.fly_mode != 'brm':
                 self.fly_mode = 'ccm'  # 비행상태를 변화시킴
                 past_position_x = self.position_x
                 past_position_y = self.position_y
                 self.last_position_x = self.position_x
                 self.last_position_y = self.position_y
-
                 self.v_x = self.speed * (self.estimated_hitting_point_x - self.position_x) / r_est_hitting_point
                 self.v_y = self.speed * (self.estimated_hitting_point_y - self.position_y) / r_est_hitting_point
-
-
                 self.position_x += self.v_x
                 self.position_y += self.v_y
                 self.course = get_own_course(past_position_x, past_position_y, self.position_x, self.position_y)
 
             if r_est_hitting_point < self.seeker_on_distance:
-
                 self.fly_mode = 'brm'
                 if self.seeker.on != 'lock_on':
                     past_position_x = self.position_x
                     past_position_y = self.position_y
                     self.last_position_x = self.position_x
                     self.last_position_y = self.position_y
-
                     self.v_x = self.speed * (self.estimated_hitting_point_x - self.position_x) / r_est_hitting_point
                     self.v_y = self.speed * (self.estimated_hitting_point_y - self.position_y) / r_est_hitting_point
 
@@ -591,6 +584,7 @@ class Missile:
 
         self.a_x = (self.v_x - self.last_v_x)/self.env.simtime_per_framerate
         self.a_y = (self.v_y - self.last_v_y) / self.env.simtime_per_framerate
+
         self.last_v_x = self.v_x
         self.last_v_y = self.v_y
 
@@ -639,10 +633,10 @@ class Missile:
                 pass
             else:
                 self.target = detection
+
                 self.seeker.on = 'lock_on'
-#                print(self.target.cla, self.launcher.side)
-#                 if self.cla == 'SSM' and self.launcher.side=='yellow':
-#                     print(self.target.cla )
+                # if self.cla == 'SSM':
+                #     print(self.original_target.cla, self.target.cla)
                 if self.target.cla == 'decoy':
                     self.target.launcher.monitors['ssm_decoying'] += 1
                     self.env.event_log.append({"time": self.env.now, "friend_or_foe": self.launcher.side,
@@ -1037,9 +1031,7 @@ class Ship:
         self.ciws_max_range = ciws_max_range * 10
         self.ciws_max_num_per_min = ciws_max_num_per_min
         self.ciws_bullet_capacity = ciws_bullet_capacity
-
-        self.CIWS = CIWS(env, launcher=self, ciws_max_num_per_min=self.ciws_max_num_per_min,
-                         ciws_bullet_capacity=self.ciws_bullet_capacity)
+        self.CIWS = CIWS(env, launcher=self, ciws_max_num_per_min=self.ciws_max_num_per_min, ciws_bullet_capacity=self.ciws_bullet_capacity)
         if self.env.detection_by_height == False:
             self.detection_range = detection_range * 10
         else:
@@ -1089,7 +1081,7 @@ class Ship:
 
         self.m_sam_max_range = self.m_sam_launcher[0].attack_range
         self.l_sam_max_range = self.l_sam_launcher[0].attack_range
-
+        self.ssm_feature = [0, 0, 0, 0, 0, 0]
 
         if len(self.ssm_launcher) != 0:
             self.ssm_max_range = self.ssm_launcher[0].attack_range
@@ -1145,8 +1137,42 @@ class Ship:
     def show(self):
         self.env.screen.blit(self.img, (self.position_x, self.position_y))
 
-    def maneuvering(self):
+    def get_flying_ssms_status(self):
+        self.ssm_feature = [0, 0, 0, 0, 0, 0]
+        if self.side == 'blue':
+            for missile in self.env.flying_ssms_enemy:
+                distance = cal_distance(missile, self)
+                if missile.original_target == self:
+                    if distance >= 500:
+                        self.ssm_feature[0] += 1
+                    elif distance >= 400:
+                        self.ssm_feature[1] += 1
+                    elif distance >= 300:
+                        self.ssm_feature[2] += 1
+                    elif distance >= 200:
+                        self.ssm_feature[3] += 1
+                    elif distance >= 100:
+                        self.ssm_feature[4] += 1
+                    else:
+                        self.ssm_feature[5] += 1
+        else:
+            for missile in self.env.flying_ssms_friendly:
+                distance = cal_distance(missile, self)
+                if missile.original_target == self:
+                    if distance >= 500:
+                        self.ssm_feature[0] += 1
+                    elif distance >= 400:
+                        self.ssm_feature[1] += 1
+                    elif distance >= 300:
+                        self.ssm_feature[2] += 1
+                    elif distance >= 200:
+                        self.ssm_feature[3] += 1
+                    elif distance >= 100:
+                        self.ssm_feature[4] += 1
+                    else:
+                        self.ssm_feature[5] += 1
 
+    def maneuvering(self):
         if self.position_x != None:
             past_position_x = self.position_x
             past_position_y = self.position_y
@@ -1362,13 +1388,13 @@ class Ship:
         #print(self.cla)
         #rint(self.env.now)
         if missile.cla == 'SSM':
-            norm = 2000*1/self.env.now
+            norm = 500*1/self.env.now
             noise_y = target.position_y + np.random.normal(0, norm)
             noise_x = target.position_x + np.random.normal(0, norm)
             #print(noise_x, noise_y)
         else:
-            distance = ((target.position_y-self.position_y)**2+(target.position_x-self.position_x)**2)/2000
-            #print(distance)
+            distance = ((target.position_y-self.position_y)**2+(target.position_x-self.position_x)**2)/4000
+
             noise_y = target.position_y+np.random.normal(0, distance)
             noise_x = target.position_x+np.random.normal(0, distance)
 
