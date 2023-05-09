@@ -328,8 +328,7 @@ if __name__ == "__main__":
         if vessl_on == True:
             if e >= cfg.train_start:
                 vessl.log(step=e-cfg.train_start, payload={'reward': episode_reward})
-            else:
-                vessl.log(step=e, payload={'data collection': episode_reward})
+
         if e % 10 == 0:
             import os
             import pandas as pd
