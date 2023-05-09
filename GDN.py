@@ -315,6 +315,8 @@ class Replay_Buffer:
                 yield datas[5][s]
             if cat == 'done':
                 yield datas[6][s]
+
+
             if cat == 'node_feature_missile_next':
                 yield datas[1][s + self.n_step]
             if cat == 'ship_features_next':
@@ -340,7 +342,7 @@ class Replay_Buffer:
                                               torch.ones(torch.tensor(datas[12][s]).shape[1]),
                                               (self.n_node_feature_enemy, self.n_node_feature_enemy)).to_dense()
             if cat == 'node_feature_enemy_next':
-                yield datas[11][s]
+                yield datas[11][s+ self.n_step]
             if cat == 'edge_index_enemy_next':
                 yield torch.sparse_coo_tensor(datas[12][s + self.n_step],
                                               torch.ones(torch.tensor(datas[12][s + self.n_step]).shape[1]),
@@ -351,16 +353,17 @@ class Replay_Buffer:
 
         copied_delta_store = deepcopy(list(self.buffer[10]))
         delta = np.abs(delta) + np.min(copied_delta_store)
-        priority = np.array(copied_delta_store).astype(float)
+        priority = np.array(
+            copied_delta_store).astype(float)
         batch_index = batch_index.astype(int)
         priority[batch_index] = delta
-        #print("후", self.buffer[1][d])
         self.buffer[10]= deque(priority, maxlen=self.buffer_size)
 
 
     def sample(self, vdn):
         step_count_list = self.step_count_list[:]
-        step_count_list.pop()
+        #step_count_list.pop()
+
 
         if vdn == False:
             priority_point = list(self.buffer[9])[:]
@@ -380,7 +383,7 @@ class Replay_Buffer:
             p = p.tolist()
             #print(step_count_list[:-self.n_step+1], len(p), len(priority))
 
-            sampled_batch_idx = np.random.choice(step_count_list[:-self.n_step+1], size=self.batch_size, p = p)
+            sampled_batch_idx = np.random.choice(step_count_list[:-self.n_step], size=self.batch_size, p = p)
 
         node_feature_missile = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='node_feature_missile')
         node_features_missile = list(node_feature_missile)

@@ -322,7 +322,11 @@ if __name__ == "__main__":
         episode_reward, epsilon, t, eval = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon, min_epsilon=min_epsilon, anneal_step=anneal_step , initializer=False, output_dir=None, vdn=True, n_step = n_step, anneal_epsilon = anneal_epsilon)
         if e >= cfg.train_start:
             if vessl_on == False:
-                writer.add_scalar("episode", episode_reward, e)
+                writer.add_scalar("episode", episode_reward, e-cfg.train_start)
+        else:
+            if vessl_on == False:
+                writer.add_scalar("data aggregation", episode_reward, e)
+
         reward_list.append(episode_reward)
         if vessl_on == True:
             if e >= cfg.train_start:
