@@ -91,15 +91,18 @@ class IQN(nn.Module):
         self.v_layer = nn.Sequential(self.noisylinears_for_v)
         if cfg.epsilon_greedy == False:
             self.reset_noise_net()
+        else:
+            self.advantage_layer.apply(weight_init_xavier_uniform)
+            self.v_layer.apply(weight_init_xavier_uniform)
 
 
     def reset_noise_net(self):
         for layer in self.v_layer:
             if type(layer) is NoisyLinear:
-                layer.sample_noise()
+                layer.reset_noise()
         for layer in self.advantage_layer:
             if type(layer) is NoisyLinear:
-                layer.sample_noise()
+                layer.reset_noise()
 
     def remove_noise_net(self):
         for layer in self.v_layer:

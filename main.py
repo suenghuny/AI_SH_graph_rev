@@ -312,11 +312,7 @@ if __name__ == "__main__":
     reward_list = list()
     anneal_epsilon = (epsilon - min_epsilon) / cfg.anneal_step
     for e in range(num_iteration):
-
         start = time.time()
-
-
-        #print("소요시간", time.time()-start)
         env = modeler(data,
                       visualize=visualize,
                       size=size,
@@ -324,15 +320,16 @@ if __name__ == "__main__":
                       tick=tick,
                       simtime_per_framerate=simtime_per_frame,
                       ciws_threshold=ciws_threshold)
-
-
         episode_reward, epsilon, t, eval = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon, min_epsilon=min_epsilon, anneal_step=anneal_step , initializer=False, output_dir=None, vdn=True, n_step = n_step, anneal_epsilon = anneal_epsilon)
         if e >= cfg.train_start:
             if vessl_on == False:
                 writer.add_scalar("episode", episode_reward, e)
         reward_list.append(episode_reward)
         if vessl_on == True:
-            vessl.log(step=e, payload={'reward': episode_reward})
+            if e >= cfg.train_start:
+                vessl.log(step=e-cfg.train_start, payload={'reward': episode_reward})
+            else:
+                vessl.log(step=e, payload={'data collection': episode_reward})
         if e % 10 == 0:
             import os
             import pandas as pd
