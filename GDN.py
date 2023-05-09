@@ -550,7 +550,7 @@ class Agent:
             self.func_missile_obs = GAT(nfeat=n_representation_missile,
                                          nhid=hidden_size_comm,
                                          nheads=n_multi_head,
-                                         nclass=n_representation_missile+5,
+                                         nclass=n_representation_missile+2,
                                          dropout=dropout,
                                          alpha=0.2,
                                          mode='observation',
@@ -561,16 +561,16 @@ class Agent:
             self.func_enemy_obs = GAT(nfeat=n_representation_enemy,
                                          nhid=hidden_size_enemy,
                                          nheads=n_multi_head,
-                                         nclass=n_representation_enemy+5,
+                                         nclass=n_representation_enemy+2,
                                          dropout=dropout,
                                          alpha=0.2,
                                          mode='observation',
                                          batch_size=self.batch_size,
                                          teleport_probability=self.teleport_probability).to(device)  # 수정사항
 
-            self.Q = IQN(n_representation_ship+n_representation_missile + n_representation_enemy+10, self.action_size,
+            self.Q = IQN(n_representation_ship+n_representation_missile + n_representation_enemy+4, self.action_size,
                          batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos = n_cos, layers = iqn_layers).to(device)
-            self.Q_tar = IQN(n_representation_ship+n_representation_missile + n_representation_enemy+10, self.action_size,
+            self.Q_tar = IQN(n_representation_ship+n_representation_missile + n_representation_enemy+4, self.action_size,
                              batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos = n_cos, layers = iqn_layers).to(device)
 
             self.Q_tar.load_state_dict(self.Q.state_dict())
