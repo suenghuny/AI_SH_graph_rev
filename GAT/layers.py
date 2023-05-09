@@ -66,7 +66,7 @@ class GraphAttentionLayer(nn.Module):
 
             attention = F.softmax(attention, dim=1)                                     # attention : (n_node, n_node)
             #print('왜안되지2', attention.shape)
-            attention = self.dropout(attention)
+            #attention = self.dropout(attention)
             ## F.droupout(attention, 0.7, training = False)
             #print(attention.shape, Wh.shape)
             h_prime =self.teleport_probability * torch.mm(attention, Wh) + (1-self.teleport_probability) * Wh
@@ -89,7 +89,8 @@ class GraphAttentionLayer(nn.Module):
             attention = adj*e#torch.where(adj > 0, e, zero_vec)  # adj.shape: 1, num_enemy
             attention = F.softmax(attention, dim=2)
 
-            attention = self.dropout(attention)
+            #attention = self.dropout(attention)
+
 
             h_prime = self.teleport_probability * torch.bmm(attention, Wh) + (1-self.teleport_probability) * Wh
 

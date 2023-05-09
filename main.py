@@ -300,7 +300,6 @@ if __name__ == "__main__":
                   n_cos = cfg.n_cos
 
                   )
-
     anneal_episode = cfg.anneal_episode
     anneal_step = (cfg.per_beta - 1) / anneal_episode
 
