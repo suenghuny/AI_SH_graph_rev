@@ -499,7 +499,7 @@ class Environment:
                         if enemy.type_ssm['speed'] == 1.2:
                             node_features.append(np.concatenate([[r, theta, v, theta_v, 0, 1], ssm_feature]))
                         else:
-                            node_features.append(np.concatenate([[r, theta, v, theta_v, 0, 1], ssm_feature]))
+                            node_features.append(np.concatenate([[r, theta, v, theta_v, 1, 0], ssm_feature]))
                     else:
                         px = enemy.position_x - ship.position_x
                         py = enemy.position_y - ship.position_y
