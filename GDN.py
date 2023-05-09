@@ -326,11 +326,11 @@ class Replay_Buffer:
                                               torch.ones(torch.tensor(datas[3][s + self.n_step]).shape[1]),
                                               (self.n_node_feature_missile, self.n_node_feature_missile)).to_dense()
             if cat == 'avail_action_next':
-                yield datas[7][s + self.n_step]
+                yield datas[7][s+self.n_step]
             if cat == 'status':
                 yield datas[8][s]
             if cat == 'status_next':
-                yield datas[8][s+ self.n_step]
+                yield datas[8][s+self.n_step]
 
             if cat == 'priority':
                 yield datas[10][s]
@@ -380,13 +380,25 @@ class Replay_Buffer:
             priority = list(deepcopy(self.buffer[10]))[:-self.n_step]
             p = np.array(priority)**self.alpha#/np.array(priority).sum()).tolist()
             p /= p.sum()
-            p = p.tolist()
-            #print(step_count_list[:-self.n_step+1], len(p), len(priority))
 
+            p_sampled = p
+            p = p.tolist()
             sampled_batch_idx = np.random.choice(step_count_list[:-self.n_step], size=self.batch_size, p = p)
+
+            p_sampled = p_sampled[sampled_batch_idx]
+
 
         node_feature_missile = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='node_feature_missile')
         node_features_missile = list(node_feature_missile)
+
+        edge_index_missile = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='edge_index_missile')
+        edge_indices_missile = list(edge_index_missile)
+
+        node_feature_missile_next = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='node_feature_missile_next')
+        node_features_missile_next = list(node_feature_missile_next)
+
+        edge_index_missile_next = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='edge_index_missile_next')
+        edge_indices_missile_next = list(edge_index_missile_next)
 
         action = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='action')
         actions = list(action)
@@ -394,13 +406,10 @@ class Replay_Buffer:
         ship_features = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='ship_features')
         ship_features = list(ship_features)
 
-        ship_features_next = self.generating_mini_batch(self.buffer, sampled_batch_idx,
-                                                                 cat='ship_features_next')
+        ship_features_next = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='ship_features_next')
         ship_features_next = list(ship_features_next)
 
-        edge_index_missile = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='edge_index_missile')
 
-        edge_indices_missile = list(edge_index_missile)
 
         reward = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='reward')
         rewards = list(reward)
@@ -411,15 +420,7 @@ class Replay_Buffer:
         #
 
 
-        node_feature_missile_next = self.generating_mini_batch(self.buffer, sampled_batch_idx,
-                                                               cat='node_feature_missile_next')
-        node_features_missile_next = list(node_feature_missile_next)
 
-
-
-        edge_index_missile_next = self.generating_mini_batch(self.buffer, sampled_batch_idx,
-                                                             cat='edge_index_missile_next')
-        edge_indices_missile_next = list(edge_index_missile_next)
 
         avail_action_next = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='avail_action_next')
         avail_actions_next = list(avail_action_next)
@@ -448,7 +449,24 @@ class Replay_Buffer:
 
 #
 
-        return node_features_missile, ship_features, edge_indices_missile, actions, rewards, dones, node_features_missile_next, ship_features_next, edge_indices_missile_next, avail_actions_next, status, status_next,priority, sampled_batch_idx, node_feature_enemy, edge_index_enemy, node_feature_enemy_next, edge_index_enemy_next
+        return node_features_missile, \
+               ship_features, \
+               edge_indices_missile, \
+               actions, \
+               rewards, \
+               dones, \
+               node_features_missile_next, \
+               ship_features_next, \
+               edge_indices_missile_next, \
+               avail_actions_next, \
+               status, \
+               status_next,\
+               priority, \
+               sampled_batch_idx, \
+               node_feature_enemy, \
+               edge_index_enemy, \
+               node_feature_enemy_next, \
+               edge_index_enemy_next,p_sampled
 
 
 class Agent:
@@ -848,16 +866,30 @@ class Agent:
     def learn(self, regularizer, vdn = False):
 
         node_features_missile, \
-        ship_features, edge_indices_missile, \
+        ship_features, \
+        edge_indices_missile, \
         actions, \
         rewards, \
         dones, \
         node_features_missile_next, \
         ship_features_next, \
         edge_indices_missile_next, \
-        avail_actions_next, status, status_next,priority,batch_index, node_feature_enemy, edge_index_enemy, node_feature_enemy_next, edge_index_enemy_next = self.buffer.sample(vdn = vdn)
-        weight = (len(self.buffer.buffer[10])*torch.tensor(priority, dtype=torch.float, device = device))**(-self.beta)
+        avail_actions_next, \
+        status, \
+        status_next,\
+        priority,\
+        batch_index, \
+        node_feature_enemy, \
+        edge_index_enemy, \
+        node_feature_enemy_next, \
+        edge_index_enemy_next,\
+            p_sampled = self.buffer.sample(vdn = vdn)
+        #
+        # print("전", len(priority), priority)
+        # print("후",len(p_sampled),  p_sampled)
+        weight = ((len(self.buffer.buffer[10])-self.n_step)*torch.tensor(priority, dtype=torch.float, device = device))**(-self.beta)
         weight /= weight.max()
+        #
         # print("전", priority)
         # print("후", weight.detach().tolist())
 
@@ -871,6 +903,7 @@ class Agent:
 
         n_node_features_missile = self.n_node_feature_missile
         n_node_features_enemy = self.n_node_feature_enemy
+
         obs = self.get_node_representation(
             node_features_missile,
             ship_features,
@@ -880,7 +913,6 @@ class Agent:
             edge_index_enemy,
             n_node_features_enemy,
             mini_batch=True)
-
         obs_next = self.get_node_representation(
             node_features_missile_next,
             ship_features_next,
@@ -895,9 +927,6 @@ class Agent:
             dones = torch.tensor(dones, device=device, dtype=torch.float)
             rewards = torch.tensor(rewards, device=device, dtype=torch.float)
             cos, taus = self.Q.calc_cos(self.batch_size)
-
-
-
             q = [self.cal_Q(obs=obs,
                             actions=actions,
                             avail_actions_next=None,
