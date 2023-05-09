@@ -433,7 +433,7 @@ class Environment:
             if distance_list==list():
                 distance_list.append(1)
             else:
-                distance_list.insert(0, np.min(distance_list)/2.8)
+                distance_list.insert(0, np.min(distance_list)/3)
             target_distance_list.append(distance_list)
         return avail_actions, target_distance_list, air_alert
 
