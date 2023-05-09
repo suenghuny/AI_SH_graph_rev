@@ -170,9 +170,16 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                                     n_step_enemy_edge_index[0],
                                     status)
             else:
-                for i in range(step-1):
+                for i in range(step):
                     n_step_dones.append(True)
                     n_step_rewards.append(0)
+                    n_step_action_blue.append([0] * agent.num_agent)
+                    n_step_avail_action_blue.append(dummy_avail_action)
+                    n_step_missile_node_features.append(np.zeros_like(missile_node_feature).tolist())
+                    n_step_ship_feature.append(np.zeros_like(ship_feature).tolist())
+                    n_step_edge_index.append([[], []])
+                    n_step_enemy_feature.append(np.zeros_like(enemy_node_feature).tolist())
+                    n_step_enemy_edge_index.append([[], []])
                     agent.buffer.memory(n_step_missile_node_features[0],
                                         n_step_ship_feature[0],
                                         n_step_edge_index[0],
@@ -184,14 +191,6 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                                         n_step_enemy_edge_index[0],
                                         status)
 
-                    n_step_action_blue.append([0]*agent.num_agent)
-                    n_step_avail_action_blue.append(dummy_avail_action)
-                    n_step_missile_node_features.append(np.zeros_like(missile_node_feature).tolist())
-                    n_step_ship_feature.append(np.zeros_like(ship_feature).tolist())
-                    n_step_edge_index.append([[],[]])
-
-                    n_step_enemy_feature.append(np.zeros_like(enemy_node_feature).tolist())
-                    n_step_enemy_edge_index.append([[], []])
 
             break
     return episode_reward, epsilon, t, eval
