@@ -210,12 +210,12 @@ if __name__ == "__main__":
 
 
 
-    agent.load_model(output_dir+"2000 (1).pt")
+    agent.load_model(output_dir+"500.pt")
     anneal_episode = cfg.anneal_episode
     anneal_step = (cfg.per_beta - 1) / anneal_episode
 
-    epsilon = 1
-    min_epsilon = 0.01
+    epsilon = 0
+    min_epsilon = 0
 
     reward_list = list()
 

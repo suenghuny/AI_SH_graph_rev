@@ -69,6 +69,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
         if env.now % (decision_timestep) <= 0.00001:
             #print("다다다", env.now)
             avail_action_yellow, target_distance_yellow, air_alert_yellow = env.get_avail_actions_temp(side='yellow')
+
             avail_action_blue, target_distance_blue, air_alert_blue = env.get_avail_actions_temp(side='blue')
 
             ship_feature = env.get_ship_feature()
@@ -340,7 +341,7 @@ if __name__ == "__main__":
             df = pd.DataFrame(reward_list)
             df.to_csv(output_dir + 'episode_reward.csv')
 
-        if e % 500 == 0:
+        if e % 200 == 0:
             agent.save_model(e, t, epsilon, output_dir + "{}.pt".format(e))
 
         #print(len(agent.buffer.buffer[2]))

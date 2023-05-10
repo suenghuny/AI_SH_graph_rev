@@ -98,8 +98,17 @@ class Environment:
                 else:
                     speed = 25
                     course = 90
-                    initial_position_x = 50 + 10*inception_data['inception_distance'] * np.cos((inception_data['inception_angle']+noise) * np.pi / 180)+10*np.random.normal(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
-                    initial_position_y = 50 + 10*inception_data['inception_distance'] * np.sin((inception_data['inception_angle']+noise) * np.pi / 180)+10*np.random.normal(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                    initial_position_x = 50 + 10 * inception_data['inception_distance'] * np.cos(
+                        inception_data['inception_angle'] * np.pi / 180) + 10 * np.random.normal(
+                        inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                    initial_position_y = 50 + 10 * inception_data['inception_distance'] * np.sin(
+                        inception_data['inception_angle'] * np.pi / 180) + 10 * np.random.normal(
+                        inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+
+                    # speed = 25
+                    # course = 90
+                    # initial_position_x = 50 + 10*inception_data['inception_distance'] * np.cos((inception_data['inception_angle']+noise) * np.pi / 180)+10*np.random.normal(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                    # initial_position_y = 50 + 10*inception_data['inception_distance'] * np.sin((inception_data['inception_angle']+noise) * np.pi / 180)+10*np.random.normal(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
 
 
 

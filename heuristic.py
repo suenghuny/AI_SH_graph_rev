@@ -60,6 +60,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
             action_blue = agent_blue.get_action(avail_action_blue, target_distance_blue, air_alert_blue)
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
 
+
             reward, win_tag, done = env.step(action_blue, action_yellow)
 
             episode_reward += reward

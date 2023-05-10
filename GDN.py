@@ -110,7 +110,7 @@ class IQN(nn.Module):
                 layer.remove_noise()
         for layer in self.advantage_layer:
             if type(layer) is NoisyLinear:
-                layer.sample_noise().remove_noise()
+                layer.remove_noise()
 
 
 
@@ -144,20 +144,20 @@ class IQN(nn.Module):
         cos = cos.view(batch_size * N, self.n_cos)
         cos_x = torch.relu(self.cos_embedding(cos)).view(batch_size, N, self.layer_size)  # (batch, n_tau, layer)
         x = (x.unsqueeze(1) * cos_x).view(batch_size * N, self.layer_size)  # 이부분이 phsi * phi에 해당하는 부분
-        out_a = self.advantage_layer(x)
+        out_a = self.advantage_layer(x,)
         quantiles_a = out_a.view(batch_size, N, self.action_size)
-        a = quantiles_a.mean(dim=1)
-
-        y = torch.relu(self.head_y(input.to(device)))  # x의 shape는 batch_size, layer_size
-        cos_y = cos_x
-        y = (y.unsqueeze(1) * cos_y).view(batch_size * N, self.layer_size)  # 이부분이 phsi * phi에 해당하는 부분
-        out_v = self.v_layer(y)
-        quantiles_v = out_v.view(batch_size, N, 1)
-        v = quantiles_v.mean(dim=1)
+        q = quantiles_a.mean(dim=1)
+        #
+        # y = torch.relu(self.head_y(input.to(device)))  # x의 shape는 batch_size, layer_size
+        # cos_y = cos_x
+        # y = (y.unsqueeze(1) * cos_y).view(batch_size * N, self.layer_size)  # 이부분이 phsi * phi에 해당하는 부분
+        # out_v = self.v_layer(y)
+        # quantiles_v = out_v.view(batch_size, N, 1)
+        # v = quantiles_v.mean(dim=1)
 
        # print(quantiles_v.shape, quantiles_a.shape, a.shape)
 
-        q = v + a-a.mean(dim= 1, keepdims = True)
+        # q = v + a-a.mean(dim= 1, keepdims = True)
         return q
 
 
@@ -589,9 +589,9 @@ class Agent:
                                          batch_size=self.batch_size,
                                          teleport_probability=self.teleport_probability).to(device)  # 수정사항
 
-            self.Q = IQN(n_representation_ship+n_representation_missile + 2, self.action_size,
+            self.Q = IQN(n_representation_ship+n_representation_missile +n_representation_enemy + 4, self.action_size,
                          batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos = n_cos, layers = iqn_layers).to(device)
-            self.Q_tar = IQN(n_representation_ship+n_representation_missile + 2, self.action_size,
+            self.Q_tar = IQN(n_representation_ship+n_representation_missile + n_representation_enemy + 4, self.action_size,
                              batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos = n_cos, layers = iqn_layers).to(device)
 
             self.Q_tar.load_state_dict(self.Q.state_dict())
@@ -665,14 +665,13 @@ class Agent:
         # self.Q.head_y.remove_noise()
         # print("푸릇 셀러드?")
         #
+        self.Q.remove_noise_net()
         # for layer in self.Q.v_layer:
         #     if type(layer) is NoisyLinear:
-        #         print("??? 되는겨?")
         #         layer.remove_noise()
         #
         # for layer in self.Q.advantage_layer:
         #     if type(layer) is NoisyLinear:
-        #         print("??? 된겨?")
         #         layer.remove_noise()
 
         self.eval_params = list(self.VDN.parameters()) + \
@@ -695,10 +694,10 @@ class Agent:
                 with torch.no_grad():
 
 
-                    # enemy_node_features = torch.tensor(enemy_node_feature, dtype=torch.float, device=device)
-                    # node_embedding_enemy = self.node_representation_enemy(enemy_node_features)
-                    # enemy_edge_index = torch.tensor(enemy_edge_index, dtype = torch.long, device = device)
-                    # node_embedding_enemy = self.func_enemy_obs(node_embedding_enemy,enemy_edge_index,  n_node_features_enemy, mini_batch = mini_batch)
+                    enemy_node_features = torch.tensor(enemy_node_feature, dtype=torch.float, device=device)
+                    node_embedding_enemy = self.node_representation_enemy(enemy_node_features)
+                    enemy_edge_index = torch.tensor(enemy_edge_index, dtype = torch.long, device = device)
+                    node_embedding_enemy = self.func_enemy_obs(node_embedding_enemy,enemy_edge_index,  n_node_features_enemy, mini_batch = mini_batch)
 
 
 
@@ -712,24 +711,24 @@ class Agent:
                     node_representation = self.func_missile_obs(node_embedding_missile_node, edge_index_missile,
                                                                  n_node_features_missile, mini_batch=mini_batch)
 
-                    node_representation = torch.cat([node_embedding_ship_features, node_representation[0].unsqueeze(0)], dim=1)
+                    node_representation = torch.cat([node_embedding_ship_features, node_representation[0].unsqueeze(0), node_embedding_enemy[0].unsqueeze(0)], dim=1)
             else:
 
-                # enemy_node_features = torch.tensor(enemy_node_feature, dtype=torch.float, device=device)
-                #
-                # empty0 = list()
-                # for i in range(n_node_features_enemy):
-                #     node_embedding_enemy = self.node_representation_enemy(enemy_node_features[:, i, :], missile = True)
-                #     empty0.append(node_embedding_enemy)
-                #
-                # node_embedding_enemy = torch.stack(empty0)
-                # node_embedding_enemy = torch.einsum('ijk->jik', node_embedding_enemy)
-                # enemy_edge_index = torch.stack(enemy_edge_index)
-                #
-                #
-                #
-                # node_embedding_enemy = self.func_enemy_obs(node_embedding_enemy, enemy_edge_index,
-                #                                            n_node_features_enemy, mini_batch=mini_batch)
+                enemy_node_features = torch.tensor(enemy_node_feature, dtype=torch.float, device=device)
+
+                empty0 = list()
+                for i in range(n_node_features_enemy):
+                    node_embedding_enemy = self.node_representation_enemy(enemy_node_features[:, i, :], missile = True)
+                    empty0.append(node_embedding_enemy)
+
+                node_embedding_enemy = torch.stack(empty0)
+                node_embedding_enemy = torch.einsum('ijk->jik', node_embedding_enemy)
+                enemy_edge_index = torch.stack(enemy_edge_index)
+
+
+
+                node_embedding_enemy = self.func_enemy_obs(node_embedding_enemy, enemy_edge_index,
+                                                           n_node_features_enemy, mini_batch=mini_batch)
 
 
 
@@ -747,7 +746,7 @@ class Agent:
                 node_representation = self.func_missile_obs(node_embedding_missile_node, edge_index_missile,
                                                              n_node_features_missile, mini_batch=mini_batch)
 
-                node_representation = torch.cat([node_embedding_ship_features, node_representation[:, 0, :]], dim=1)
+                node_representation = torch.cat([node_embedding_ship_features, node_representation[:, 0, :],  node_embedding_enemy[:, 0, :]], dim=1)
 
         return node_representation
 
@@ -844,7 +843,6 @@ class Agent:
             greedy_u = torch.argmax(Q)
 
             if cfg.epsilon_greedy == True:
-
                 if np.random.uniform(0, 1) >= epsilon:
                     u = greedy_u
                     #utility.append(Q[0][u].detach().item())
