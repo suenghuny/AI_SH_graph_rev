@@ -209,7 +209,7 @@ class Environment:
     def get_env_info(self):
         env_info = {"n_agents" : 1,
                     "ship_feature_shape": 10+(1 + self.ship_friendly_action_space + self.air_friendly_action_space),  # + self.n_agents,
-                    "missile_feature_shape" : 6,  #9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
+                    "missile_feature_shape" : 5,  #9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
                     "enemy_feature_shape": 12,
                     # 9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
                     "n_actions": (1 + self.ship_friendly_action_space + self.air_friendly_action_space)
@@ -518,7 +518,7 @@ class Environment:
 
 
     def get_missile_node_feature(self, rad_coordinate = True):
-        node_features = [[0,0,0,0,0,0]]
+        node_features = [[0,0,0,0,0]]
         for ship in self.friendlies_fixed_list:
             for missile in ship.ssm_detections:
                 if rad_coordinate == True:
@@ -531,7 +531,7 @@ class Environment:
                     if a <=0.01:
                         a = 0
                         theta_a = 0
-                    node_features.append([r, np.abs(theta_r-theta_v), theta_v, v, a, theta_a])
+                    node_features.append([r, v, a, theta_r-theta_v, theta_v-theta_a])
                 else:
                     px = missile.position_x - ship.position_x
                     py = missile.position_y - ship.position_y
@@ -542,7 +542,7 @@ class Environment:
                     node_features.append([px/missile.attack_range, py/missile.attack_range, vx/missile.speed, vy/missile.speed, ax, ay])
         if ship.air_tracking_limit+1-len(node_features) >0:
             for _ in range(ship.air_tracking_limit+1-len(node_features)):
-                node_features.append([0,0,0,0,0,0])
+                node_features.append([0,0,0,0,0])
         #print("후", len(node_features), ship.air_tracking_limit + 1 - len(node_features))
 
         return node_features

@@ -23,7 +23,7 @@ def get_cfg():
     parser.add_argument("--missile_layers", type=str, default='[56, 32]', help="layer 구조")
     parser.add_argument("--enemy_layers", type=str, default='[56, 32]', help="layer 구조")
     parser.add_argument("--n_representation_ship", type=int, default=42, help="")
-    parser.add_argument("--n_representation_missile", type=int, default=20, help="")
+    parser.add_argument("--n_representation_missile", type=int, default=12, help="")
     parser.add_argument("--n_representation_enemy", type=int, default=20, help="")
     parser.add_argument("--temperature", type=int, default=15, help="")
     parser.add_argument("--iqn_layer_size", type=int, default=128, help="")
