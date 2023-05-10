@@ -836,7 +836,6 @@ class Agent:
         action = []
         utility = list()
         cos, taus = self.Q.calc_cos(1)
-
         for n in range(self.num_agent):
             obs = node_representation[n]
             obs = obs.unsqueeze(0)

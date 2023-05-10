@@ -28,7 +28,7 @@ def get_cfg():
     parser.add_argument("--temperature", type=int, default=15, help="")
     parser.add_argument("--iqn_layer_size", type=int, default=128, help="")
     parser.add_argument("--iqn_N", type=int, default=32, help="")
-    parser.add_argument("--n_cos", type=int, default=4648, help="")
+    parser.add_argument("--n_cos", type=int, default=46, help="")
     parser.add_argument("--buffer_size", type=int, default=100000, help="")
     parser.add_argument("--batch_size", type=int, default=32, help="")
     parser.add_argument("--teleport_probability", type=float, default=1.0, help="teleport_probability")
