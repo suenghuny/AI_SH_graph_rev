@@ -329,8 +329,7 @@ if __name__ == "__main__":
 
         reward_list.append(episode_reward)
         if vessl_on == True:
-            if e >= cfg.train_start:
-                vessl.log(step=e-cfg.train_start, payload={'reward': episode_reward})
+            vessl.log(step=e-cfg.train_start, payload={'reward': episode_reward})
 
         if e % 10 == 0:
             import os

@@ -37,7 +37,7 @@ def get_cfg():
     parser.add_argument("--lr", type=float, default=3e-5, help="learning rate")
     parser.add_argument("--n_multi_head", type=int, default=1, help="number of multi head")
     parser.add_argument("--num_episode", type=int, default=1000000, help="number of episode")
-    parser.add_argument("--scheduler_step", type =int, default=100000, help= "scheduler step")
+    parser.add_argument("--scheduler_step", type =int, default=20000, help= "scheduler step")
     parser.add_argument("--scheduler_ratio", type=float, default=0.2, help= "scheduler ratio")
     parser.add_argument("--train_start", type=int, default=300, help="number of train start")
     parser.add_argument("--epsilon_greedy", type=bool, default=True, help="epsilon_greedy")
