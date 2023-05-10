@@ -146,18 +146,18 @@ class IQN(nn.Module):
         x = (x.unsqueeze(1) * cos_x).view(batch_size * N, self.layer_size)  # 이부분이 phsi * phi에 해당하는 부분
         out_a = self.advantage_layer(x,)
         quantiles_a = out_a.view(batch_size, N, self.action_size)
-        q = quantiles_a.mean(dim=1)
+        a = quantiles_a.mean(dim=1)
         #
-        # y = torch.relu(self.head_y(input.to(device)))  # x의 shape는 batch_size, layer_size
-        # cos_y = cos_x
-        # y = (y.unsqueeze(1) * cos_y).view(batch_size * N, self.layer_size)  # 이부분이 phsi * phi에 해당하는 부분
-        # out_v = self.v_layer(y)
-        # quantiles_v = out_v.view(batch_size, N, 1)
-        # v = quantiles_v.mean(dim=1)
+        y = torch.relu(self.head_y(input.to(device)))  # x의 shape는 batch_size, layer_size
+        cos_y = cos_x
+        y = (y.unsqueeze(1) * cos_y).view(batch_size * N, self.layer_size)  # 이부분이 phsi * phi에 해당하는 부분
+        out_v = self.v_layer(y)
+        quantiles_v = out_v.view(batch_size, N, 1)
+        v = quantiles_v.mean(dim=1)
 
-       # print(quantiles_v.shape, quantiles_a.shape, a.shape)
+       #print(quantiles_v.shape, quantiles_a.shape, a.shape)
 
-        # q = v + a-a.mean(dim= 1, keepdims = True)
+        q = v + a-a.mean(dim= 1, keepdims = True)
         return q
 
 
