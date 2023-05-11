@@ -93,7 +93,7 @@ class Environment:
                 if mode == True:
                     speed = 25
                     course = 90
-                    initial_position_x = 50 + 10*inception_data['inception_distance'] * np.cos(inception_data['inception_angle'] * np.pi / 180)+ 10*np.random.normal(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                    initial_position_x = 50 + 10*inception_data['inception_distance'] * np.cos(inception_data['inception_angle'] * np.pi / 180) + 10*np.random.normal(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
                     initial_position_y = 50 + 10*inception_data['inception_distance'] * np.sin(inception_data['inception_angle'] * np.pi / 180) + 10*np.random.normal(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
                 else:
                     speed = 25
@@ -227,7 +227,7 @@ class Environment:
 
 
 
-    def get_target_availability(self, friendlies_fixed_list, avail_action_friendly_model, enemies_fixed_list, flying_ssms_enemies):
+    def get_target_availability(self, friendlies_fixed_list, avail_action_friendly_model, enemies_fixed_list, flying_ssms_enemies, interval_min, interval_constant):
         avail_actions = list()
         target_distance_list = list()
         air_alert = False
@@ -442,15 +442,18 @@ class Environment:
             if distance_list==list():
                 distance_list.append(1)
             else:
-                distance_list.insert(0, np.min(distance_list)/2)
+                if interval_min == True:
+                    distance_list.insert(0, np.min(distance_list)/interval_constant)
+                else:
+                    distance_list.insert(0, np.min(distance_list)/interval_constant)
             target_distance_list.append(distance_list)
         return avail_actions, target_distance_list, air_alert
 
-    def get_avail_actions_temp(self, side='blue'):
+    def get_avail_actions_temp(self, interval_min, interval_constant, side='blue'):
         if side != 'blue':
-            avail_actions, target_distance_list, air_alert = self.get_target_availability(self.enemies_fixed_list, self.avail_action_enemy, self.friendlies_fixed_list, self.flying_ssms_friendly)
+            avail_actions, target_distance_list, air_alert = self.get_target_availability(self.enemies_fixed_list, self.avail_action_enemy, self.friendlies_fixed_list, self.flying_ssms_friendly, interval_min, interval_constant)
         else:
-            avail_actions, target_distance_list, air_alert = self.get_target_availability(self.friendlies_fixed_list, self.avail_action_friendly, self.enemies_fixed_list, self.flying_ssms_enemy)
+            avail_actions, target_distance_list, air_alert = self.get_target_availability(self.friendlies_fixed_list, self.avail_action_friendly, self.enemies_fixed_list, self.flying_ssms_enemy, interval_min, interval_constant)
         return avail_actions, target_distance_list, air_alert
 
     def get_ship_feature(self):

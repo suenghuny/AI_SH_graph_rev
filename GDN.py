@@ -215,6 +215,7 @@ class NodeEmbedding(nn.Module):
         for i in range(len(layers)):
             layer = layers[i]
             if i <= len(layers)-2:
+                print(last_layer, layer)
                 self.linears['linear{}'.format(i)]= nn.Linear(last_layer, layer)
                 self.linears['batchnorm{}'.format(i)] = nn.BatchNorm1d(layer)
                 self.linears['activation{}'.format(i)] = nn.ReLU()

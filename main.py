@@ -60,6 +60,13 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
 
     n_step_enemy_feature = deque(maxlen = n_step)
     n_step_enemy_edge_index = deque(maxlen = n_step)
+    if random.uniform(0, 1) > 0.5:
+        interval_min = True
+
+    else:
+        interval_min = False
+
+    interval_constant = random.uniform(0, 5)
 
 
 
@@ -68,9 +75,13 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
         #print(env.now % (decision_timestep))
         if env.now % (decision_timestep) <= 0.00001:
             #print("다다다", env.now)
-            avail_action_yellow, target_distance_yellow, air_alert_yellow = env.get_avail_actions_temp(side='yellow')
 
-            avail_action_blue, target_distance_blue, air_alert_blue = env.get_avail_actions_temp(side='blue')
+            avail_action_blue, target_distance_blue, air_alert_blue = env.get_avail_actions_temp(interval_min=True,
+                                                                                                 interval_constant=0.5,
+                                                                                                 side='blue')
+            avail_action_yellow, target_distance_yellow, air_alert_yellow = env.get_avail_actions_temp(interval_min,
+                                                                                                       interval_constant,
+                                                                                                       side='yellow')
 
             ship_feature = env.get_ship_feature()
             edge_index   = env.get_edge_index()
@@ -334,9 +345,7 @@ if __name__ == "__main__":
         if e % 10 == 0:
             import os
             import pandas as pd
-            #output_dir = "../output_dir_susceptibility/"
-            # if not os.path.exists(output_dir):
-            #     os.makedirs(output_dir)
+
             df = pd.DataFrame(reward_list)
             df.to_csv(output_dir + 'episode_reward.csv')
 

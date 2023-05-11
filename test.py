@@ -210,7 +210,7 @@ if __name__ == "__main__":
 
 
 
-    agent.load_model(output_dir+"500.pt")
+    agent.load_model(output_dir+"800.pt")
     anneal_episode = cfg.anneal_episode
     anneal_step = (cfg.per_beta - 1) / anneal_episode
 
@@ -250,8 +250,7 @@ if __name__ == "__main__":
             df = pd.DataFrame(reward_list)
             df.to_csv(output_dir + 'episode_reward_test.csv')
 
-        if e % 500 == 0:
-            agent.save_model(e, t, epsilon, output_dir + "{}.pt".format(e))
+
 
         # print(len(agent.buffer.buffer[2]))
         print(

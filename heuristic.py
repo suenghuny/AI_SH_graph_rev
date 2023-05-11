@@ -34,8 +34,11 @@ def preprocessing(scenarios):
 
 
 def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, initializer, output_dir, vdn, n_step):
-    temp = random.randint(30, 31)
-    #print(temp)
+    interval_min_blue = False
+    interval_constant_blue = random.uniform(0, 5)
+
+    temp = random.uniform(0, 50)
+
     agent_blue = Policy(env, rule='rule2', temperatures=[cfg.temperature, cfg.temperature])
     agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
     done = False
@@ -47,12 +50,23 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
     enemy_action_for_transition = [0] * len(env.enemies_fixed_list)
     friendly_action_for_transition = [0] * len(env.friendlies_fixed_list)
     step_checker = 0
+    if random.uniform(0, 1) > 0.5:
+        interval_min = True
+
+    else:
+        interval_min = False
+
+    interval_constant = random.uniform(0, 5)
+
     while not done:
         # print(env.now % (decision_timestep))
         if env.now % (decision_timestep) <= 0.00001:
             # print("다다다", env.now)
-            avail_action_yellow, target_distance_yellow, air_alert_yellow = env.get_avail_actions_temp(side='yellow')
-            avail_action_blue, target_distance_blue, air_alert_blue = env.get_avail_actions_temp(side='blue')
+            avail_action_blue, target_distance_blue, air_alert_blue = env.get_avail_actions_temp(interval_min_blue,
+                                                                                                 interval_constant_blue,
+                                                                                                 side='blue')
+            avail_action_yellow, target_distance_yellow, air_alert_yellow = env.get_avail_actions_temp(interval_min, interval_constant, side='yellow')
+
 
 
 
