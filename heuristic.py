@@ -5,6 +5,7 @@ from collections import deque
 from cfg import get_cfg
 from GDN import Agent
 import numpy as np
+import torch, random
 import scipy
 def preprocessing(scenarios):
     scenario = scenarios[0]
@@ -32,9 +33,9 @@ def preprocessing(scenarios):
 
 
 def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, initializer, output_dir, vdn, n_step):
-    interval_min_blue = False
-    interval_constant_blue = 2
-    temp = random.uniform(0, 50)
+    interval_min_blue = cfg.interval_min_blue
+    interval_constant_blue = cfg.interval_constant_blue
+    temp = random.randint(30, 31)
     agent_blue = Policy(env, rule='rule2', temperatures=[cfg.temperature, cfg.temperature])
     agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
     done = False
@@ -50,35 +51,19 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
         interval_min = True
     else:
         interval_min = False
-
     interval_constant = random.uniform(0, 5)
-
     while not done:
-        # print(env.now % (decision_timestep))
         if env.now % (decision_timestep) <= 0.00001:
-            # print("다다다", env.now)
             avail_action_blue, target_distance_blue, air_alert_blue = env.get_avail_actions_temp(interval_min_blue,
                                                                                                  interval_constant_blue,
                                                                                                  side='blue')
             avail_action_yellow, target_distance_yellow, air_alert_yellow = env.get_avail_actions_temp(interval_min, interval_constant, side='yellow')
-
-
-
-
-
             action_blue = agent_blue.get_action(avail_action_blue, target_distance_blue, air_alert_blue)
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
-
-
             reward, win_tag, done = env.step(action_blue, action_yellow)
-
             episode_reward += reward
-
             status = None
             step_checker += 1
-
-
-
             if e >= train_start:
                 t += 1
         else:
@@ -131,18 +116,12 @@ if __name__ == "__main__":
     lose_ratio = list()
     remains_ratio = list()
     polar_chart_scenario1 = [33, 29, 25, 33, 30, 30, 55, 27, 27, 35, 25, 30, 40]  # RCS의 polarchart 적용
-
     polar_chart = [polar_chart_scenario1]
     df_dict = {}
-    # scenario = np.random.choice(scenarios)
     episode_polar_chart = polar_chart[0]
     records = list()
-    import torch, random
 
-    seed = 42
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    random.seed(seed)
+    #seed = 42
 
     data = preprocessing(scenarios)
     t = 0
@@ -153,19 +132,18 @@ if __name__ == "__main__":
                   tick=tick,
                   simtime_per_framerate=simtime_per_frame,
                   ciws_threshold=ciws_threshold)
-
     anneal_episode = cfg.anneal_episode
     anneal_step = (cfg.per_beta - 1) / anneal_episode
-
     epsilon = 1
     min_epsilon = 0.01
-
     reward_list = list()
     agent = None
     for e in range(num_iteration):
-
+        seed = 2 * e
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        random.seed(seed)
         start = time.time()
-
         env = modeler(data,
                       visualize=visualize,
                       size=size,
@@ -173,7 +151,6 @@ if __name__ == "__main__":
                       tick=tick,
                       simtime_per_framerate=simtime_per_frame,
                       ciws_threshold=ciws_threshold)
-
         episode_reward, epsilon, t, eval = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon,
                                                  min_epsilon=min_epsilon, anneal_step=anneal_step, initializer=False,
                                                  output_dir=None, vdn=True, n_step=n_step)
@@ -186,7 +163,7 @@ if __name__ == "__main__":
             import os
             import pandas as pd
             df = pd.DataFrame(reward_list)
-            df.to_csv(output_dir + 'episode_reward_{}_perfectly_random.csv'.format(cfg.temperature))
+            df.to_csv(output_dir + 'episode_reward_{}_{}_{}.csv'.format(cfg.temperature, cfg.interval_min_blue, cfg.interval_constant_blue))
 
 
 

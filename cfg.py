@@ -23,9 +23,9 @@ def get_cfg():
     parser.add_argument("--missile_layers", type=str, default='[36, 23]', help="layer 구조")
     parser.add_argument("--enemy_layers", type=str, default='[48, 32]', help="layer 구조")
     parser.add_argument("--n_representation_ship", type=int, default=42, help="")
-    parser.add_argument("--n_representation_missile", type=int, default=20, help="")
-    parser.add_argument("--n_representation_enemy", type=int, default=20, help="")
-    parser.add_argument("--temperature", type=int, default=0.1, help="")
+    parser.add_argument("--n_representation_missile", type=int, default=12, help="")
+    parser.add_argument("--n_representation_enemy", type=int, default=22, help="")
+
     parser.add_argument("--iqn_layer_size", type=int, default=128, help="")
     parser.add_argument("--iqn_N", type=int, default=32, help="")
     parser.add_argument("--n_cos", type=int, default=46, help="")
@@ -44,5 +44,9 @@ def get_cfg():
     parser.add_argument("--epsilon", type=float, default=0.5, help="epsilon")
     parser.add_argument("--min_epsilon", type=float, default=0.01, help="epsilon")
     parser.add_argument("--anneal_step", type=int, default=50000, help="epsilon")
+    parser.add_argument("--temperature", type=int, default=7, help="")
+    parser.add_argument("--interval_min_blue", type=bool, default=False, help="interval_min_blue")
+    parser.add_argument("--interval_constant_blue", type=float, default=3.5, help="interval_constant_blue")
+    parser.add_argument("--test_epi", type=int, default=1800, help="interval_constant_blue")
 
     return parser.parse_args()

@@ -81,6 +81,7 @@ class Environment:
 
         inception_data = self.data.inception_data
         noise = np.random.uniform(-10, 10)
+
         self.missile_speed_list = list()
 
         for key, value in data.ship_data.items():
