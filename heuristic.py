@@ -6,8 +6,6 @@ from cfg import get_cfg
 from GDN import Agent
 import numpy as np
 import scipy
-
-
 def preprocessing(scenarios):
     scenario = scenarios[0]
     if mode == 'txt':
@@ -35,10 +33,8 @@ def preprocessing(scenarios):
 
 def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, initializer, output_dir, vdn, n_step):
     interval_min_blue = False
-    interval_constant_blue = random.uniform(0, 5)
-
+    interval_constant_blue = 2
     temp = random.uniform(0, 50)
-
     agent_blue = Policy(env, rule='rule2', temperatures=[cfg.temperature, cfg.temperature])
     agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
     done = False
@@ -52,7 +48,6 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
     step_checker = 0
     if random.uniform(0, 1) > 0.5:
         interval_min = True
-
     else:
         interval_min = False
 
@@ -110,19 +105,14 @@ if __name__ == "__main__":
             os.makedirs(output_dir)
     else:
         from torch.utils.tensorboard import SummaryWriter
-
         output_dir = "../output_susceptibility_heuristic/"
         writer = SummaryWriter('./logs2')
         import os
-
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
     import time
-
     """
-
     환경 시스템 관련 변수들
-
     """
     visualize = False # 가시화 기능 사용 여부 / True : 가시화 적용, False : 가시화 미적용
     size = [600, 600]  # 화면 size / 600, 600 pixel
@@ -176,7 +166,6 @@ if __name__ == "__main__":
 
         start = time.time()
 
-        # print("소요시간", time.time()-start)
         env = modeler(data,
                       visualize=visualize,
                       size=size,
@@ -196,12 +185,8 @@ if __name__ == "__main__":
         if e % 10 == 0:
             import os
             import pandas as pd
-
-            # output_dir = "../output_dir_susceptibility/"
-            # if not os.path.exists(output_dir):
-            #     os.makedirs(output_dir)
             df = pd.DataFrame(reward_list)
-            df.to_csv(output_dir + 'episode_reward_{}.csv'.format(cfg.temperature))
+            df.to_csv(output_dir + 'episode_reward_{}_perfectly_random.csv'.format(cfg.temperature))
 
 
 

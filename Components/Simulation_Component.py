@@ -306,7 +306,9 @@ class Missile:
                                     if np.random.uniform(0, 1) < self.p_h:  # probability of hitting에 따른 명중여부 판단
 
                                         """
+                                        
                                         state feature 만들기
+                                        
                                         """
                                         self.launcher.missile_destroying_history += 1
 
@@ -397,7 +399,6 @@ class Missile:
                                 표적은 DECOY : 표적은 미파괴
                                 """
                                 self.original_target.missile_destroying_history += 1  # 표적(ship)의 입장에서는 하나가 격추된 느낌이다.
-
                                 self.target.launcher.monitors["ssm_mishit"] += 1
 
                             if self.target.cla == 'ship' or self.target.cla == 'decoy':  # 표적이 함정일 경우
