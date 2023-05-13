@@ -1,4 +1,6 @@
 from torch.optim.lr_scheduler import StepLR
+from torch.optim.lr_scheduler import CosineAnnealingLR
+
 
 import torch
 import torch.nn as nn
@@ -607,7 +609,7 @@ class Agent:
         if cfg.scheduler == 'step':
             self.scheduler = StepLR(optimizer=self.optimizer, step_size=cfg.scheduler_step, gamma=cfg.scheduler_ratio)
         elif cfg.scheduler == 'cosine':
-            optim.lr_scheduler.CosineAnnealingLR(optimizer=self.optimizer, T_max=cfg.t_max, eta_min=cfg.scheduler_ratio*learning_rate)
+            self.scheduler = CosineAnnealingLR(optimizer=self.optimizer, T_max=cfg.t_max, eta_min=cfg.scheduler_ratio*learning_rate)
         self.time_check = [[], []]
     def save_model(self, e, t, epsilon, path):
         torch.save({
