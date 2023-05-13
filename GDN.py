@@ -604,7 +604,10 @@ class Agent:
         self.optimizer = optim.Adam(self.eval_params, lr=learning_rate)
         from cfg import get_cfg
         cfg = get_cfg()
-        self.scheduler = StepLR(optimizer=self.optimizer, step_size=cfg.scheduler_step, gamma=cfg.scheduler_ratio)
+        if cfg.scheduler == 'step':
+            self.scheduler = StepLR(optimizer=self.optimizer, step_size=cfg.scheduler_step, gamma=cfg.scheduler_ratio)
+        elif cfg.scheduler == 'cosine':
+            optim.lr_scheduler.CosineAnnealingLR(optimizer=self.optimizer, T_max=cfg.t_max, eta_min=cfg.scheduler_ratio*learning_rate)
         self.time_check = [[], []]
     def save_model(self, e, t, epsilon, path):
         torch.save({

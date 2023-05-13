@@ -48,5 +48,7 @@ def get_cfg():
     parser.add_argument("--interval_min_blue", type=bool, default=False, help="interval_min_blue")
     parser.add_argument("--interval_constant_blue", type=float, default=3.5, help="interval_constant_blue")
     parser.add_argument("--test_epi", type=int, default=1800, help="interval_constant_blue")
+    parser.add_argument("--scheduler", type=str, default='cosine', help="step 형태")
+    parser.add_argument("--t_max", type=int, default=40000, help="interval_constant_blue")
 
     return parser.parse_args()
