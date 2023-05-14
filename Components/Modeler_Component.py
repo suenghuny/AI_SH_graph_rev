@@ -743,7 +743,7 @@ class Environment:
             for i in range(len(self.friendlies_fixed_list)):
                 ship = self.friendlies_fixed_list[i]
                 if ship.status != 'destroyed':
-                    reward += ship.health - ship.last_health
+                    reward += (ship.health - ship.last_health)*10
                     ship.last_health = deepcopy(ship.health)
                     #print(reward, ship.health, ship.last_health, self.now)
                 else:
