@@ -29,10 +29,10 @@ radar_receiver_bandwidth		4		4		4       4
 ciws_max_range				4		4		4       4
 ciws_max_num_per_min			4200		4200		4200        4200
 ciws_bullet_capacity			1100		1100		1100        1100
-ssm_launching_duration_min		10		10		10      10
-ssm_launching_duration_max		15		15		15      15
-lsam_launching_duration_min		7		7		7       7
-lsam_launching_duration_max		10		10		10      10
-msam_launching_duration_min		3		5		5       5
-msam_launching_duration_max		6		10		10      10
+ssm_launching_duration_min		4		4		4       4
+ssm_launching_duration_max		8		8		8       8
+lsam_launching_duration_min		2		2		2       2
+lsam_launching_duration_max		5		5		5       5
+msam_launching_duration_min		2		2		2       2
+msam_launching_duration_max		5		5		5       5
 side						blue		yellow		yellow      yellow
