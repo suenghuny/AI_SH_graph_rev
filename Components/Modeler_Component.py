@@ -218,7 +218,7 @@ class Environment:
 
     def get_env_info(self):
         env_info = {"n_agents" : 1,
-                    "ship_feature_shape": 10+(1 + self.ship_friendly_action_space + self.air_friendly_action_space),  # + self.n_agents,
+                    "ship_feature_shape": 10+1+(1 + self.ship_friendly_action_space + self.air_friendly_action_space),  # + self.n_agents,
                     "missile_feature_shape" : 5,  #9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
                     "enemy_feature_shape": 12,
                     # 9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
@@ -476,7 +476,8 @@ class Environment:
             f9 = self.f9 / self.simtime_per_framerate
             f10 = self.f10 / self.simtime_per_framerate
             f11 = self.f11
-            ship_feature.append(np.concatenate([[f1,f2,f3,f4,f5,f6,f7,f8,f9,f10], f11]).tolist())
+            f12 = ship.health /ship.init_health
+            ship_feature.append(np.concatenate([[f1,f2,f3,f4,f5,f6,f7,f8,f9,f10, f12], f11]).tolist())
         return ship_feature
 
     def get_edge_index(self):
@@ -597,11 +598,16 @@ class Environment:
                 patrol_aircraft.show()
 
         num_f = 0
+  #      reward = 0
         for i in range(len(self.friendlies_fixed_list)):
             num_f += 1
             ship = self.friendlies_fixed_list[i]
+
+            #print(reward, ship.health, ship.last_health, self.now)
             self.temp_max_air_engagement.append(len(ship.air_engagement_managing_list))
             if ship.status != 'destroyed':
+
+                #print(reward)
                 ship.target_allocation_process(action_blue[i])
                 ship.air_prelaunching_process()
                 ship.surface_prelaunching_process()
@@ -733,9 +739,13 @@ class Environment:
             missile_destroyed_cal = 0
             enemy_destroyed_cal = 0
             ship_destroyed_cal = 0
+            reward=0
             for i in range(len(self.friendlies_fixed_list)):
                 ship = self.friendlies_fixed_list[i]
-                if ship.status != 'destroyed':pass
+                if ship.status != 'destroyed':
+                    reward += ship.health - ship.last_health
+                    ship.last_health = deepcopy(ship.health)
+                    #print(reward, ship.health, ship.last_health, self.now)
                 else:
                     ship_destroyed_cal += 1
 
@@ -750,11 +760,11 @@ class Environment:
             self.f8 = enemy_destroyed_cal
             self.f9 = missile_destroyed_cal - self.last_destroyed_missile
             self.f10 = enemy_destroyed_cal - self.last_destroyed_enemy
-            #self.f12 = ship_destroyed_cal - self.last_destroyed_ship
-            reward = 1000 * (enemy_destroyed_cal - self.last_destroyed_enemy) + \
-                     -5000 * (ship_destroyed_cal - self.last_destroyed_ship) + \
-                     50 * (missile_destroyed_cal - self.last_destroyed_missile)
-            reward = reward / 200
+            #reward = self.
+            # reward = 1000 * (enemy_destroyed_cal - self.last_destroyed_enemy) + \
+            #          -5000 * (ship_destroyed_cal - self.last_destroyed_ship) + \
+            #          50 * (missile_destroyed_cal - self.last_destroyed_missile)
+            # reward = reward / 200
             self.last_destroyed_missile = missile_destroyed_cal
             self.last_destroyed_enemy = enemy_destroyed_cal
             self.last_destroyed_ship = ship_destroyed_cal
