@@ -54,9 +54,10 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
     n_step_edge_index = deque(maxlen = n_step)
     n_step_action_blue =deque(maxlen = n_step)
     n_step_avail_action_blue = deque(maxlen = n_step)
-
     n_step_enemy_feature = deque(maxlen = n_step)
     n_step_enemy_edge_index = deque(maxlen = n_step)
+    n_step_action_feature = deque(maxlen=n_step)
+    n_step_action_features = deque(maxlen=n_step)
     if random.uniform(0, 1) > 0.5:
         interval_min = True
 
@@ -83,29 +84,22 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
             ship_feature = env.get_ship_feature()
             edge_index   = env.get_edge_index()
             missile_node_feature = env.get_missile_node_feature()
-
-            enemy_edge_index = env.get_enemy_edge_index()
-            enemy_node_feature = env.get_enemy_node_feature()
+            enemy_edge_index = [[],[]]#env.get_enemy_edge_index()
+            enemy_node_feature = None# env.get_enemy_node_feature()
+            action_feature = env.get_action_feature()
 
             n_node_feature_missile = env.friendlies_fixed_list[0].air_tracking_limit+1
             n_node_feature_enemy = env.friendlies_fixed_list[0].surface_tracking_limit + 1
-
             agent.eval_check(eval=True)
             node_representation = agent.get_node_representation(missile_node_feature, ship_feature,edge_index,n_node_feature_missile,
                                                                 enemy_node_feature = enemy_node_feature,
                                                                 enemy_edge_index = enemy_edge_index,
                                                                 n_node_features_enemy = n_node_feature_enemy,
-
-
                                                                 mini_batch=False)  # 차원 : n_agents X n_representation_comm
-            action_blue = agent.sample_action(node_representation, avail_action_blue, epsilon)
-
+            action_blue = agent.sample_action(node_representation, avail_action_blue, epsilon,action_feature)
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
-
             reward, win_tag, done = env.step(action_blue, action_yellow)
-
             episode_reward += reward
-
             n_step_missile_node_features.append(missile_node_feature)
             n_step_ship_feature.append(ship_feature)
             n_step_edge_index.append(edge_index)
@@ -115,6 +109,8 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
             n_step_avail_action_blue.append(avail_action_blue)
             n_step_enemy_feature.append(enemy_node_feature)
             n_step_enemy_edge_index.append(enemy_edge_index)
+            n_step_action_feature.append(action_blue)
+            n_step_action_features.append(action_feature)
             status = None
             step_checker += 1
             if e >= train_start:
@@ -136,7 +132,10 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                                     n_step_avail_action_blue[idx],
                                     n_step_enemy_feature[idx],
                                     n_step_enemy_edge_index[idx],
-                                    status)
+                                    status,
+                                    n_step_action_feature[idx],
+                                    n_step_action_features[idx]
+                                    )
 
 
 
@@ -158,14 +157,13 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                     n_step_rewards.append(0)
                     n_step_action_blue.append([0] * agent.num_agent)
                     n_step_avail_action_blue.append(dummy_avail_action)
-
-
                     n_step_missile_node_features.append(np.zeros_like(missile_node_feature).tolist())
                     n_step_ship_feature.append(np.zeros_like(ship_feature).tolist())
-                    n_step_enemy_feature.append(np.zeros_like(enemy_node_feature).tolist())
-
+                    n_step_enemy_feature.append(None)
                     n_step_edge_index.append([[], []])
                     n_step_enemy_edge_index.append([[], []])
+                    n_step_action_feature.append(np.zeros_like(action_blue))
+                    n_step_action_features.append(np.zeros_like(action_feature))
 
                 agent.buffer.memory(n_step_missile_node_features[0],
                                     n_step_ship_feature[0],
@@ -174,10 +172,11 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                                     n_step_rewards,
                                     n_step_dones,
                                     n_step_avail_action_blue[0],
-
                                     n_step_enemy_feature[0],
                                     n_step_enemy_edge_index[0],
-                                    status)
+                                    status,
+                                    n_step_action_feature[0],
+                                    n_step_action_features[0])
             else:
                 for i in range(step):
                     n_step_dones.append(True)
@@ -187,8 +186,10 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                     n_step_missile_node_features.append(np.zeros_like(missile_node_feature).tolist())
                     n_step_ship_feature.append(np.zeros_like(ship_feature).tolist())
                     n_step_edge_index.append([[], []])
-                    n_step_enemy_feature.append(np.zeros_like(enemy_node_feature).tolist())
+                    n_step_enemy_feature.append(None)
                     n_step_enemy_edge_index.append([[], []])
+                    n_step_action_feature.append(np.zeros_like(action_blue))
+                    n_step_action_features.append(np.zeros_like(action_feature))
                     agent.buffer.memory(n_step_missile_node_features[0],
                                         n_step_ship_feature[0],
                                         n_step_edge_index[0],
@@ -198,7 +199,9 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                                         n_step_avail_action_blue[0],
                                         n_step_enemy_feature[0],
                                         n_step_enemy_edge_index[0],
-                                        status)
+                                        status,
+                                        n_step_action_feature[0],
+                                    n_step_action_features[0])
             break
     return episode_reward, epsilon, t, eval
 
@@ -229,7 +232,7 @@ if __name__ == "__main__":
     환경 시스템 관련 변수들
     
     """
-    visualize = False                 # 가시화 기능 사용 여부 / True : 가시화 적용, False : 가시화 미적용
+    visualize = False                # 가시화 기능 사용 여부 / True : 가시화 적용, False : 가시화 미적용
     size = [600, 600]                # 화면 size / 600, 600 pixel
     tick = 500                       # 가시화 기능 사용 시 빠르기
     n_step = cfg.n_step
@@ -271,12 +274,15 @@ if __name__ == "__main__":
                   feature_size_ship=env.get_env_info()["ship_feature_shape"],
                   feature_size_enemy=env.get_env_info()["enemy_feature_shape"],
                   feature_size_missile=env.get_env_info()["missile_feature_shape"],
+                  feature_size_action = env.get_env_info()["action_feature_shape"],
 
                   iqn_layers=list(eval(cfg.iqn_layers)),
 
                   node_embedding_layers_ship=list(eval(cfg.ship_layers)),
                   node_embedding_layers_missile=list(eval(cfg.missile_layers)),
-                  node_embedding_layers_enemy=list(eval(cfg.enemy_layers)), #### t
+                  node_embedding_layers_enemy=list(eval(cfg.enemy_layers)),
+                  node_embedding_layers_action=list(eval(cfg.action_layers)),
+
 
 
                   hidden_size_comm = cfg.hidden_size_comm,
@@ -286,6 +292,7 @@ if __name__ == "__main__":
                   n_representation_ship=cfg.n_representation_ship,
                   n_representation_missile=cfg.n_representation_missile,
                   n_representation_enemy=cfg.n_representation_enemy,
+                  n_representation_action=cfg.n_representation_action,
 
                   dropout=0.6,
                   action_size=env.get_env_info()["n_actions"],

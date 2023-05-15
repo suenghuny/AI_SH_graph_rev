@@ -1416,7 +1416,21 @@ class Ship:
         estimated_y = noise_y + target.v_y*time_to_intersection #self.position_y + 300*math.sin(theta)#((target.position_x-self.position_y)-(target.position_y*(-target.v_y/target.v_x)-self.position_y*1/math.tan(-theta)))/(1/math.tan(-theta)-(-target.v_y/target.v_x))
         return estimated_x, estimated_y
 
-    def target_allocation_process(self, target_id):
+    def target_allot_by_action_feature(self, action_feature):
+
+        if action_feature == [0,0,0,0,0,0,0]:
+            target_id = 0
+        else:
+            for tar in self.env.enemies_fixed_list:
+                if action_feature == tar.last_action_feature:
+                    target_id = self.env.enemies_fixed_list.index(tar)+1
+            for tar in self.ssm_detections:
+                if action_feature == tar.last_action_feature:
+                    target_id = self.ssm_detections.index(tar) + 1 + self.surface_tracking_limit
+
+
+
+
         if target_id == 0:
             pass
         if (target_id >= 1) and (target_id <= self.surface_tracking_limit):  # 대함표적에 대한 prelaunching process logic
@@ -1484,7 +1498,79 @@ class Ship:
                 self.air_prelaunching_managing_list.append([launching_time, missile, target])
                 self.air_engagement_managing_list.append([missile, target])
             if (d <= self.ciws_max_range):
+                self.CIWS.target = target
+                self.CIWS.original_target = target
 
+    def target_allocation_process(self, target_id):
+        if target_id == 0:
+            pass
+        if (target_id >= 1) and (target_id <= self.surface_tracking_limit):  # 대함표적에 대한 prelaunching process logic
+            target_idx = target_id - 1  # no_ops를 제외하고 index한다.
+            if self.side == 'blue':
+                target = self.env.enemies_fixed_list[target_idx]  # 적함에 대한 표적할당
+            else:
+                target = self.env.friendlies_fixed_list[target_idx]  # 우군함에 대한 표적할당
+
+            idle_ssm_launcher = [missile for missile in self.ssm_launcher if
+                                 missile.status == 'idle']  # idle한 유도탄 중에서 유도탄을 할당
+            missile = idle_ssm_launcher[0]
+
+            missile.target = target
+            missile.original_target = target
+
+
+            missile.status = 'target_allocated'
+            launching_time = self.env.now + np.random.uniform(self.ssm_launching_duration_min,
+                                                              self.ssm_launching_duration_max)  # 대함 발사 소요시간
+            self.surface_prelaunching_managing_list.append([launching_time, missile, target])
+        if target_id > self.surface_tracking_limit:  # 대공표적에 대한 prelauching_process 수행
+            "LSAM의 경우는 표적할당부터 해당 LSAM 파괴 시까지 capacity를 하나 가져간다"
+            "MSAM의 경우는 표적할당부터 해당 MSAM 발사 시까지 capacity를 하나 가져간다"
+            "각 유도탄에 대해서는 일정 시간의 발사 준비시간이 소요됨 해당 "
+            "유도탄 할당 정책"
+            "이 로직에 거리에 대한 sorting이 들어가야함"
+            "get_avail_actions에서는 가까운 순서대로 앞 index를 가져옴"
+            "surface_limit의 의미 : 표적관리를 몇개까지 할 것인가?"
+            target_idx = target_id - self.surface_tracking_limit - 1  # 대공 표적에 대한 index는 no_ops, 그다음 self.surface_limit다 채우고 시작
+            #print([cal_distance(self, tar) for tar in self.ssm_detections])
+            target = self.ssm_detections[target_idx]
+            "무장 운용 우선순위"
+            "해당 거리 대에 최적화된 무장을 운용"
+            "i.e. LSAM은 MSAM.max < 표적거리 <= LSAM.max 최적화"
+            "     MSAM은 CIWS.max < 표적거리 <= MSAM.max 최적화"
+            "     CIWS는        0 < 표적거리 <= CIWS.max 최적화"
+            d = cal_distance(self, target)
+            if (d <= self.l_sam_max_range) and (d > self.m_sam_max_range):
+                idle_l_sam = [missile for missile in self.l_sam_launcher if missile.status == 'idle']
+                if len(idle_l_sam) >= 1:
+                    missile = idle_l_sam[0]
+
+                    missile.target = target
+                    missile.original_target = target
+
+                    missile.status = 'target_allocated'
+                    launching_time = self.env.now + np.random.uniform(self.lsam_launching_duration_min,
+                                                                      self.lsam_launching_duration_max)  # 발사 소요시간
+                    self.air_prelaunching_managing_list.append([launching_time, missile, target])
+                    self.air_engagement_managing_list.append([missile, target])
+            if (d <= self.m_sam_max_range) and (d > self.ciws_max_range):
+                idle_m_sam = [missile for missile in self.m_sam_launcher if missile.status == 'idle']
+                if len(idle_m_sam) >= 1:
+                    missile = idle_m_sam[0]
+                else:
+                    idle_l_sam = [missile for missile in self.l_sam_launcher if missile.status == 'idle']
+
+                    missile = idle_l_sam[0]
+
+                missile.target = target
+                missile.original_target = target
+
+                missile.status = 'target_allocated'
+                launching_time = self.env.now + np.random.uniform(self.msam_launching_duration_min,
+                                                                  self.msam_launching_duration_min)  # 발사 소요시간
+                self.air_prelaunching_managing_list.append([launching_time, missile, target])
+                self.air_engagement_managing_list.append([missile, target])
+            if (d <= self.ciws_max_range):
                 self.CIWS.target = target
                 self.CIWS.original_target = target
 
