@@ -581,6 +581,7 @@ class Environment:
                 if rad_coordinate == True:
                     f1, f2, f3, f4, f5 = self.get_feature(ship, missile)
                     node_features.append([f1, f2, f3, f4, f5])
+
                 else:
                     px = missile.position_x - ship.position_x
                     py = missile.position_y - ship.position_y
