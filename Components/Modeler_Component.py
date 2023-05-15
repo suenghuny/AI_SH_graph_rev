@@ -638,7 +638,6 @@ class Environment:
             num_f += 1
             ship = self.friendlies_fixed_list[i]
 
-            #print(reward, ship.health, ship.last_health, self.now)
             self.temp_max_air_engagement.append(len(ship.air_engagement_managing_list))
             if ship.status != 'destroyed':
                 ship.target_allot_by_action_feature(action_blue)

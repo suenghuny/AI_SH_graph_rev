@@ -6,7 +6,7 @@ def get_cfg():
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("--vessl", type=bool, default=False, help="vessl AI 사용여부")
     parser.add_argument("--simtime_per_frame", type=int, default=2, help="framerate 관련")
-    parser.add_argument("--decision_timestep", type=int, default=2, help="decision timestep 관련")
+    parser.add_argument("--decision_timestep", type=int, default=4, help="decision timestep 관련")
     parser.add_argument("--ciws_threshold", type=float, default=1, help="ciws threshold")
     parser.add_argument("--per_alpha", type=float, default=1, help="PER_alpha")
     parser.add_argument("--per_beta", type=float, default=0.6, help="PER_beta")

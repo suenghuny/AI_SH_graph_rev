@@ -377,16 +377,14 @@ class Replay_Buffer:
             priority_point = list(self.buffer[9])[:]
             priority_point.pop()
             one_ratio = priority_point.count(1)/len(priority_point)
-
             if np.random.uniform(0, 1) <= one_ratio:
                 sampled_batch_idx =np.random.choice(step_count_list, p = np.array(priority_point)/np.sum(priority_point), size = self.batch_size)
             else:
                 sampled_batch_idx = np.random.choice(step_count_list, size=self.batch_size)
         else:
             priority = list(deepcopy(self.buffer[10]))[:-self.n_step]
-            p = np.array(priority)**self.alpha#/np.array(priority).sum()).tolist()
+            p = np.array(priority)**self.alpha
             p /= p.sum()
-
             p_sampled = p
             p = p.tolist()
             sampled_batch_idx = np.random.choice(step_count_list[:-self.n_step], size=self.batch_size, p = p)
@@ -798,24 +796,21 @@ class Agent:
 
                 q = self.Q(obs_n_action, cos, mini_batch=True)
 
-                #actions = torch.tensor(actions, device=device).long()
-                #act_n = actions[:, agent_id].unsqueeze(1)  # action.shape : (batch_size, 1)
-                #q = torch.gather(q, 1, act_n).squeeze(1)  # q.shape :      (batch_size, 1)
                 return q
             else:
                 with torch.no_grad():
                     actions = torch.tensor(actions, device=device, dtype=torch.float)
                     node_representation_action = torch.stack([self.node_representation_action_feature(actions[:, i, :]) for i in range(self.action_size)])
-                    node_representation_action = torch.einsum('ijk->jik', node_representation_action)
-
-                    obs = obs.unsqueeze(1)
-                    obs = obs.expand([self.batch_size, self.action_size, obs.shape[2]])
+                    node_representation_action = torch.einsum('ijk->jik', node_representation_action)   # batch_size, action_size, action_feature_size
+                    obs = obs.unsqueeze(1)                                                              # batch_size, 1, obs_size
+                    obs = obs.expand([self.batch_size, self.action_size, obs.shape[2]])                 # batch-size, action_size, obs_size
                     obs_n_action = torch.cat([obs, node_representation_action], dim = 2)
+
+
                     Q = torch.stack([self.Q(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
                     Q = torch.einsum('ijk->jik', Q)
 
-                    Q_tar = torch.stack(
-                        [self.Q_tar(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
+                    Q_tar = torch.stack([self.Q_tar(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
                     Q_tar = torch.einsum('ijk->jik', Q_tar)
 
                     avail_actions_next = torch.tensor(avail_actions_next, device=device).bool()
@@ -824,6 +819,7 @@ class Agent:
                     Q = Q.squeeze(2)
                     mask = mask.squeeze(1)
                     Q = Q.masked_fill(mask == 0, float('-inf'))
+
 
                     act_n = torch.max(Q, dim = 1)
                     act_n_indices = act_n[1].long().unsqueeze(1)
