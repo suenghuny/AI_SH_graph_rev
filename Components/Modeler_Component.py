@@ -775,9 +775,9 @@ class Environment:
             reward=0
             for i in range(len(self.friendlies_fixed_list)):
                 ship = self.friendlies_fixed_list[i]
-                if ship.status != 'destroyed':
-                    reward += (ship.health - ship.last_health)*10
-                    ship.last_health = deepcopy(ship.health)
+                if ship.status != 'destroyed':pass
+                    #reward += (ship.health - ship.last_health)*10
+                    #ship.last_health = deepcopy(ship.health)
                     #print(reward, ship.health, ship.last_health, self.now)
                 else:
                     ship_destroyed_cal += 1
@@ -794,7 +794,7 @@ class Environment:
             self.f9 = missile_destroyed_cal - self.last_destroyed_missile
             self.f10 = enemy_destroyed_cal - self.last_destroyed_enemy
             #reward = self.
-            # reward = 1000 * (enemy_destroyed_cal - self.last_destroyed_enemy) + \
+            reward = 1000 * (enemy_destroyed_cal - self.last_destroyed_enemy)
             #          -5000 * (ship_destroyed_cal - self.last_destroyed_ship) + \
             #          50 * (missile_destroyed_cal - self.last_destroyed_missile)
             # reward = reward / 200
