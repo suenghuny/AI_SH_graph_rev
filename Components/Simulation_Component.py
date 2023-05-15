@@ -217,17 +217,17 @@ class Missile:
                                 # if self.launcher.side == 'yellow':
                                 #print("폭발", self.speed/self.env.mach_scaler, self.launcher.side)
                                 #print(self.target.last_health, self.target.health, self.speed/self.env.mach_scaler)
-                                if self.target.health <= 0:
-                                    self.launcher.ship_destroying_history += 1
-                                    self.original_target.missile_destroying_history += 1
-                                    enemies.remove(self.target)  # self.target은 yellow의 ship
-                                    self.target.monitors['enemy_flying_ssms'] = len(flying_ssms_friendly)
-                                    """
-                                    2023.2.20 업데이트
-                                    """
-                                    flying_ssms_friendly.remove(self)  # self는          blue의 ssm
-                                    self.target.status = 'destroyed'
-                                    self.env.event_log.append({"time": self.env.now, "friend_or_foe": self.launcher.side,
+                                #if self.target.health <= 0:
+                                self.launcher.ship_destroying_history += 1
+                                self.original_target.missile_destroying_history += 1
+                                enemies.remove(self.target)  # self.target은 yellow의 ship
+                                self.target.monitors['enemy_flying_ssms'] = len(flying_ssms_friendly)
+                                """
+                                2023.2.20 업데이트
+                                """
+                                flying_ssms_friendly.remove(self)  # self는          blue의 ssm
+                                self.target.status = 'destroyed'
+                                self.env.event_log.append({"time": self.env.now, "friend_or_foe": self.launcher.side,
                                                                "launcher_id": self.launcher.id, "missile_id": self.id,
                                                                "object": self.cla, "id": self.id, "event_type":
                                                                    "{} target / id {}".format(self.target.cla,
