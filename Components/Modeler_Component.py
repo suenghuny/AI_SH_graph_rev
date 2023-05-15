@@ -794,9 +794,7 @@ class Environment:
             self.f9 = missile_destroyed_cal - self.last_destroyed_missile
             self.f10 = enemy_destroyed_cal - self.last_destroyed_enemy
             #reward = self.
-            reward = 1000 * (enemy_destroyed_cal - self.last_destroyed_enemy)
-            #          -5000 * (ship_destroyed_cal - self.last_destroyed_ship) + \
-            #          50 * (missile_destroyed_cal - self.last_destroyed_missile)
+            reward = 1000 * (enemy_destroyed_cal - self.last_destroyed_enemy) -5000 * (ship_destroyed_cal - self.last_destroyed_ship) +  50 * (missile_destroyed_cal - self.last_destroyed_missile)
             reward = reward / 200
             self.last_destroyed_missile = missile_destroyed_cal
             self.last_destroyed_enemy = enemy_destroyed_cal
