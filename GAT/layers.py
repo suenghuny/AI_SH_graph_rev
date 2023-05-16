@@ -75,21 +75,16 @@ class GraphAttentionLayer(nn.Module):
             batch_size = len(edge_index)
 
             W = self.W.expand([batch_size, self.in_features, self.out_features])
-            Wh = torch.bmm(h, W)  # h.shape: (1, in_features), Wh.shape: (in_features, out_features)
-            #print(h.shape, W.shape, Wh.shape)
-
+            Wh = torch.bmm(h, W)
 
             e = self._prepare_attentional_mechanism_input(Wh, mini_batch = mini_batch)  # e.shape: 1, num_enemy+1
 
             adj = edge_index
-            #print("sssss",adj.shape)
-            #adj = torch.stack(adj)
             adj = adj.to(device).long()
 
-            attention = adj*e#torch.where(adj > 0, e, zero_vec)  # adj.shape: 1, num_enemy
+            attention = adj*e #torch.where(adj > 0, e, zero_vec)  # adj.shape: 1, num_enemy
             attention = F.softmax(attention, dim=2)
 
-            #attention = self.dropout(attention)
 
 
             h_prime = self.teleport_probability * torch.bmm(attention, Wh) + (1-self.teleport_probability) * Wh

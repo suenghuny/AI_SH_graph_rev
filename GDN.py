@@ -649,7 +649,7 @@ class Agent:
                                list(self.node_representation.parameters()) + \
                                list(self.func_missile_obs.parameters())
 
-        self.optimizer = optim.Adam(self.eval_params, lr=learning_rate)
+        self.optimizer = optim.RMSprop(self.eval_params, lr=learning_rate)
         from cfg import get_cfg
         cfg = get_cfg()
         if cfg.scheduler == 'step':
