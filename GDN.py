@@ -610,9 +610,6 @@ class Agent:
                                                      n_representation_obs=n_representation_missile,
                                                      layers = node_embedding_layers_missile).to(device)  # 수정사항
 
-            self.node_representation_enemy = NodeEmbedding(feature_size=feature_size_enemy,
-                                                     n_representation_obs=n_representation_enemy,
-                                                     layers = node_embedding_layers_enemy).to(device)  # 수정사항
 
 
             self.func_missile_obs = GAT(nfeat=n_representation_missile,
@@ -626,15 +623,6 @@ class Agent:
                                          teleport_probability=self.teleport_probability).to(device)  # 수정사항
 
 
-            self.func_enemy_obs = GAT(nfeat=n_representation_enemy,
-                                         nhid=hidden_size_enemy,
-                                         nheads=n_multi_head,
-                                         nclass=n_representation_enemy+2,
-                                         dropout=dropout,
-                                         alpha=0.2,
-                                         mode='observation',
-                                         batch_size=self.batch_size,
-                                         teleport_probability=self.teleport_probability).to(device)  # 수정사항
 
             self.DuelingQ = DuelingDQN().to(device)
 
@@ -654,14 +642,12 @@ class Agent:
             #self.V_tar.load_state_dict(self.V.state_dict())
             self.Q_tar.load_state_dict(self.Q.state_dict())
 
-            self.eval_params = list(self.VDN.parameters()) + \
+            self.eval_params = list(self.DuelingQ.parameters()) + \
                                list(self.Q.parameters()) + \
                                list(self.node_representation_action_feature.parameters()) + \
                                list(self.node_representation_ship_feature.parameters()) + \
                                list(self.node_representation.parameters()) + \
-                                list(self.node_representation_enemy.parameters())+\
-                               list(self.func_missile_obs.parameters())+\
-                               list(self.func_enemy_obs.parameters())
+                               list(self.func_missile_obs.parameters())
 
         self.optimizer = optim.Adam(self.eval_params, lr=learning_rate)
         from cfg import get_cfg
