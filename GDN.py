@@ -348,9 +348,10 @@ class Replay_Buffer:
                                               (self.n_node_feature_missile, self.n_node_feature_missile)).to_dense()
             if cat == 'avail_action':
                 yield datas[7][s]
-
             if cat == 'avail_action_next':
                 yield datas[7][s+self.n_step]
+
+
             if cat == 'status':
                 yield datas[8][s]
             if cat == 'status_next':
@@ -373,8 +374,9 @@ class Replay_Buffer:
                                               (self.n_node_feature_enemy, self.n_node_feature_enemy)).to_dense()
             if cat == 'action_feature':
                 yield datas[13][s]
+
             if cat == 'action_features':
-                yield datas[14][s + self.n_step]
+                yield datas[14][s]
 
             if cat == 'action_features_next':
                 yield datas[14][s + self.n_step]
