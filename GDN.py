@@ -602,7 +602,6 @@ class Agent:
                                                              layers = node_embedding_layers_action).to(device)  # 수정사항
 
 
-
             self.node_representation_ship_feature = NodeEmbedding(feature_size=feature_size_ship,
                                                              n_representation_obs=n_representation_ship,
                                                              layers = node_embedding_layers_ship).to(device)  # 수정사항
@@ -657,6 +656,7 @@ class Agent:
 
             self.eval_params = list(self.VDN.parameters()) + \
                                list(self.Q.parameters()) + \
+                               list(self.node_representation_action_feature.parameters()) + \
                                list(self.node_representation_ship_feature.parameters()) + \
                                list(self.node_representation.parameters()) + \
                                 list(self.node_representation_enemy.parameters())+\

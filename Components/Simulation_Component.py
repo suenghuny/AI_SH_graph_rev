@@ -1412,8 +1412,8 @@ class Ship:
         return estimated_x, estimated_y
 
     def target_allot_by_action_feature(self, action_feature):
-
-        if action_feature == [0,0,0,0,0,0,0]:
+        #print(action_feature)
+        if action_feature == [0,0,0,0,0,0,0,0]:
             target_id = 0
         else:
             for tar in self.env.enemies_fixed_list:

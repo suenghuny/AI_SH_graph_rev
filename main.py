@@ -147,8 +147,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                 agent.learn(regularizer=0, vdn=vdn)
         else:
             pass_transition = True
-            env.step(action_blue=[0,0,0,0,0,0,0],
-                                                    action_yellow=enemy_action_for_transition, pass_transition = pass_transition)
+            env.step(action_blue=[0,0,0,0,0,0,0,0],action_yellow=enemy_action_for_transition, pass_transition = pass_transition)
 
         if done == True:
             if step_checker < n_step:

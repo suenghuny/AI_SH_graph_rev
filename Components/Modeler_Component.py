@@ -214,14 +214,14 @@ class Environment:
         self.f9 = 0
         self.f10 = 0
         self.last_action_encodes = np.eye(self.action_size_friendly)
-        self.f11 = [0,0,0,0,0,0,0]
+        self.f11 = [0,0,0,0,0,0,0,0]
 
     def get_env_info(self):
         env_info = {"n_agents" : 1,
-                    "ship_feature_shape": 10+1+7,  # + self.n_agents,
-                    "missile_feature_shape" : 5,  #9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
+                    "ship_feature_shape": 10+1+8,  # + self.n_agents,
+                    "missile_feature_shape" : 6,  #9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
                     "enemy_feature_shape": 12,
-                    "action_feature_shape": 7,
+                    "action_feature_shape": 8,
                     # 9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
                     "n_actions": (1 + self.ship_friendly_action_space + self.air_friendly_action_space)
                     }
@@ -479,6 +479,7 @@ class Environment:
             f11 = self.f11
             f12 = ship.health /ship.init_health
             ship_feature.append(np.concatenate([[f1,f2,f3,f4,f5,f6,f7,f8,f9,f10, f12], f11]).tolist())
+        #print(len(f11), len(ship_feature[0]),"dddd")
         return ship_feature
 
     def get_edge_index(self):
@@ -559,27 +560,27 @@ class Environment:
             a = 0
             theta_a = 0
 
-        return r, v, a, theta_r - theta_v, theta_v - theta_a
+        return r, v, a, theta_v, theta_r - theta_v, theta_v - theta_a
 
 
     def get_action_feature(self):
-        dummy = [0,0,0,0,0,0,0]
+        dummy = [0,0,0,0,0,0,0,0]
         node_features = [dummy]
         for ship in self.friendlies_fixed_list:
             for enemy in self.enemies_fixed_list:
                 if enemy.status != 'destroyed':
-                    f1, f2, f3, f4, f5 = self.get_feature(ship, enemy)
-                    node_features.append([f1, f2, f3, f4, f5, 0, 1])
-                    enemy.last_action_feature = [f1, f2, f3, f4, f5, 0, 1]
+                    f1, f2, f3, f4, f5, f6 = self.get_feature(ship, enemy)
+                    node_features.append([f1, f2, f3, f4, f5, f6, 0, 1])
+                    enemy.last_action_feature = [f1, f2, f3, f4, f5, f6, 0, 1]
         if ship.surface_tracking_limit+1-len(node_features)>0:
             for _ in range(ship.surface_tracking_limit+1-len(node_features)):
                 node_features.append(dummy)
 
         for ship in self.friendlies_fixed_list:
             for missile in ship.ssm_detections:
-                f1, f2, f3, f4, f5 = self.get_feature(ship, missile)
-                node_features.append([f1, f2, f3, f4, f5, 1, 0])
-                missile.last_action_feature = [f1, f2, f3, f4, f5, 1, 0]
+                f1, f2, f3, f4, f5, f6 = self.get_feature(ship, missile)
+                node_features.append([f1, f2, f3, f4, f5, f6, 1, 0])
+                missile.last_action_feature = [f1, f2, f3, f4, f5, f6, 1, 0]
         #print("전",len(node_features))
         if ship.surface_tracking_limit+ship.air_tracking_limit+1-len(node_features) >0:
             for _ in range(ship.surface_tracking_limit+ship.air_tracking_limit+1-len(node_features)):
@@ -592,13 +593,13 @@ class Environment:
 
 
     def get_missile_node_feature(self, rad_coordinate = True):
-        node_features = [[0,0,0,0,0]]
+        dummy =[0,0,0,0,0,0]
+        node_features = [dummy]
         for ship in self.friendlies_fixed_list:
             for missile in ship.ssm_detections:
                 if rad_coordinate == True:
-                    f1, f2, f3, f4, f5 = self.get_feature(ship, missile)
-                    node_features.append([f1, f2, f3, f4, f5])
-
+                    f1, f2, f3, f4, f5, f6 = self.get_feature(ship, missile)
+                    node_features.append([f1, f2, f3, f4, f5, f6])
                 else:
                     px = missile.position_x - ship.position_x
                     py = missile.position_y - ship.position_y
@@ -609,7 +610,7 @@ class Environment:
                     node_features.append([px/missile.attack_range, py/missile.attack_range, vx/missile.speed, vy/missile.speed, ax, ay])
         if ship.air_tracking_limit+1-len(node_features) >0:
             for _ in range(ship.air_tracking_limit+1-len(node_features)):
-                node_features.append([0,0,0,0,0])
+                node_features.append(dummy)
         #print("후", len(node_features), ship.air_tracking_limit + 1 - len(node_features))
 
         return node_features
@@ -622,6 +623,7 @@ class Environment:
 
 
         self.f11 = action_blue
+
         #print(self.f11.shape)
         if self.visualize == True:
             self.screen.fill(self.black)
