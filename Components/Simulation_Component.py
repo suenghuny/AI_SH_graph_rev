@@ -212,12 +212,7 @@ class Missile:
                         self.status = 'destroyed'
                         if self.target.cla == 'ship':
                             if np.random.uniform(0, 1) < self.p_h:  # probability of hitting에 따른 명중여부 판단
-                                #self.target.last_health = deepcopy(self.target.health)
                                 self.target.health -= self.speed/self.env.mach_scaler
-                                # if self.launcher.side == 'yellow':
-                                #print("폭발", self.speed/self.env.mach_scaler, self.launcher.side)
-                                #print(self.target.last_health, self.target.health, self.speed/self.env.mach_scaler)
-                                #if self.target.health <= 0:
                                 self.launcher.ship_destroying_history += 1
                                 self.original_target.missile_destroying_history += 1
                                 enemies.remove(self.target)  # self.target은 yellow의 ship

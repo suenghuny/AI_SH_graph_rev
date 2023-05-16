@@ -39,21 +39,15 @@ class IQN(nn.Module):
         super(IQN, self).__init__()
         self.input_shape = state_size
         self.batch_size = batch_size
-        # print(state_size)
         self.action_size = action_size
         self.N = N
         self.n_cos = n_cos
         self.layer_size = layer_size
         #print(self.N, self.n_cos)
         self.pis = torch.FloatTensor([np.pi * i for i in range(self.n_cos)]).view(1, 1, self.n_cos).to(device)
-
-
         self.head = nn.Linear(self.input_shape, layer_size)  # cound be a cnn
         self.head_y = nn.Linear(self.input_shape, layer_size)  # cound be a cnn
         self.cos_embedding = nn.Linear(self.n_cos, layer_size)
-
-
-
         self.noisylinears_for_advantage = OrderedDict()
         last_layer = layer_size
         for i in range(len(layers)):
@@ -71,33 +65,11 @@ class IQN(nn.Module):
                     self.noisylinears_for_advantage['linear{}'.format(i)] = NoisyLinear(last_layer,1)
                 else:
                     self.noisylinears_for_advantage['linear{}'.format(i)] = nn.Linear(last_layer, 1)
-        #print("/&/&/&",self.noisylinears_for_advantage)
-        # self.noisylinears_for_v = OrderedDict()
-        # last_layer = layer_size
-        # for i in range(len(layers)):
-        #     layer = layers[i]
-        #     if i <= len(layers) - 2:
-        #         print(cfg.epsilon_greedy)
-        #         if cfg.epsilon_greedy == False:
-        #             self.noisylinears_for_v['linear{}'.format(i)]= NoisyLinear(last_layer, layer)
-        #         else:
-        #             self.noisylinears_for_v['linear{}'.format(i)] = nn.Linear(last_layer, layer)
-        #         self.noisylinears_for_v['batchnorm{}'.format(i)] = nn.BatchNorm1d(layer)
-        #         self.noisylinears_for_v['activation{}'.format(i)] = nn.ReLU()
-        #         last_layer = layer
-        #     else:
-        #         if cfg.epsilon_greedy == False:
-        #             self.noisylinears_for_v['linear{}'.format(i)] = NoisyLinear(last_layer, 1)
-        #         else:
-        #             self.noisylinears_for_v['linear{}'.format(i)] = nn.Linear(last_layer, 1)
         self.advantage_layer = nn.Sequential(self.noisylinears_for_advantage)
-
-        #self.v_layer = nn.Sequential(self.noisylinears_for_v)
         if cfg.epsilon_greedy == False:
             self.reset_noise_net()
         else:
             self.advantage_layer.apply(weight_init_xavier_uniform)
-            #self.v_layer.apply(weight_init_xavier_uniform)
 
 
     def reset_noise_net(self):
@@ -130,23 +102,12 @@ class IQN(nn.Module):
         return cos, taus
 
     def forward(self, input, cos, mini_batch):
-
-
-
         N = self.N
-        """
-        Quantile Calculation depending on the number of tau
-        Return:
-        quantiles [ shape of (batch_size, num_tau, action_size)]
-        taus [shape of ((batch_size, num_tau, 1))]
-        """
         if mini_batch == False:
             batch_size = 1
         else:
             batch_size = self.batch_size
-
         x = torch.relu(self.head(input.to(device)))  # x의 shape는 batch_size, layer_size
-
         cos = cos.view(batch_size * N, self.n_cos)
         cos_x = torch.relu(self.cos_embedding(cos)).view(batch_size, N, self.layer_size)  # (batch, n_tau, layer)
 
@@ -154,17 +115,50 @@ class IQN(nn.Module):
         out_a = self.advantage_layer(x)
         quantiles_a = out_a.view(batch_size, N, 1)
         q = quantiles_a.mean(dim=1)
-
-        # y = torch.relu(self.head_y(input.to(device)))  # x의 shape는 batch_size, layer_size
-        # cos_y = cos_x
-        # y = (y.unsqueeze(1) * cos_y).view(batch_size * N, self.layer_size)  # 이부분이 phsi * phi에 해당하는 부분
-        # out_v = self.v_layer(y)
-        # quantiles_v = out_v.view(batch_size, N, 1)
-        # v = quantiles_v.mean(dim=1)
-        # q = v + a-a.mean(dim= 1, keepdims = True)
-
         return q
 
+
+class DuelingDQN(nn.Module):
+    def __init__(self):
+        super(DuelingDQN, self).__init__()
+
+    def forward(self, V, A, mask, past_action = None, training = False):
+        # v의 shape : batch_size x 1
+        # a의 shape : batch_size x action size
+        if (past_action == None) and (training == False):
+            A = A.masked_fill(mask == 0,float('-inf'))
+            zeros = torch.zeros_like(A)
+            ones = torch.ones_like(A)
+            nA = torch.where(A == float('-inf'), zeros, ones).sum()
+            mean_A = torch.where(A == float('-inf'), zeros, A).sum()
+            mean_A = mean_A/nA
+            Q = V+A-mean_A
+        if (past_action != None) and (training == True):
+            A = A.squeeze(2)
+            mask = mask.squeeze(1)
+            A = A.masked_fill(mask == 0, float('-inf'))
+            zeros = torch.zeros_like(A)
+            ones = torch.ones_like(A)
+            nA = torch.where(A == float('-inf'), zeros, ones).sum(dim = 1)
+            mean_A = torch.where(A == float('-inf'), zeros, A).sum(dim = 1)
+            mean_A = mean_A / nA
+            Q = V + past_action - mean_A.unsqueeze(1)
+        if (past_action == None) and (training == True):
+            A = A.squeeze(2)
+            mask = mask.squeeze(1)
+            A = A.masked_fill(mask == 0, float('-inf'))
+
+            zeros = torch.zeros_like(A)
+            ones = torch.ones_like(A)
+
+            nA = torch.where(A == float('-inf'), zeros, ones).sum(dim = 1)
+            mean_A = torch.where(A == float('-inf'), zeros, A).sum(dim = 1)
+
+            mean_A = mean_A / nA
+            Q = V + A - mean_A.unsqueeze(1)
+
+
+        return Q
 
 class VDN(nn.Module):
 
@@ -333,6 +327,9 @@ class Replay_Buffer:
                 yield torch.sparse_coo_tensor(datas[3][s + self.n_step],
                                               torch.ones(torch.tensor(datas[3][s + self.n_step]).shape[1]),
                                               (self.n_node_feature_missile, self.n_node_feature_missile)).to_dense()
+            if cat == 'avail_action':
+                yield datas[7][s]
+
             if cat == 'avail_action_next':
                 yield datas[7][s+self.n_step]
             if cat == 'status':
@@ -357,7 +354,10 @@ class Replay_Buffer:
                                               (self.n_node_feature_enemy, self.n_node_feature_enemy)).to_dense()
             if cat == 'action_feature':
                 yield datas[13][s]
-            if cat == 'action_feature_next':
+            if cat == 'action_features':
+                yield datas[14][s + self.n_step]
+
+            if cat == 'action_features_next':
                 yield datas[14][s + self.n_step]
 
     def update_transition_priority(self, batch_index, delta):
@@ -423,7 +423,8 @@ class Replay_Buffer:
 
         #
 
-
+        avail_action = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='avail_action')
+        avail_actions = list(avail_action)
 
 
         avail_action_next = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='avail_action_next')
@@ -451,10 +452,14 @@ class Replay_Buffer:
         edge_index_enemy_next = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='edge_index_enemy_next')
         edge_index_enemy_next = list(edge_index_enemy_next)
 
-        action_features = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='action_feature')
+        action_feature = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='action_feature')
+        action_feature = list(action_feature)
+
+
+        action_features = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='action_features')
         action_features = list(action_features)
 
-        action_features_next = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='action_feature_next')
+        action_features_next = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='action_features_next')
         action_features_next = list(action_features_next)
 
 
@@ -467,6 +472,7 @@ class Replay_Buffer:
                node_features_missile_next, \
                ship_features_next, \
                edge_indices_missile_next, \
+               avail_actions,\
                avail_actions_next, \
                status, \
                status_next,\
@@ -474,8 +480,10 @@ class Replay_Buffer:
                sampled_batch_idx, \
                node_feature_enemy, \
                edge_index_enemy, \
-               node_feature_enemy_next, \
-               edge_index_enemy_next,p_sampled, \
+               node_feature_enemy_next,\
+               edge_index_enemy_next,\
+               p_sampled,\
+               action_feature, \
                action_features, \
                action_features_next
 
@@ -610,11 +618,23 @@ class Agent:
                                          batch_size=self.batch_size,
                                          teleport_probability=self.teleport_probability).to(device)  # 수정사항
 
+            self.DuelingQ = DuelingDQN().to(device)
+
             self.Q = IQN(n_representation_ship+n_representation_missile + 2 + n_representation_action, self.action_size,
                          batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos = n_cos, layers = iqn_layers).to(device)
             self.Q_tar = IQN(n_representation_ship+n_representation_missile + 2 + n_representation_action, self.action_size,
                              batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos = n_cos, layers = iqn_layers).to(device)
 
+            self.V = IQN(n_representation_ship + n_representation_missile + 2,
+                         self.action_size,
+                         batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos=n_cos,
+                         layers=iqn_layers).to(device)
+            self.V_tar = IQN(n_representation_ship + n_representation_missile + 2,
+                             self.action_size,
+                             batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos=n_cos,
+                             layers=iqn_layers).to(device)
+
+            self.V_tar.load_state_dict(self.V.state_dict())
             self.Q_tar.load_state_dict(self.Q.state_dict())
 
             self.eval_params = list(self.VDN.parameters()) + \
@@ -692,18 +712,9 @@ class Agent:
         self.VDN_target.load_state_dict(checkpoint["VDN_target"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
 
-        # self.Q.head.remove_noise()
-        # self.Q.head_y.remove_noise()
-        # print("푸릇 셀러드?")
         #
         self.Q.remove_noise_net()
-        # for layer in self.Q.v_layer:
-        #     if type(layer) is NoisyLinear:
-        #         layer.remove_noise()
-        #
-        # for layer in self.Q.advantage_layer:
-        #     if type(layer) is NoisyLinear:
-        #         layer.remove_noise()
+
 
         self.eval_params = list(self.VDN.parameters()) + \
                            list(self.Q.parameters()) + \
@@ -781,68 +792,59 @@ class Agent:
         A.append((edge, value))
         return A
 
-    def cal_Q(self, obs, actions, avail_actions_next, agent_id, cos, vdn, target=False):
+    def cal_Q(self, obs, action_feature, action_features, avail_actions, agent_id, cos, vdn, target=False):
         """
         node_representation
         - training 시        : batch_size X num_nodes X feature_size
         - action sampling 시 : num_nodes X feature_size
         """
-        if vdn == True:
-            if target == False:
-
-                actions = torch.tensor(actions, device = device, dtype = torch.float)
-                actions = self.node_representation_action_feature(actions)
-                obs_n_action = torch.cat([obs, actions], dim = 1)
-
-                q = self.Q(obs_n_action, cos, mini_batch=True)
-
-                return q
-            else:
-                with torch.no_grad():
-                    actions = torch.tensor(actions, device=device, dtype=torch.float)
-                    node_representation_action = torch.stack([self.node_representation_action_feature(actions[:, i, :]) for i in range(self.action_size)])
-                    node_representation_action = torch.einsum('ijk->jik', node_representation_action)   # batch_size, action_size, action_feature_size
-                    obs = obs.unsqueeze(1)                                                              # batch_size, 1, obs_size
-                    obs = obs.expand([self.batch_size, self.action_size, obs.shape[2]])                 # batch-size, action_size, obs_size
-                    obs_n_action = torch.cat([obs, node_representation_action], dim = 2)
+        if target == False:
+            mask = torch.tensor(avail_actions, device=device).bool()
+            action_feature = torch.tensor(action_feature, device = device, dtype = torch.float)
+            action_feature = self.node_representation_action_feature(action_feature)
+            obs_n_action = torch.cat([obs, action_feature], dim = 1)
+            A_a = self.Q(obs_n_action, cos, mini_batch=True)
 
 
-                    Q = torch.stack([self.Q(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
-                    Q = torch.einsum('ijk->jik', Q)
-
-                    Q_tar = torch.stack([self.Q_tar(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
-                    Q_tar = torch.einsum('ijk->jik', Q_tar)
-
-                    avail_actions_next = torch.tensor(avail_actions_next, device=device).bool()
-                    mask = avail_actions_next
-
-                    Q = Q.squeeze(2)
-                    mask = mask.squeeze(1)
-                    Q = Q.masked_fill(mask == 0, float('-inf'))
-
-
-                    act_n = torch.max(Q, dim = 1)
-                    act_n_indices = act_n[1].long().unsqueeze(1)
-                    Q_tar = Q_tar.squeeze(2)
-
-                    q_tar_max = torch.gather(Q_tar, 1, act_n_indices).squeeze(1)  # q.shape :      (batch_size, 1)
-
-
-                    return q_tar_max
+            action_features = torch.tensor(action_features, device=device, dtype=torch.float)
+            node_representation_action = torch.stack([self.node_representation_action_feature(action_features[:, i, :]) for i in range(self.action_size)])
+            node_representation_action = torch.einsum('ijk->jik', node_representation_action)
+            obs_expand = obs.unsqueeze(1)
+            obs_expand = obs_expand.expand([self.batch_size, self.action_size, obs_expand.shape[2]])  # batch-size, action_size, obs_size
+            obs_n_action = torch.cat([obs_expand, node_representation_action], dim=2)
+            A = torch.stack([self.Q(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
+            A = torch.einsum('ijk->jik', A)
+            V = self.V(obs, cos, mini_batch = True)
+            Q = self.DuelingQ(V, A, mask, past_action = A_a, training = True)
+            return Q
         else:
-            if target == False:
-                q = self.Q(obs, cos, mini_batch=True)
-                actions = actions.long().to(device)
-                q = torch.gather(q, 1, actions)
-                return q.squeeze(1)
-            else:
-                obs_next = obs
-                q_tar = self.Q(obs_next, cos, mini_batch=True)
-                avail_actions_next = avail_actions_next.bool().to(device)
-                mask = avail_actions_next
-                q_tar = q_tar.masked_fill(mask == 0, float('-inf'))
-                q_tar_max = torch.max(q_tar, dim=1)[0]
-                return q_tar_max
+            with torch.no_grad():
+                mask = torch.tensor(avail_actions, device=device).bool()
+                action_features = torch.tensor(action_features, device=device, dtype=torch.float)
+                node_representation_action = torch.stack(
+                    [self.node_representation_action_feature(action_features[:, i, :]) for i in
+                     range(self.action_size)])
+                node_representation_action = torch.einsum('ijk->jik', node_representation_action)
+                obs_expand = obs.unsqueeze(1)
+                obs_expand = obs_expand.expand(
+                    [self.batch_size, self.action_size, obs_expand.shape[2]])  # batch-size, action_size, obs_size
+                obs_n_action = torch.cat([obs_expand, node_representation_action], dim=2)
+                A = torch.stack([self.Q(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
+                A = torch.einsum('ijk->jik', A)
+                V = self.V(obs, cos, mini_batch=True)
+                Q = self.DuelingQ(V, A, mask, past_action=None, training=True)
+
+                A_tar = torch.stack([self.Q_tar(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
+                A_tar = torch.einsum('ijk->jik', A_tar)
+                V_tar = self.V_tar(obs, cos, mini_batch=True)
+                Q_tar = self.DuelingQ(V_tar, A_tar, mask, past_action=None, training=True)
+
+                action_max = Q.max(dim = 1)[1].long().unsqueeze(1)
+                Q_tar_max = torch.gather(Q_tar, 1, action_max)
+
+
+                return Q_tar_max
+
 
     @torch.no_grad()
     def sample_action(self, node_representation, avail_action, epsilon, action_feature):
@@ -854,20 +856,17 @@ class Agent:
         action_feature_dummy = action_feature
         action_feature = torch.tensor(action_feature, dtype = torch.float).to(device)
         node_embedding_action = self.node_representation_action_feature(action_feature)
-        #print(node_representation.expand(action_feature.shape[0], node_representation.shape[1]).shape)
-        #print(node_representation.shape, )
-        obs_n_action = torch.cat([node_representation.expand(node_embedding_action.shape[0],
-                                                             node_representation.shape[1]),
+        obs_n_action = torch.cat([node_representation.expand(node_embedding_action.shape[0],node_representation.shape[1]),
                                   node_embedding_action], dim = 1)
 
         # print(obs_n_action[0].unsqueeze(0).shape, "dddd")
         mask = torch.tensor(avail_action, device=device).bool()
         action = []
         cos, taus = self.Q.calc_cos(1)
-
-        Q = torch.stack([self.Q(obs_n_action[i].unsqueeze(0), cos, mini_batch=False) for i in range(self.action_size)]).squeeze(1).squeeze(1).unsqueeze(0)
-
-        Q = Q.masked_fill(mask == 0, float('-inf'))
+        #print(node_representation.shape)
+        V = self.V(node_representation, cos, mini_batch=False)
+        A = torch.stack([self.Q(obs_n_action[i].unsqueeze(0), cos, mini_batch=False) for i in range(self.action_size)]).squeeze(1).squeeze(1).unsqueeze(0)
+        Q = self.DuelingQ(V, A, mask)
         greedy_u = torch.argmax(Q)
         if cfg.epsilon_greedy == True:
             if np.random.uniform(0, 1) >= epsilon:
@@ -894,6 +893,7 @@ class Agent:
         node_features_missile_next, \
         ship_features_next, \
         edge_indices_missile_next, \
+        avail_actions, \
         avail_actions_next, \
         status, \
         status_next,\
@@ -903,15 +903,11 @@ class Agent:
         edge_index_enemy, \
         node_feature_enemy_next, \
         edge_index_enemy_next,\
-            p_sampled, action_features, action_features_next = self.buffer.sample(vdn = vdn)
-        #
-        # print("전", len(priority), priority)
-        # print("후",len(p_sampled),  p_sampled)
+            p_sampled, action_feature, action_features, action_features_next = self.buffer.sample(vdn = vdn)
+
         weight = ((len(self.buffer.buffer[10])-self.n_step)*torch.tensor(priority, dtype=torch.float, device = device))**(-self.beta)
         weight /= weight.max()
-        #
-        # print("전", priority)
-        # print("후", weight.detach().tolist())
+
 
 
         """
@@ -943,90 +939,44 @@ class Agent:
             n_node_features_enemy,
             mini_batch=True)
 
-        if vdn == True:
-            dones = torch.tensor(dones, device=device, dtype=torch.float)
-            rewards = torch.tensor(rewards, device=device, dtype=torch.float)
-            cos, taus = self.Q.calc_cos(self.batch_size)
+        dones = torch.tensor(dones, device=device, dtype=torch.float)
+        rewards = torch.tensor(rewards, device=device, dtype=torch.float)
+        cos, taus = self.Q.calc_cos(self.batch_size)
 
-            q = self.cal_Q(obs=obs,
-                           actions=action_features,
-                            avail_actions_next=None,
+        q = self.cal_Q(obs=obs,
+                       action_feature=action_feature,
+                       action_features =action_features,
+                        avail_actions=avail_actions,
+                        agent_id=0,
+                        target=False,
+                        cos=cos,vdn = vdn)
+        q_tar = self.cal_Q(obs=obs_next,
+                            action_feature=None,
+                            action_features=action_features_next,
+                            avail_actions=avail_actions_next,
                             agent_id=0,
-                            target=False,
-                            cos=cos,vdn = vdn)# for agent_id in range(self.num_agent)
+                            target=True,
+                            cos=cos, vdn = vdn)
+        q_tot = q
+        q_tot_tar = q_tar
+        rewards_1_step = rewards[:, 0].unsqueeze(1)
+        rewards_k_step = rewards[:, 1:]
+        masked_n_step_bootstrapping = dones*torch.cat([rewards_k_step, q_tot_tar], dim = 1)
+        discounted_n_step_bootstrapping = self.gamma_n_step*torch.cat([rewards_1_step, masked_n_step_bootstrapping], dim = 1)
+        td_target = discounted_n_step_bootstrapping.sum(dim=1, keepdims = True)
 
-            q_tar = self.cal_Q(obs=obs_next,
-                                actions=action_features_next,
-                                avail_actions_next=avail_actions_next,
-                                agent_id=0,
-                                target=True,
-                                cos=cos, vdn = vdn)
-            q_tot = q           # status/status.sum(dim = 1, keepdims = True)
-            q_tot_tar = q_tar   # status_next/status_next.sum(dim = 1, keepdims = True)
+        delta = (td_target - q_tot).detach().tolist()
+        self.buffer.update_transition_priority(batch_index = batch_index, delta = delta)
 
-            rewards_1_step = rewards[:, 0].unsqueeze(1)
-            rewards_k_step = rewards[:, 1:]
+        loss = F.huber_loss(weight*q_tot, weight*td_target.detach())#
+        self.optimizer.zero_grad()
+        loss.backward()
+        #torch.nn.utils.clip_grad_norm_(self.eval_params, 1)
+        self.optimizer.step()
+        self.scheduler.step()
+        tau = 1e-3
+        for target_param, local_param in zip(self.Q_tar.parameters(), self.Q.parameters()):
+            target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
 
-            masked_n_step_bootstrapping = dones*torch.cat([rewards_k_step, q_tot_tar.unsqueeze(1)], dim = 1)
-            discounted_n_step_bootstrapping = self.gamma_n_step*torch.cat([rewards_1_step, masked_n_step_bootstrapping], dim = 1)
-            td_target = discounted_n_step_bootstrapping.sum(dim=1, keepdims = True)
-
-            delta = (td_target - q_tot).detach().tolist()
-            self.buffer.update_transition_priority(batch_index = batch_index, delta = delta)
-
-            loss = F.huber_loss(weight*q_tot, weight*td_target.detach())#
-            self.optimizer.zero_grad()
-            loss.backward()
-            #torch.nn.utils.clip_grad_norm_(self.eval_params, 1)
-            self.optimizer.step()
-            self.scheduler.step()
-            tau = 1e-3
-            for target_param, local_param in zip(self.Q_tar.parameters(), self.Q.parameters()):
-                target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
-        else:
-            sampled_indexes = [np.random.choice(self.agent_index, p = np.array(sta)/np.sum(sta)) for sta in status]
-            obs = torch.stack([obs[b, sampled_indexes[b], :] for b in range(self.batch_size)])
-            obs_next = torch.stack([obs_next[b, sampled_indexes[b], :] for b in range(self.batch_size)])
-            rewards = torch.gather(torch.tensor(rewards), 1, torch.tensor(sampled_indexes).long().unsqueeze(1)).to(device)
-            actions = torch.gather(torch.tensor(actions), 1, torch.tensor(sampled_indexes).long().unsqueeze(1))
-            avail_actions_next = torch.tensor([avail_actions_next[b][sampled_indexes[b]] for b in range(self.batch_size)])
-            cos, taus = self.Q.calc_cos(self.batch_size)
-
-
-            q_tot =self.cal_Q(obs=obs,
-                       actions=actions,
-                       avail_actions_next=None,
-                       agent_id=None,
-                       target=False,
-                       vdn = False,
-                       cos=cos)
-
-            q_tot_tar =self.cal_Q(obs=obs_next,
-                       actions=None,
-                       avail_actions_next=avail_actions_next,
-                       agent_id=None,
-                       target=True,
-                       vdn=False,
-                       cos=cos)
-            """
-            q_tot.shape : batch_size, num_agent
-            rewards.shape : batch_size, num_agent
-            """
-            dones = torch.tensor(dones, device=device, dtype=torch.float)
-
-            print(rewards.shape, q_tot_tar.shape)
-            td_target = rewards.squeeze(1) + self.gamma * (1-dones) * q_tot_tar
-            loss1 = F.huber_loss(q_tot, td_target.detach())
-            loss = loss1
-            self.optimizer.zero_grad()
-            loss.backward()
-            #torch.nn.utils.clip_grad_norm_(self.eval_params, 1)
-            self.optimizer.step()
-            tau = 1e-3
-            for target_param, local_param in zip(self.Q_tar.parameters(), self.Q.parameters()):
-                target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
-            if cfg.epsilon_greedy == False:
-                self.Q.reset_noise_net()
-                self.Q_tar.reset_noise_net()
 
         return loss
