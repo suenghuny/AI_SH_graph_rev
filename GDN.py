@@ -673,6 +673,7 @@ class Agent:
             'dueling_Q': self.DuelingQ.state_dict(),
             'optimizer': self.optimizer.state_dict()}, "{}".format(path))
 
+
     def eval_check(self, eval):
         if eval == True:
             self.DuelingQ.eval()
@@ -716,14 +717,12 @@ class Agent:
         #
         self.Q.remove_noise_net()
 
-
-        self.eval_params = list(self.VDN.parameters()) + \
+        self.eval_params = list(self.DuelingQ.parameters()) + \
                            list(self.Q.parameters()) + \
+                           list(self.node_representation_action_feature.parameters()) + \
                            list(self.node_representation_ship_feature.parameters()) + \
                            list(self.node_representation.parameters()) + \
-                           list(self.node_representation_enemy.parameters()) + \
-                           list(self.func_missile_obs.parameters()) + \
-                           list(self.func_enemy_obs.parameters())
+                           list(self.func_missile_obs.parameters())
         return e, t, epsilon
 
     def get_node_representation(self, missile_node_feature, ship_features, edge_index_missile,
