@@ -668,12 +668,9 @@ class Agent:
             'Q_tar': self.Q_tar.state_dict(),
             'node_representation_action_feature': self.node_representation_action_feature.state_dict(),
             'node_representation_ship_feature': self.node_representation_ship_feature.state_dict(),
-            'node_representation_enemy':self.node_representation_enemy.state_dict(),
             'node_representation': self.node_representation.state_dict(),
             'func_missile_obs': self.func_missile_obs.state_dict(),
-            'func_enemy_obs': self.func_enemy_obs.state_dict(),
-            'VDN': self.VDN.state_dict(),
-            'VDN_target': self.VDN_target.state_dict(),
+            'dueling_Q': self.DuelingQ.state_dict(),
             'optimizer': self.optimizer.state_dict()}, "{}".format(path))
 
     def eval_check(self, eval):
