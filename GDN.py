@@ -61,7 +61,7 @@ class IQN(nn.Module):
                 else:
                     self.noisylinears_for_advantage['linear{}'.format(i)] = nn.Linear(last_layer, layer)
                 self.noisylinears_for_advantage['batchnorm{}'.format(i)] = nn.BatchNorm1d(layer)
-                self.noisylinears_for_advantage['activation{}'.format(i)] = nn.ReLU()
+                self.noisylinears_for_advantage['activation{}'.format(i)] = nn.ELU()
                 last_layer = layer
             else:
                 if cfg.epsilon_greedy == False:
@@ -238,7 +238,7 @@ class NodeEmbedding(nn.Module):
             if i <= len(layers)-2:
                 self.linears['linear{}'.format(i)]= nn.Linear(last_layer, layer)
                 self.linears['batchnorm{}'.format(i)] = nn.BatchNorm1d(layer)
-                self.linears['activation{}'.format(i)] = nn.ReLU()
+                self.linears['activation{}'.format(i)] = nn.ELU()
                 last_layer = layer
             else:
                 self.linears['linear{}'.format(i)] = nn.Linear(last_layer, n_representation_obs)
@@ -622,7 +622,7 @@ class Agent:
                                          nclass=n_representation_missile+2,
                                          dropout=dropout,
                                          alpha=0.2,
-                                         mode='observation',
+                                         mode='communication',
                                          batch_size=self.batch_size,
                                          teleport_probability=self.teleport_probability).to(device)  # 수정사항
 

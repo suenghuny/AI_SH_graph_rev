@@ -483,10 +483,27 @@ class Environment:
 
     def get_edge_index(self):
         edge_index = [[],[]]
-        for ship in self.friendlies_fixed_list:
-            for j in range(len(ship.ssm_detections)):
-                edge_index[0].append(0)
-                edge_index[1].append(j+1)
+        ship = self.friendlies_fixed_list[0]
+        len_ssm_detections = len(ship.ssm_detections)
+        for i in range(len_ssm_detections):
+            edge_index[0].append(0)
+            edge_index[1].append(i+1)
+            edge_index[0].append(i+1)
+            edge_index[1].append(0)
+        #print("전", edge_index)
+        for j in range(len_ssm_detections-1, -1, -1):
+            for k in range(j-1, -1, -1):
+                missile_j = ship.ssm_detections[j]
+                missile_k = ship.ssm_detections[k]
+                #print(cal_distance(missile_j, missile_k))
+                if cal_distance(missile_j, missile_k) <= 20:
+                    edge_index[0].append(j+1)
+                    edge_index[1].append(k+1)
+                    edge_index[0].append(k+1)
+                    edge_index[1].append(j+1)
+        #print("후", edge_index)
+
+
         return edge_index
 
     def get_enemy_edge_index(self):
