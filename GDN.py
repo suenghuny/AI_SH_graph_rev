@@ -35,18 +35,21 @@ def weight_init_xavier_uniform(submodule):
         submodule.bias.data.zero_()
 
 class IQN(nn.Module):
-    def __init__(self, state_size, action_size, batch_size, layer_size=128, N=12, layers = [128, 96, 64, 56, 48], n_cos = 64):
+    def __init__(self, state_size_advantage, state_size_value, action_size, batch_size, layer_size=128, N=12, layers = [128, 96, 64, 56, 48], n_cos = 64):
         super(IQN, self).__init__()
-        self.input_shape = state_size
+
+        self.state_size_advantage = state_size_advantage
+        self.state_size_value = state_size_value
+
+
         self.batch_size = batch_size
         self.action_size = action_size
         self.N = N
         self.n_cos = n_cos
         self.layer_size = layer_size
-        #print(self.N, self.n_cos)
         self.pis = torch.FloatTensor([np.pi * i for i in range(self.n_cos)]).view(1, 1, self.n_cos).to(device)
-        self.head = nn.Linear(self.input_shape, layer_size)  # cound be a cnn
-        self.head_y = nn.Linear(self.input_shape, layer_size)  # cound be a cnn
+        self.head_a = nn.Linear(self.state_size_advantage, layer_size)  # cound be a cnn
+        self.head_v = nn.Linear( self.state_size_value, layer_size)  # cound be a cnn
         self.cos_embedding = nn.Linear(self.n_cos, layer_size)
         self.noisylinears_for_advantage = OrderedDict()
         last_layer = layer_size
@@ -101,21 +104,37 @@ class IQN(nn.Module):
         assert cos.shape == (batch_size, self.N, self.n_cos), "cos shape is incorrect"
         return cos, taus
 
-    def forward(self, input, cos, mini_batch):
+    def advantage_forward(self, input, cos, mini_batch):
         N = self.N
         if mini_batch == False:
             batch_size = 1
         else:
             batch_size = self.batch_size
-        x = torch.relu(self.head(input.to(device)))  # x의 shape는 batch_size, layer_size
+        x = torch.relu(self.head_a(input.to(device)))  # x의 shape는 batch_size, layer_size
         cos = cos.view(batch_size * N, self.n_cos)
         cos_x = torch.relu(self.cos_embedding(cos)).view(batch_size, N, self.layer_size)  # (batch, n_tau, layer)
 
         x = (x.unsqueeze(1) * cos_x).view(batch_size * N, self.layer_size)  # 이부분이 phsi * phi에 해당하는 부분
         out_a = self.advantage_layer(x)
         quantiles_a = out_a.view(batch_size, N, 1)
-        q = quantiles_a.mean(dim=1)
-        return q
+        a = quantiles_a.mean(dim=1)
+        return a
+
+    def value_forward(self, input, cos, mini_batch):
+        N = self.N
+        if mini_batch == False:
+            batch_size = 1
+        else:
+            batch_size = self.batch_size
+        y = torch.relu(self.head_v(input.to(device)))  # x의 shape는 batch_size, layer_size
+        cos_y = cos.view(batch_size * N, self.n_cos)
+        cos_y = torch.relu(self.cos_embedding(cos_y)).view(batch_size, N, self.layer_size)  # (batch, n_tau, layer)
+
+        y = (y.unsqueeze(1) * cos_y).view(batch_size * N, self.layer_size)  # 이부분이 phsi * phi에 해당하는 부분
+        out_v = self.advantage_layer(y)
+        quantiles_v = out_v.view(batch_size, N, 1)
+        v = quantiles_v.mean(dim=1)
+        return v
 
 
 class DuelingDQN(nn.Module):
@@ -620,21 +639,20 @@ class Agent:
 
             self.DuelingQ = DuelingDQN().to(device)
 
-            self.Q = IQN(n_representation_ship+n_representation_missile + 2 + n_representation_action, self.action_size,
+            self.Q = IQN(state_size_advantage = n_representation_ship+n_representation_missile + 2 + n_representation_action,
+                         state_size_value = n_representation_ship + n_representation_missile + 2,
+                         action_size = self.action_size,
                          batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos = n_cos, layers = iqn_layers).to(device)
-            self.Q_tar = IQN(n_representation_ship+n_representation_missile + 2 + n_representation_action, self.action_size,
-                             batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos = n_cos, layers = iqn_layers).to(device)
 
-            self.V = IQN(n_representation_ship + n_representation_missile + 2,
-                         self.action_size,
-                         batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos=n_cos,
-                         layers=iqn_layers).to(device)
-            self.V_tar = IQN(n_representation_ship + n_representation_missile + 2,
-                             self.action_size,
-                             batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos=n_cos,
-                             layers=iqn_layers).to(device)
+            self.Q_tar = IQN(
+                state_size_advantage=n_representation_ship + n_representation_missile + 2 + n_representation_action,
+                state_size_value=n_representation_ship + n_representation_missile + 2,
+                action_size=self.action_size,
+                batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos=n_cos, layers=iqn_layers).to(
+                device)
 
-            self.V_tar.load_state_dict(self.V.state_dict())
+
+            #self.V_tar.load_state_dict(self.V.state_dict())
             self.Q_tar.load_state_dict(self.Q.state_dict())
 
             self.eval_params = list(self.VDN.parameters()) + \
@@ -803,7 +821,7 @@ class Agent:
             action_feature = torch.tensor(action_feature, device = device, dtype = torch.float)
             action_feature = self.node_representation_action_feature(action_feature)
             obs_n_action = torch.cat([obs, action_feature], dim = 1)
-            A_a = self.Q(obs_n_action, cos, mini_batch=True)
+            A_a = self.Q.advantage_forward(obs_n_action, cos, mini_batch=True)
 
 
             action_features = torch.tensor(action_features, device=device, dtype=torch.float)
@@ -812,9 +830,9 @@ class Agent:
             obs_expand = obs.unsqueeze(1)
             obs_expand = obs_expand.expand([self.batch_size, self.action_size, obs_expand.shape[2]])  # batch-size, action_size, obs_size
             obs_n_action = torch.cat([obs_expand, node_representation_action], dim=2)
-            A = torch.stack([self.Q(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
+            A = torch.stack([self.Q.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
             A = torch.einsum('ijk->jik', A)
-            V = self.V(obs, cos, mini_batch = True)
+            V = self.Q.value_forward(obs, cos, mini_batch = True)
             Q = self.DuelingQ(V, A, mask, past_action = A_a, training = True)
             return Q
         else:
@@ -829,14 +847,14 @@ class Agent:
                 obs_expand = obs_expand.expand(
                     [self.batch_size, self.action_size, obs_expand.shape[2]])  # batch-size, action_size, obs_size
                 obs_n_action = torch.cat([obs_expand, node_representation_action], dim=2)
-                A = torch.stack([self.Q(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
+                A = torch.stack([self.Q.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
                 A = torch.einsum('ijk->jik', A)
-                V = self.V(obs, cos, mini_batch=True)
+                V = self.Q.value_forward(obs, cos, mini_batch=True)
                 Q = self.DuelingQ(V, A, mask, past_action=None, training=True)
 
-                A_tar = torch.stack([self.Q_tar(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
+                A_tar = torch.stack([self.Q_tar.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
                 A_tar = torch.einsum('ijk->jik', A_tar)
-                V_tar = self.V_tar(obs, cos, mini_batch=True)
+                V_tar = self.Q_tar.value_forward(obs, cos, mini_batch=True)
                 Q_tar = self.DuelingQ(V_tar, A_tar, mask, past_action=None, training=True)
 
                 action_max = Q.max(dim = 1)[1].long().unsqueeze(1)
@@ -864,8 +882,8 @@ class Agent:
         action = []
         cos, taus = self.Q.calc_cos(1)
         #print(node_representation.shape)
-        V = self.V(node_representation, cos, mini_batch=False)
-        A = torch.stack([self.Q(obs_n_action[i].unsqueeze(0), cos, mini_batch=False) for i in range(self.action_size)]).squeeze(1).squeeze(1).unsqueeze(0)
+        V = self.Q.value_forward(node_representation, cos, mini_batch=False)
+        A = torch.stack([self.Q.advantage_forward(obs_n_action[i].unsqueeze(0), cos, mini_batch=False) for i in range(self.action_size)]).squeeze(1).squeeze(1).unsqueeze(0)
         Q = self.DuelingQ(V, A, mask)
         greedy_u = torch.argmax(Q)
         if cfg.epsilon_greedy == True:
