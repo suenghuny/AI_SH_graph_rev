@@ -58,6 +58,8 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
     n_step_enemy_edge_index = deque(maxlen = n_step)
     n_step_action_feature = deque(maxlen=n_step)
     n_step_action_features = deque(maxlen=n_step)
+
+
     if random.uniform(0, 1) > 0.5:
         interval_min = True
 
@@ -111,6 +113,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
             n_step_enemy_edge_index.append(enemy_edge_index)
             n_step_action_feature.append(action_blue)
             n_step_action_features.append(action_feature)
+
             status = None
             step_checker += 1
             if e >= train_start:
@@ -128,10 +131,13 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                                     n_step_edge_index[idx],
                                     n_step_action_blue[idx],
                                     n_step_rewards,
+
                                     n_step_dones,
                                     n_step_avail_action_blue[idx],
+
                                     n_step_enemy_feature[idx],
                                     n_step_enemy_edge_index[idx],
+
                                     status,
                                     n_step_action_feature[idx],
                                     n_step_action_features[idx]
@@ -169,10 +175,13 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                                     n_step_edge_index[0],
                                     n_step_action_blue[0],
                                     n_step_rewards,
+
                                     n_step_dones,
                                     n_step_avail_action_blue[0],
+
                                     n_step_enemy_feature[0],
                                     n_step_enemy_edge_index[0],
+
                                     status,
                                     n_step_action_feature[0],
                                     n_step_action_features[0])
@@ -194,13 +203,16 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                                         n_step_edge_index[0],
                                         n_step_action_blue[0],
                                         n_step_rewards,
+
                                         n_step_dones,
                                         n_step_avail_action_blue[0],
+
                                         n_step_enemy_feature[0],
                                         n_step_enemy_edge_index[0],
+
                                         status,
                                         n_step_action_feature[0],
-                                    n_step_action_features[0])
+                                        n_step_action_features[0])
             break
     return episode_reward, epsilon, t, eval
 

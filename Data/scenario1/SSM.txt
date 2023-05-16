@@ -7,7 +7,7 @@ seeker_on_distance			10	10
 range					10	10
 attack_range			80	80
 length					4	4
-p_h					0.8	0.8
+p_h					    0.8	0.8
 radar_peak_power			1000000	1000000
 antenna_gain_factor		9300	9300
 wavelength_of_signal		3.7	3.7

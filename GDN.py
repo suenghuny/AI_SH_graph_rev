@@ -278,10 +278,13 @@ class Replay_Buffer:
                edge_index_missile,
                action,
                reward,
+
                done,
                avail_action,
+
                node_feature_enemy,
                edge_index_enemy,
+
                status,
                action_feature,
                action_features
@@ -342,6 +345,7 @@ class Replay_Buffer:
                 yield datas[1][s + self.n_step]
             if cat == 'ship_features_next':
                 yield datas[2][s + self.n_step]
+
             if cat == 'edge_index_missile_next':
                 yield torch.sparse_coo_tensor(datas[3][s + self.n_step],
                                               torch.ones(torch.tensor(datas[3][s + self.n_step]).shape[1]),
@@ -443,11 +447,8 @@ class Replay_Buffer:
         done = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='done')
         dones = list(done)
 
-        #
-
         avail_action = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='avail_action')
         avail_actions = list(avail_action)
-
 
         avail_action_next = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='avail_action_next')
         avail_actions_next = list(avail_action_next)
@@ -870,11 +871,11 @@ class Agent:
         V = self.Q.value_forward(node_representation, cos, mini_batch=False)
         A = torch.stack([self.Q.advantage_forward(obs_n_action[i].unsqueeze(0), cos, mini_batch=False) for i in range(self.action_size)]).squeeze(1).squeeze(1).unsqueeze(0)
         Q = self.DuelingQ(V, A, mask)
+
         greedy_u = torch.argmax(Q)
         if cfg.epsilon_greedy == True:
             if np.random.uniform(0, 1) >= epsilon:
                 u = greedy_u.detach().item()
-                #action.append(u)
             else:
                 mask_n = np.array(avail_action[0], dtype=np.float64)
                 u = np.random.choice(self.action_space, p=mask_n / np.sum(mask_n))
@@ -974,7 +975,6 @@ class Agent:
         loss = F.huber_loss(weight*q_tot, weight*td_target.detach())#
         self.optimizer.zero_grad()
         loss.backward()
-        #torch.nn.utils.clip_grad_norm_(self.eval_params, 1)
         self.optimizer.step()
         self.scheduler.step()
         tau = 1e-3
