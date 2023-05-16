@@ -678,19 +678,19 @@ class Agent:
 
     def eval_check(self, eval):
         if eval == True:
+            self.DuelingQ.eval()
             self.node_representation_ship_feature.eval()
-            self.node_representation_enemy.eval()
+            self.node_representation_action_feature.eval()
             self.node_representation.eval()
             self.func_missile_obs.eval()
-            self.func_enemy_obs.eval()
             self.Q.eval()
             self.Q_tar.eval()
         else:
+            self.DuelingQ.train()
             self.node_representation_ship_feature.train()
-            self.node_representation_enemy.train()
+            self.node_representation_action_feature.train()
             self.node_representation.train()
             self.func_missile_obs.train()
-            self.func_enemy_obs.train()
             self.Q.train()
             self.Q_tar.train()
 
