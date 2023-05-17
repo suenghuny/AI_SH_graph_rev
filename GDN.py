@@ -645,7 +645,6 @@ class Agent:
 
             #self.V_tar.load_state_dict(self.V.state_dict())
             self.Q_tar.load_state_dict(self.Q.state_dict())
-
             self.eval_params = list(self.DuelingQ.parameters()) + \
                                list(self.Q.parameters()) + \
                                list(self.node_representation_action_feature.parameters()) + \

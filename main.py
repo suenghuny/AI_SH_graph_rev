@@ -90,7 +90,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
             enemy_node_feature = None# env.get_enemy_node_feature()
             action_feature = env.get_action_feature()
 
-            n_node_feature_missile = env.friendlies_fixed_list[0].air_tracking_limit+1
+            n_node_feature_missile = env.friendlies_fixed_list[0].air_tracking_limit +env.friendlies_fixed_list[0].air_engagement_limit+env.friendlies_fixed_list[0].num_m_sam+1
             n_node_feature_enemy = env.friendlies_fixed_list[0].surface_tracking_limit + 1
             agent.eval_check(eval=True)
             node_representation = agent.get_node_representation(missile_node_feature, ship_feature,edge_index,n_node_feature_missile,
@@ -281,7 +281,8 @@ if __name__ == "__main__":
                   detection_by_height=detection_by_height,
                   tick=tick,
                   simtime_per_framerate=simtime_per_frame,
-                  ciws_threshold=ciws_threshold)
+                  ciws_threshold=ciws_threshold,
+                  action_history_step=cfg.action_history_step)
     agent = Agent(num_agent=1,
                   feature_size_ship=env.get_env_info()["ship_feature_shape"],
                   feature_size_enemy=env.get_env_info()["enemy_feature_shape"],
@@ -315,7 +316,10 @@ if __name__ == "__main__":
                   GNN='GAT',
                   teleport_probability=cfg.teleport_probability,
                   gtn_beta=0.1,
-                  n_node_feature_missile = env.friendlies_fixed_list[0].air_tracking_limit + 1,
+                  n_node_feature_missile = env.friendlies_fixed_list[0].air_tracking_limit +
+                                           env.friendlies_fixed_list[0].air_engagement_limit+
+                                           env.friendlies_fixed_list[0].num_m_sam+
+                                           1,
                   n_node_feature_enemy =env.friendlies_fixed_list[0].surface_tracking_limit + 1,
                   n_step= n_step,
                   beta = cfg.per_beta,
@@ -345,7 +349,9 @@ if __name__ == "__main__":
                       detection_by_height=detection_by_height,
                       tick=tick,
                       simtime_per_framerate=simtime_per_frame,
-                      ciws_threshold=ciws_threshold)
+                      ciws_threshold=ciws_threshold,
+                      action_history_step = cfg.action_history_step
+                      )
         episode_reward, epsilon, t, eval = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon, min_epsilon=min_epsilon, anneal_step=anneal_step , initializer=False, output_dir=None, vdn=True, n_step = n_step, anneal_epsilon = anneal_epsilon)
         if e >= cfg.train_start:
             if vessl_on == False:

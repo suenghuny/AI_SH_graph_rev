@@ -56,19 +56,11 @@ class GraphAttentionLayer(nn.Module):
                                            torch.ones(edge_index.clone().detach().shape[1]).to(device).clone().detach(),
                                            (n_node_features, n_node_features)).to_dense().to(device).clone().detach()
 
+#            print(adj[2])
+
             adj = adj.to(device).long()
-            #print(adj)
-            # zero_vec = -9e15 * torch.ones_like(e)
-            # attention = torch.where(adj > 0, e, zero_vec)
-
             attention = adj * e
-
-
             attention = F.softmax(attention, dim=1)                                     # attention : (n_node, n_node)
-            #print('왜안되지2', attention.shape)
-            #attention = self.dropout(attention)
-            ## F.droupout(attention, 0.7, training = False)
-            #print(attention.shape, Wh.shape)
             h_prime =self.teleport_probability * torch.mm(attention, Wh) + (1-self.teleport_probability) * Wh
 
         else:

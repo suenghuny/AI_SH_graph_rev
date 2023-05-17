@@ -40,7 +40,7 @@ def get_cfg():
     parser.add_argument("--num_episode", type=int, default=1000000, help="number of episode")
     parser.add_argument("--scheduler_step", type =int, default=100000, help= "scheduler step")
     parser.add_argument("--scheduler_ratio", type=float, default=0.2, help= "scheduler ratio")
-    parser.add_argument("--train_start", type=int, default=200, help="number of train start")
+    parser.add_argument("--train_start", type=int, default=1, help="number of train start")
     parser.add_argument("--epsilon_greedy", type=bool, default=True, help="epsilon_greedy")
     parser.add_argument("--epsilon", type=float, default=0.3, help="epsilon")
     parser.add_argument("--min_epsilon", type=float, default=0.01, help="epsilon")
@@ -48,6 +48,9 @@ def get_cfg():
     parser.add_argument("--temperature", type=int, default=7, help="")
     parser.add_argument("--interval_min_blue", type=bool, default=False, help="interval_min_blue")
     parser.add_argument("--interval_constant_blue", type=float, default=3.5, help="interval_constant_blue")
+
+    parser.add_argument("--action_history_step", type=int, default=4, help="action_history_step")
+    parser.add_argument("--graph_distance", type=float, default=20, help="graph distance")
 
     parser.add_argument("--test_epi", type=int, default=1800, help="interval_constant_blue")
     parser.add_argument("--scheduler", type=str, default='step', help="step 형태")

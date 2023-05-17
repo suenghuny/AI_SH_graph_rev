@@ -1,9 +1,9 @@
 from Components.Adapter_Component import *
 from Components.Simulation_Component import *
+from collections import deque
 
 
-
-def modeler(data, visualize, size, detection_by_height, tick, simtime_per_framerate, ciws_threshold, epsilon = 20):
+def modeler(data, visualize, size, detection_by_height, tick, simtime_per_framerate, ciws_threshold, action_history_step, epsilon = 20):
     env = Environment(data,
                       visualize,
                       size = size,
@@ -11,13 +11,15 @@ def modeler(data, visualize, size, detection_by_height, tick, simtime_per_framer
                       tick = tick,
                       simtime_per_framerate = simtime_per_framerate,
                       epsilon = epsilon,
-                      ciws_threshold = ciws_threshold)
+                      ciws_threshold = ciws_threshold,
+                      action_history_step = action_history_step)
     return env
 
 class Environment:
     def __init__(self,
                  data,
                  visualize,
+                 action_history_step,
                  epsilon=15,
                  simtime_per_framerate = 2.5,
                  size = [2200, 2200],
@@ -41,6 +43,7 @@ class Environment:
         self.visualize = visualize
         self.temp_termination = False
         self.tick = tick
+        self.action_history_step = action_history_step
         if visualize == True:
             self.pygame = pygame
             self.game_initializer = self.pygame.init()
@@ -114,13 +117,11 @@ class Environment:
 
 
             type_m_sam = data.SAM_data[int(value['type_m_sam'])]
-            type_l_sam = data.SAM_data[
-                int(value['type_l_sam'])]
-
-            type_ssm = data.SSM_data[
-                int(value['type_ssm'])]
-            self.missile_speed_list.append(type_ssm['speed'])
-            #print()
+            type_l_sam = data.SAM_data[int(value['type_l_sam'])]
+            type_ssm = data.SSM_data[int(value['type_ssm'])]
+            self.missile_speed_list.append((type_ssm['speed']+type_l_sam['speed'])*self.mach_scaler)
+            self.missile_speed_list.append((type_ssm['speed']+type_m_sam['speed'])*self.mach_scaler)
+            #self.missile_speed_list.append(type_m_sam['speed'])
             self.ships.append(Ship(env=self,
                                    id=key,
                                    speed=speed,
@@ -215,6 +216,9 @@ class Environment:
         self.f10 = 0
         self.last_action_encodes = np.eye(self.action_size_friendly)
         self.f11 = [0,0,0,0,0,0,0,0]
+        self.f11_deque = deque(maxlen = self.action_history_step)
+        for _ in range(self.action_history_step):
+            self.f11_deque.append(self.f11)
 
     def get_env_info(self):
         env_info = {"n_agents" : 1,
@@ -487,24 +491,36 @@ class Environment:
         ship = self.friendlies_fixed_list[0]
         len_ssm_detections = len(ship.ssm_detections)
         for i in range(len_ssm_detections):
+            #print('엣지', len_ssm_detections, 0, i+1)
             edge_index[0].append(0)
             edge_index[1].append(i+1)
-            edge_index[0].append(i+1)
-            edge_index[1].append(0)
-        #print("전", edge_index)
-        for j in range(len_ssm_detections-1, -1, -1):
-            for k in range(j-1, -1, -1):
-                missile_j = ship.ssm_detections[j]
-                missile_k = ship.ssm_detections[k]
-                #print(cal_distance(missile_j, missile_k))
-                if cal_distance(missile_j, missile_k) <= 20:
-                    edge_index[0].append(j+1)
-                    edge_index[1].append(k+1)
-                    edge_index[0].append(k+1)
-                    edge_index[1].append(j+1)
-        #print("후", edge_index)
+
+        len_flying_sams_friendly = len(self.flying_sams_friendly)
+        for i in range(1, len_ssm_detections):
+            for j in range(len_flying_sams_friendly):
+                #print('엣지', len_ssm_detections, i, len_ssm_detections+j+1)
+                ssm_i = ship.ssm_detections[i]
+                sam_j = self.flying_sams_friendly[j]
+                if sam_j.original_target==ssm_i:
+                    edge_index[0].append(i)
+                    edge_index[1].append(len_ssm_detections+j+1)
 
 
+
+        #     for k in range(j - 1, -1, -1):
+        #
+        #         missile_j = ship.l
+        #
+        # for j in range(len_ssm_detections-1, -1, -1):
+        #     for k in range(j-1, -1, -1):
+        #         missile_j = ship.ssm_detections[j]
+        #         missile_k = ship.ssm_detections[k]
+        #         #print(cal_distance(missile_j, missile_k))
+        #         if cal_distance(missile_j, missile_k) <= 20:
+        #             edge_index[0].append(j+1)
+        #             edge_index[1].append(k+1)
+        #             edge_index[0].append(k+1)
+        #             edge_index[1].append(j+1)
         return edge_index
 
     def get_enemy_edge_index(self):
@@ -532,7 +548,6 @@ class Environment:
                         if a <= 0.01:
                             a = 0
                             theta_a = 0
-
                         node_features.append([r, v, a, theta_r - theta_v, theta_v - theta_a])
                     else:
                         px = enemy.position_x - ship.position_x
@@ -548,10 +563,8 @@ class Environment:
         return node_features
 
     def get_feature(self, ship, target):
-        r = ((target.position_x - ship.position_x) ** 2 + (target.position_y - ship.position_y) ** 2) ** 0.5 / (
-                    target.attack_range - ship.detection_range)
-        v = ((target.v_x - ship.v_x) ** 2 + (target.v_y - ship.v_y) ** 2) ** 0.5 / (
-                    self.missile_speed_scaler - ship.speed)
+        r = ((target.position_x - ship.position_x) ** 2 + (target.position_y - ship.position_y) ** 2) ** 0.5 / 600
+        v = ((target.v_x - ship.v_x) ** 2 + (target.v_y - ship.v_y) ** 2) ** 0.5 / (self.missile_speed_scaler)
         theta_r = math.atan2(target.position_y - ship.position_y, target.position_x - ship.position_x)
         theta_v = math.atan2(ship.v_y - target.v_y, ship.v_x - target.v_x)
         a = ((target.a_x - ship.a_x) ** 2 + (target.a_y - ship.a_y) ** 2) ** 0.5
@@ -561,7 +574,6 @@ class Environment:
             theta_a = 0
 
         return r, v, a, theta_v, theta_r - theta_v, theta_v - theta_a
-
 
     def get_action_feature(self):
         dummy = [0,0,0,0,0,0,0,0]
@@ -589,11 +601,13 @@ class Environment:
 
         return node_features
 
-
-
-
     def get_missile_node_feature(self, rad_coordinate = True):
-        dummy =[0,0,0,0,0,0]
+        dummy =[0,
+                0,
+                0,
+                0,
+                0,
+                0]
         node_features = [dummy]
         for ship in self.friendlies_fixed_list:
             for missile in ship.ssm_detections:
@@ -608,9 +622,29 @@ class Environment:
                     ax = missile.a_x - ship.a_x
                     ay = missile.a_y - ship.a_y
                     node_features.append([px/missile.attack_range, py/missile.attack_range, vx/missile.speed, vy/missile.speed, ax, ay])
-        if ship.air_tracking_limit+1-len(node_features) >0:
+
+        if ship.air_tracking_limit+1-len(node_features) > 0:
             for _ in range(ship.air_tracking_limit+1-len(node_features)):
                 node_features.append(dummy)
+
+        len_flying_sams_friendly = len(self.flying_sams_friendly)
+        for j in range(len_flying_sams_friendly):
+            missile = self.flying_sams_friendly[j]
+            original_target = missile.original_target
+            f1, f2, f3, f4, f5, f6 = self.get_feature(original_target, missile)
+            node_features.append([f1, f2, f3, f4, f5, f6])
+        #print("길이", len(node_features))
+# self.friendlies_fixed_list[0].air_tracking_limit +self.friendlies_fixed_list[0].air_engagement_limit+self.friendlies_fixed_list[0].num_m_sam+1
+
+
+        if ship.air_tracking_limit +ship.air_engagement_limit+ship.num_m_sam+1-len(node_features) > 0:
+            for _ in range(ship.air_tracking_limit +ship.air_engagement_limit+ship.num_m_sam+1-len(node_features)):
+                node_features.append(dummy)
+
+
+
+
+
         #print("후", len(node_features), ship.air_tracking_limit + 1 - len(node_features))
 
         return node_features
@@ -621,7 +655,8 @@ class Environment:
 
     def step(self, action_blue, action_yellow, rl = True, pass_transition = False):
 
-
+        self.f11_deque.append(action_blue)
+        #print(np.concatenate(list(self.f11_deque)).shape)
         self.f11 = action_blue
 
         #print(self.f11.shape)
@@ -712,7 +747,12 @@ class Environment:
 
         temp_flying_ssms_friendly = self.flying_ssms_friendly[:]
         for ssm in temp_flying_ssms_friendly:
-            ssm.destroying(self.enemies, self.friendlies, self.flying_ssms_friendly, self.flying_ssms_enemy, self.flying_sams_friendly, self.flying_sams_enemy)
+            ssm.destroying(self.enemies,
+                           self.friendlies,
+                           self.flying_ssms_friendly,
+                           self.flying_ssms_enemy,
+                           self.flying_sams_friendly,
+                           self.flying_sams_enemy)
             ssm.flying()
             ssm.seeker_operation()
             ssm.rotate_arc_beam_angle()

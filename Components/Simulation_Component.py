@@ -139,6 +139,8 @@ class Missile:
         self.launcher = launcher
         self.speed = spec['speed'] * self.env.mach_scaler
 
+
+
         self.angular_velocity = spec['angular_velocity'] * pi / 180 * self.env.simtime_per_framerate
         self.rotation_range = spec['rotation_range']
 
@@ -155,7 +157,6 @@ class Missile:
 
         self.cla = spec['cla']
         self.p_h = spec['p_h']
-
         self.P = 10 * math.log10(spec['radar_peak_power'])
         self.G = 10 * math.log10(spec['antenna_gain_factor'])
         self.lmbda = spec['wavelength_of_signal'] * 0.01
@@ -1186,17 +1187,6 @@ class Ship:
             self.last_position_x = deepcopy(self.position_x)
             self.last_position_y = deepcopy(self.position_y)
 
-            # self.last_position_x = deepcopy(self.position_x)
-            # self.last_position_y = deepcopy(self.position_y)
-
-
-        # if self.env.now % (self.env.simtime_per_framerate*6)== 0:
-        #     self.course_input = self.course_input
-        # else:
-        #     pass
-
-        #print("지그재그", self.course_input )
-
         self.v_y = -self.speed * math.cos((self.course_input ) * pi / 180)
         self.v_x = self.speed * math.sin((self.course_input ) * pi / 180)
 
@@ -1360,7 +1350,6 @@ class Ship:
                         self.monitors["lsam_launching"] += 1
                     if sam.cla == 'MSAM':
                         self.monitors["msam_launching"] += 1
-
                     sam.position_x = self.position_x
                     sam.position_y = self.position_y
                     est_x, est_y = self.get_estimated_hitting_point(sam, target)
@@ -1371,7 +1360,9 @@ class Ship:
                     self.air_prelaunching_managing_list.remove(prelaunching_info)
                     if sam.cla == 'MSAM':
                         self.m_sam_launcher.remove(sam)
+                        #print("전", len(self.air_engagement_managing_list))
                         self.air_engagement_managing_list.remove([sam, target])
+                        #print("후", len(self.air_engagement_managing_list))
                     else:
                         self.l_sam_launcher.remove(sam)
                     if self.side == 'blue':
@@ -1410,7 +1401,6 @@ class Ship:
         estimated_x = noise_x + target.v_x*time_to_intersection ##self.position_x + 300*math.cos(theta)#((-target.position_y+self.position_y)-(target.position_x*(-target.v_x/target.v_y)-self.position_x*math.tan(-theta)))/(math.tan(-theta)-(-target.v_x/target.v_y))
         estimated_y = noise_y + target.v_y*time_to_intersection #self.position_y + 300*math.sin(theta)#((target.position_x-self.position_y)-(target.position_y*(-target.v_y/target.v_x)-self.position_y*1/math.tan(-theta)))/(1/math.tan(-theta)-(-target.v_y/target.v_x))
         return estimated_x, estimated_y
-
     def target_allot_by_action_feature(self, action_feature):
         #print(action_feature)
         if action_feature == [0,0,0,0,0,0,0,0]:
@@ -1495,7 +1485,6 @@ class Ship:
             if (d <= self.ciws_max_range):
                 self.CIWS.target = target
                 self.CIWS.original_target = target
-
     def target_allocation_process(self, target_id):
         if target_id == 0:
             pass
