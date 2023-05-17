@@ -831,15 +831,15 @@ class Environment:
                             pygame.quit()
                             exit()
 
-            if (len(self.enemies) == 0):
-                suceptibility = 0
-                win_tag = "win"
-                done = True
-                if self.visualize == True:
-                    for event in pygame.event.get():
-                        if event.type == pygame.QUIT:
-                            pygame.quit()
-                            exit()
+            # if (len(self.enemies) == 0):
+            #     suceptibility = 0
+            #     win_tag = "win"
+            #     done = True
+            #     if self.visualize == True:
+            #         for event in pygame.event.get():
+            #             if event.type == pygame.QUIT:
+            #                 pygame.quit()
+            #                 exit()
 
 
             if (len(self.flying_ssms_enemy) == 0) and (len(self.flying_ssms_friendly) == 0):
@@ -848,6 +848,7 @@ class Environment:
                 if (False in done_checker_A) or (False in done_checker_B):
                     done = False
                 else:
+                    #print("여긴가?", self.friendlies_fixed_list[0].status)
                     done = True
 
             if self.now >= 2000:

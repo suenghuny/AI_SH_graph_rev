@@ -101,6 +101,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
             action_blue = agent.sample_action(node_representation, avail_action_blue, epsilon,action_feature)
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
             reward, win_tag, done = env.step(action_blue, action_yellow)
+            #print(reward)
             episode_reward += reward
             n_step_missile_node_features.append(missile_node_feature)
             n_step_ship_feature.append(ship_feature)
@@ -335,7 +336,7 @@ if __name__ == "__main__":
     reward_list = list()
     anneal_epsilon = (epsilon - min_epsilon) / cfg.anneal_step
     for e in range(num_iteration):
-        if e == 12:
+        if e == 6:
             visualize = True
         start = time.time()
         env = modeler(data,
