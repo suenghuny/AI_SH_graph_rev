@@ -336,8 +336,8 @@ if __name__ == "__main__":
     reward_list = list()
     anneal_epsilon = (epsilon - min_epsilon) / cfg.anneal_step
     for e in range(num_iteration):
-        if e == 6:
-            visualize = True
+        # if e == 6:
+        #     visualize = True
         start = time.time()
         env = modeler(data,
                       visualize=visualize,
