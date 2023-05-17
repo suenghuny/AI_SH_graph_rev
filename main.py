@@ -243,7 +243,7 @@ if __name__ == "__main__":
     환경 시스템 관련 변수들
     
     """
-    visualize = False                # 가시화 기능 사용 여부 / True : 가시화 적용, False : 가시화 미적용
+    visualize = False                 # 가시화 기능 사용 여부 / True : 가시화 적용, False : 가시화 미적용
     size = [600, 600]                # 화면 size / 600, 600 pixel
     tick = 500                       # 가시화 기능 사용 시 빠르기
     n_step = cfg.n_step
@@ -335,6 +335,8 @@ if __name__ == "__main__":
     reward_list = list()
     anneal_epsilon = (epsilon - min_epsilon) / cfg.anneal_step
     for e in range(num_iteration):
+        if e == 12:
+            visualize = True
         start = time.time()
         env = modeler(data,
                       visualize=visualize,

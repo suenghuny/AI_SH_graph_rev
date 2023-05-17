@@ -850,7 +850,7 @@ class Environment:
                 else:
                     done = True
 
-            if self.now >= 1000:
+            if self.now >= 2000:
                 done = True
 
 
