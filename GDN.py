@@ -974,6 +974,8 @@ class Agent:
         loss = F.huber_loss(weight*q_tot, weight*td_target.detach())#
         self.optimizer.zero_grad()
         loss.backward()
+
+        torch.nn.utils.clip_grad_norm_(self.eval_params, cfg.grad_clip)
         self.optimizer.step()
         self.scheduler.step()
         tau = 1e-3

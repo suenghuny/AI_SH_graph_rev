@@ -511,6 +511,8 @@ class Environment:
                     edge_index[0].append(i)
                     edge_index[1].append(len_ssm_detections+j+1)
 
+                    print(i, len_ssm_detections+j+1)
+
 
 
         #     for k in range(j - 1, -1, -1):

@@ -52,6 +52,8 @@ def get_cfg():
     parser.add_argument("--action_history_step", type=int, default=4, help="action_history_step")
     parser.add_argument("--graph_distance", type=float, default=20, help="graph distance")
 
+    parser.add_argument("--grad_clip", type=float, default=10, help="gradient clipping")
+
     parser.add_argument("--test_epi", type=int, default=1800, help="interval_constant_blue")
     parser.add_argument("--scheduler", type=str, default='step', help="step 형태")
     parser.add_argument("--t_max", type=int, default=40000, help="interval_constant_blue")
