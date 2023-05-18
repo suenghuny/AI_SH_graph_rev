@@ -490,17 +490,23 @@ class Environment:
         edge_index = [[],[]]
         ship = self.friendlies_fixed_list[0]
         len_ssm_detections = len(ship.ssm_detections)
-        for i in range(len_ssm_detections):
-            #print('엣지', len_ssm_detections, 0, i+1)
-            edge_index[0].append(0)
-            edge_index[1].append(i+1)
-
         len_flying_sams_friendly = len(self.flying_sams_friendly)
-        for i in range(1, len_ssm_detections):
+        # print("==================")
+        # print("ssm 길이", len_ssm_detections)
+        # print("sam 길이", len_flying_sams_friendly)
+        for i in range(1, len_ssm_detections+1):
+            edge_index[0].append(0)
+            edge_index[1].append(i)
+            #print("전", 0, i, "전체 길이", 1+len_ssm_detections+len_flying_sams_friendly)
+
+
+        for i in range(1, len_ssm_detections+1):
             for j in range(len_flying_sams_friendly):
-                #print('엣지', len_ssm_detections, i, len_ssm_detections+j+1)
-                ssm_i = ship.ssm_detections[i]
+                #print("후", i, len_ssm_detections+j+1, "전체 길이", 1+len_ssm_detections+len_flying_sams_friendly)
+
+                ssm_i = ship.ssm_detections[i-1]
                 sam_j = self.flying_sams_friendly[j]
+
                 if sam_j.original_target==ssm_i:
                     edge_index[0].append(i)
                     edge_index[1].append(len_ssm_detections+j+1)
@@ -564,11 +570,18 @@ class Environment:
 
     def get_feature(self, ship, target):
         r = ((target.position_x - ship.position_x) ** 2 + (target.position_y - ship.position_y) ** 2) ** 0.5 / 600
+
+        #print(ship.cla, target.cla)
+
+
         v = ((target.v_x - ship.v_x) ** 2 + (target.v_y - ship.v_y) ** 2) ** 0.5 / (self.missile_speed_scaler)
+
         theta_r = math.atan2(target.position_y - ship.position_y, target.position_x - ship.position_x)
         theta_v = math.atan2(ship.v_y - target.v_y, ship.v_x - target.v_x)
+
         a = ((target.a_x - ship.a_x) ** 2 + (target.a_y - ship.a_y) ** 2) ** 0.5
         theta_a = math.atan2(ship.a_y - target.a_y, ship.a_x - target.a_x)
+
         if a <= 0.01:
             a = 0
             theta_a = 0
@@ -609,6 +622,7 @@ class Environment:
                 0,
                 0]
         node_features = [dummy]
+        #print("node_길이 1", len(node_features))
         for ship in self.friendlies_fixed_list:
             for missile in ship.ssm_detections:
                 if rad_coordinate == True:
@@ -622,27 +636,25 @@ class Environment:
                     ax = missile.a_x - ship.a_x
                     ay = missile.a_y - ship.a_y
                     node_features.append([px/missile.attack_range, py/missile.attack_range, vx/missile.speed, vy/missile.speed, ax, ay])
-
-        if ship.air_tracking_limit+1-len(node_features) > 0:
-            for _ in range(ship.air_tracking_limit+1-len(node_features)):
-                node_features.append(dummy)
-
+        #print("ssm detection 추가", len(node_features))
+        # if ship.air_tracking_limit+1-len(node_features) > 0:
+        #     for _ in range(ship.air_tracking_limit+1-len(node_features)):
+        #         node_features.append(dummy)
+        # print("ssm detection 추가", len(node_features))
         len_flying_sams_friendly = len(self.flying_sams_friendly)
         for j in range(len_flying_sams_friendly):
             missile = self.flying_sams_friendly[j]
             original_target = missile.original_target
             f1, f2, f3, f4, f5, f6 = self.get_feature(original_target, missile)
             node_features.append([f1, f2, f3, f4, f5, f6])
-        #print("길이", len(node_features))
-# self.friendlies_fixed_list[0].air_tracking_limit +self.friendlies_fixed_list[0].air_engagement_limit+self.friendlies_fixed_list[0].num_m_sam+1
+        #print("flying sam 추가", len(node_features))
 
 
         if ship.air_tracking_limit +ship.air_engagement_limit+ship.num_m_sam+1-len(node_features) > 0:
             for _ in range(ship.air_tracking_limit +ship.air_engagement_limit+ship.num_m_sam+1-len(node_features)):
                 node_features.append(dummy)
 
-
-
+        #print("마지막", len(node_features))
 
 
         #print("후", len(node_features), ship.air_tracking_limit + 1 - len(node_features))
