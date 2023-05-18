@@ -748,6 +748,7 @@ class Agent:
                     node_representation = torch.cat([node_embedding_ship_features, node_representation[0].unsqueeze(0)], dim=1)
             else:
                 ship_features = torch.tensor(ship_features,dtype=torch.float).to(device).squeeze(1)
+                #print(dir(self.eval_params))
                 node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
 
                 missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float).to(device)
@@ -974,7 +975,7 @@ class Agent:
         loss = F.huber_loss(weight*q_tot, weight*td_target.detach())#
         self.optimizer.zero_grad()
         loss.backward()
-        ###
+
         torch.nn.utils.clip_grad_norm_(self.eval_params, cfg.grad_clip)
         self.optimizer.step()
         self.scheduler.step()
