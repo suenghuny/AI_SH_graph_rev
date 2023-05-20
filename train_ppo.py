@@ -65,7 +65,6 @@ def train(agent, env, e, t):
             ship_feature = env.get_ship_feature()
             edge_index = env.get_edge_index()
             missile_node_feature = env.get_missile_node_feature()
-
             action_feature = env.get_action_feature()
 
             n_node_feature_missile = env.friendlies_fixed_list[0].air_tracking_limit + \
@@ -74,10 +73,26 @@ def train(agent, env, e, t):
             agent.eval_check(eval=True)
             node_representation = agent.get_node_representation(missile_node_feature, ship_feature, edge_index,n_node_feature_missile, mini_batch=False)  # 차원 : n_agents X n_representation_comm
 
-            action_blue = agent.sample_action(node_representation, avail_action_blue, action_feature)
+            action_blue, prob, mask, a_index= agent.sample_action(node_representation, avail_action_blue, action_feature)
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
 
             reward, win_tag, done = env.step(action_blue, action_yellow)
+
+
+            transition = (ship_feature, \
+            edge_index, \
+            missile_node_feature, \
+            action_feature, \
+            action_blue, \
+            reward, \
+            prob,\
+            mask, \
+            done, \
+            avail_action_blue,
+            a_index)
+
+
+            agent.put_data(transition)
             # print(reward)
             episode_reward += reward
 
@@ -93,8 +108,8 @@ def train(agent, env, e, t):
             env.step(action_blue=[0, 0, 0, 0, 0, 0, 0, 0], action_yellow=enemy_action_for_transition,pass_transition=pass_transition)
 
     agent.eval_check(eval=False)
-    agent.learn(regularizer=0)
-    return episode_reward, epsilon, t, eval
+    agent.learn()
+    return episode_reward, t
 
 
 if __name__ == "__main__":
@@ -166,10 +181,13 @@ if __name__ == "__main__":
                   simtime_per_framerate=simtime_per_frame,
                   ciws_threshold=ciws_threshold,
                   action_history_step=cfg.action_history_step)
+
+    n_node_feature_missile = env.friendlies_fixed_list[0].air_tracking_limit + env.friendlies_fixed_list[0].air_engagement_limit +env.friendlies_fixed_list[0].num_m_sam +1
     agent = Agent(action_size = env.get_env_info()["action_feature_shape"],
                   feature_size_ship=env.get_env_info()["ship_feature_shape"],
                   feature_size_missile=env.get_env_info()["missile_feature_shape"],
-                  feature_size_action=env.get_env_info()["action_feature_shape"])
+                  feature_size_action=env.get_env_info()["action_feature_shape"],
+                  n_node_feature_missile = n_node_feature_missile)
 
 
 
@@ -186,7 +204,7 @@ if __name__ == "__main__":
                       ciws_threshold=ciws_threshold,
                       action_history_step=cfg.action_history_step
                       )
-        episode_reward, epsilon, t, eval = train(agent, env, e, t)
+        episode_reward, t = train(agent, env, e, t)
         if e >= cfg.train_start:
             if vessl_on == False:
                 writer.add_scalar("episode", episode_reward, e - cfg.train_start)
@@ -205,15 +223,14 @@ if __name__ == "__main__":
             df = pd.DataFrame(reward_list)
             df.to_csv(output_dir + 'episode_reward.csv')
 
-        if e % 200 == 0:
-            agent.save_model(e, t, epsilon, output_dir + "{}.pt".format(e))
+        # if e % 200 == 0:
+        #     agent.save_model(e, t, epsilon, output_dir + "{}.pt".format(e))
 
         # print(len(agent.buffer.buffer[2]))
         print(
-            "Total reward in episode {} = {}, epsilon : {}, time_step : {}, episode_duration : {}".format(
+            "Total reward in episode {} = {}, time_step : {}, episode_duration : {}".format(
                 e,
                 np.round(episode_reward, 3),
-                np.round(epsilon, 3),
                 t, np.round(time.time() - start, 3)))
 
         # del data

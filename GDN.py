@@ -247,6 +247,7 @@ class NodeEmbedding(nn.Module):
 
 
     def forward(self, node_feature, missile=False):
+        #print(node_feature.shape)
         node_representation = self.node_embedding(node_feature)
         return node_representation
 
@@ -740,7 +741,7 @@ class Agent:
             if mini_batch == False:
                 with torch.no_grad():
                     ship_features = torch.tensor(ship_features, dtype=torch.float, device=device)
-                    print(ship_features.shape, "?")
+                    #print(ship_features.shape, "?")
                     node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
                     missile_node_feature = torch.tensor(missile_node_feature,dtype=torch.float,device=device).clone().detach()
                     node_embedding_missile_node = self.node_representation(missile_node_feature, missile=True)
@@ -885,11 +886,14 @@ class Agent:
             else:
                 mask_n = np.array(avail_action[0], dtype=np.float64)
                 u = np.random.choice(self.action_space, p=mask_n / np.sum(mask_n))
+
         else:
+
             u = greedy_u
             action.append(u)
 
         action_blue = action_feature_dummy[u]
+        print(action_blue)
         return action_blue
 
     def learn(self, regularizer, vdn = False):

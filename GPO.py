@@ -12,9 +12,9 @@ cfg = get_cfg()
 from torch.distributions import Categorical
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-class Network(nn.Module):
+class PPONetwork(nn.Module):
     def __init__(self, state_size, state_action_size, layers=[8,12]):
-        super(Network, self).__init__()
+        super(PPONetwork, self).__init__()
         self.state_size = state_size
         self.state_action_size = state_action_size
         self.NN_sequential = OrderedDict()
@@ -67,14 +67,17 @@ class Network(nn.Module):
 
 class Agent:
     def __init__(self,
-                action_size,
+
+                 action_size,
                  feature_size_ship,
                  feature_size_missile,
                  feature_size_action,
 
+                 n_node_feature_missile,
                  n_representation_ship = cfg.n_representation_ship,
                  n_representation_missile = cfg.n_representation_missile,
                  n_representation_action = cfg.n_representation_action,
+
 
                  node_embedding_layers_action = list(eval(cfg.action_layers)),
                  node_embedding_layers_ship = list(eval(cfg.ship_layers)),
@@ -100,7 +103,8 @@ class Agent:
         self.eps_clip = eps_clip
         self.K_epoch = K_epoch
         self.data = []
-        self.network = Network(state_size = n_representation_ship + n_representation_missile + 2,
+        #print("확인", n_representation_ship, n_representation_missile, 2, n_representation_action)
+        self.network = PPONetwork(state_size = n_representation_ship+n_representation_missile + 2,
                                state_action_size = n_representation_ship+n_representation_missile + 2 + n_representation_action,
                                layers = layers).to(device)
 
@@ -133,10 +137,10 @@ class Agent:
                            list(self.node_representation.parameters()) + \
                            list(self.func_missile_obs.parameters())
 
+        self.n_node_feature_missile = n_node_feature_missile
 
 
-        self.optimizer1 = optim.Adam(self.network.parameters(), lr=learning_rate)
-        self.optimizer2 = optim.Adam(self.network.parameters(), lr=learning_rate_critic)
+        self.optimizer = optim.Adam(self.network.parameters(), lr=learning_rate)
 
         #self.scheduler = OneCycleLR(optimizer=self.optimizer, max_lr=self.learning_rate, total_steps=30000)
     def eval_check(self, eval):
@@ -164,7 +168,6 @@ class Agent:
                 edge_index_missile = torch.tensor(edge_index_missile, dtype=torch.long, device=device)
                 node_representation = self.func_missile_obs(node_embedding_missile_node, edge_index_missile,
                                                              n_node_features_missile, mini_batch=mini_batch)
-
                 node_representation = torch.cat([node_embedding_ship_features, node_representation[0].unsqueeze(0)], dim=1)
         else:
             ship_features = torch.tensor(ship_features,dtype=torch.float).to(device).squeeze(1)
@@ -187,55 +190,150 @@ class Agent:
     def put_data(self, transition):
         self.data.append(transition)
 
-    def make_batch(self):
-        s_lst, a_lst, r_lst, s_prime_lst, prob_a_lst, mask_lst, done_lst = [], [], [], [], [], [], []
 
-        for transition in self.data:
-            s, a, r, s_prime, prob_a, mask, done = transition
-            s_lst.append(s)
-            a_lst.append(a)
-            r_lst.append([r])
-            s_prime_lst.append(s_prime)
-            prob_a_lst.append([prob_a])
-            mask_lst.append(mask)
-            done_mask = 0 if done else 1
-            done_lst.append([done_mask])
-        s, a, r, s_prime, prob_a, mask, done = torch.tensor(s_lst, dtype=torch.float).to(device), torch.tensor(a_lst).to(device), \
-                                               torch.tensor(r_lst, dtype=torch.float).to(device), torch.tensor(s_prime_lst, dtype=torch.float).to(device), \
-                                               torch.tensor(prob_a_lst).to(device), torch.tensor(mask_lst).to(device), torch.tensor(done_lst, dtype=torch.float).to(device)
+    def make_batch(self):
+
+        ship_feature_list = list()
+        edge_indices_list = list()
+        missile_node_feature_list = list()
+        action_feature_list = list()
+        a_list = list()
+
+        ship_feature_next_list = list()
+        edge_indices_next_list = list()
+        missile_node_feature_next_list = list()
+
+        r_list = list()
+        prob_list = list()
+        done_list = list()
+        avail_action_list = list()
+        a_indices_list = list()
+
+        for t in range(len(self.data)):
+            ship_feature, \
+            edge_index, \
+            missile_node_feature, \
+            action_feature, \
+            a, \
+            r, \
+            prob,\
+            mask, \
+            done,\
+            avail_actions,\
+            a_index= self.data[t]
+            avail_action_list.append(avail_actions)
+            ship_feature_list.append(ship_feature)
+            missile_node_feature_list.append(missile_node_feature)
+            action_feature_list.append(action_feature)
+            a_indices_list.append(a_index)
+
+            a_list.append(a)
+            r_list.append(r)
+            prob_list.append(prob)
+            done_list.append(done)
+
+            if t == len(self.data)-1:
+                ship_feature_next = [[0]*len(ship_feature[0])]
+                edge_index_next = [[],[]]
+                missile_node_feature_next = [[0]*len(missile_node_feature[0]) for _ in range(self.n_node_feature_missile)]
+            else:
+                ship_feature_next, \
+                edge_index_next, \
+                missile_node_feature_next, \
+                _, \
+                _, \
+                _, \
+                _, \
+                _, \
+                _ ,\
+                _ , \
+                _= self.data[t+1]
+
+            ship_feature_next_list.append(ship_feature_next)
+            missile_node_feature_next_list.append(missile_node_feature_next)
+
+            edge_indices = torch.sparse_coo_tensor(edge_index,
+                                    torch.ones(len(edge_index[0])),
+                                    (self.n_node_feature_missile, self.n_node_feature_missile)).to_dense()
+
+
+            edge_indices_next = torch.sparse_coo_tensor(edge_index_next,
+                                    torch.ones(len(edge_index_next[0])),
+                                    (self.n_node_feature_missile, self.n_node_feature_missile)).to_dense()
+
+
+
+            edge_indices_list.append(edge_indices)
+            edge_indices_next_list.append(edge_indices_next)
+
+
+        ship_feature = torch.tensor(ship_feature_list).to(device).float().squeeze(1)
+        missile_node_feature = torch.tensor(missile_node_feature_list).to(device).float()
+        action_feature = torch.tensor(action_feature_list).to(device).float()
+        a = torch.tensor(a_list).to(device).float()
+        ship_feature_next = torch.tensor(ship_feature_next_list).to(device).float().squeeze(1)
+        missile_node_feature_next = torch.tensor(missile_node_feature_next_list).to(device).float()
+
+        edge_indices = edge_indices_list
+        edge_indices_next = edge_indices_next_list
+
+        r = torch.tensor(r_list).float()
+        prob_a = torch.tensor(prob_list).float()
+        done = torch.tensor(done_list).float()
+        avail_action = torch.tensor(avail_action_list).bool()
+        a_indices = torch.tensor(a_indices_list).long()
 
         self.data = []
 
-        return s, a, r, s_prime, prob_a, mask, done
+
+        return ship_feature,missile_node_feature,action_feature,a,ship_feature_next,missile_node_feature_next,edge_indices,edge_indices_next,r,prob_a,done, avail_action, a_indices
 
     def sample_action(self, s, possible_actions, action_feature):
-        #s = torch.tensor(s).to(device).unsqueeze(0)
-        action_feature_dummy = action_feature
+        dummy_action_feature = action_feature
         action_feature = torch.tensor(action_feature, dtype = torch.float).to(device)
         node_embedding_action = self.node_representation_action_feature(action_feature)
 
-
         s = s.expand([node_embedding_action.shape[0], s.shape[1]])
-        obs_n_action = torch.concat([s, self.action_encoding], dim = 1)
-        logit = self.network.pi(obs_n_action).squeeze(1)
+        obs_n_action = torch.cat([s, node_embedding_action], dim = 1)
+
+        logit = [self.network.pi(obs_n_action[i].unsqueeze(0)) for i in range(obs_n_action.shape[0])]
+        logit = torch.stack(logit).view(1, -1)
         mask = torch.tensor(possible_actions, device=device).bool()
         logit = logit.masked_fill(mask == 0, - 1e8)
-        #print("전", logit)
+
         prob = torch.softmax(logit, dim=-1)
         #print("후", prob)
 
         m = Categorical(prob)
         a = m.sample().item()
-        return a, prob, mask
+        a_index = a
+        prob_a = prob.squeeze(0)[a]
 
-    def train(self):
-        self.network.train()
-        s, a, r, s_prime, prob_a, mask, done = self.make_batch()
+        action_blue = dummy_action_feature[a]
+
+        return action_blue, prob_a, mask, a_index
+
+    def learn(self):
+        ship_features,missile_node_feature,action_feature,a,ship_features_next,missile_node_feature_next,edge_indices,edge_indices_next,r,prob_a,done,mask,a_indices = self.make_batch()
         avg_loss = 0.0
 
+        a_indices = a_indices.unsqueeze(1)
         for i in range(self.K_epoch):
-            td_target = r + self.gamma * self.network.v(s_prime) * done
-            delta = td_target - self.network.v(s)
+            s = self.get_node_representation(missile_node_feature,
+                                             ship_features,
+                                             edge_indices,
+                                             self.n_node_feature_missile,
+                                             mini_batch= True)
+            s_prime = self.get_node_representation(missile_node_feature_next,
+                                                   ship_features_next,
+                                                   edge_indices_next,
+                                                    self.n_node_feature_missile, mini_batch=True)
+
+
+            td_target = r.unsqueeze(1) + self.gamma * self.network.v(s_prime) * (1-done).unsqueeze(1)
+            v_s = self.network.v(s)
+            #print(td_target.shape,  self.network.v(s).shape)
+            delta = td_target - v_s
             delta = delta.cpu().detach().numpy()
             advantage_lst = []
             advantage = 0.0
@@ -244,38 +342,30 @@ class Agent:
                 advantage_lst.append([advantage])
             advantage_lst.reverse()
             advantage = torch.tensor(advantage_lst, dtype=torch.float).to(device)
+            #print(action_feature.shape)
+            action_embedding = [self.node_representation_action_feature(action_feature[:, i]) for i in range(action_feature.shape[1])]
+            action_embedding = torch.stack(action_embedding)
+            action_embedding = torch.einsum('ijk -> jik', action_embedding)
 
+            s_expand = s.unsqueeze(1).expand([s.shape[0], action_feature.shape[1], s.shape[1]])
+            #print(s_expand.shape, action_feature.shape)
+            obs_n_act = torch.cat([s_expand, action_embedding], dim= 2)
 
-
-
-
-
-            s_expand = s.unsqueeze(1).expand([s.shape[0], self.action_size, self.state_size])
-            a_expand = self.action_encoding.unsqueeze(0).expand([s.shape[0], self.action_size, self.action_size])
-            obs_n_act = torch.concat([s_expand, a_expand], dim = 2)
-
-            logit = torch.stack([self.network.pi(obs_n_act[:, i]) for i in range(self.action_size)])
+            logit = torch.stack([self.network.pi(obs_n_act[:, i]) for i in range(action_feature.shape[1])])
             logit = torch.einsum('ijk->jik', logit).squeeze(2)
+            mask = mask.squeeze(1)
             logit = logit.masked_fill(mask == 0, -1e8)
+
             pi = torch.softmax(logit, dim=-1)
-            #print("후", pi)
-            #print(pi)
-            action_indices = a.nonzero(as_tuple= True)[1].long().unsqueeze(1)
-
-
-            pi_a = pi.gather(1, action_indices)
+            pi_a = pi.gather(1, a_indices)
             ratio = torch.exp(torch.log(pi_a) - torch.log(prob_a))  # a/b == exp(log(a)-log(b))
 
             surr1 = ratio * advantage
             surr2 = torch.clamp(ratio, 1 - self.eps_clip, 1 + self.eps_clip) * advantage
-            loss1 = -torch.min(surr1, surr2)
-            loss2 = 0.2 * F.smooth_l1_loss(self.network.v(s), td_target.detach())
-            self.optimizer1.zero_grad()
-            self.optimizer2.zero_grad()
-            loss1.mean().backward()
-            loss2.mean().backward()
-            self.optimizer1.step()
-            self.optimizer2.step()
+            loss = -torch.min(surr1, surr2)+0.2 * F.smooth_l1_loss(v_s, td_target.detach())
+            self.optimizer.zero_grad()
+            loss.mean().backward()
+            self.optimizer.step()
             #avg_loss += loss.mean().item()
 
         return avg_loss / self.K_epoch

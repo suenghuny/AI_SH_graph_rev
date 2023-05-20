@@ -98,7 +98,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                                                                 enemy_edge_index = enemy_edge_index,
                                                                 n_node_features_enemy = n_node_feature_enemy,
                                                                 mini_batch=False)  # 차원 : n_agents X n_representation_comm
-            action_blue = agent.sample_action(node_representation, avail_action_blue, epsilon,action_feature)
+            action_blue = agent.sample_action(node_representation, avail_action_blue, epsilon, action_feature)
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
             reward, win_tag, done = env.step(action_blue, action_yellow)
             #print(reward)
