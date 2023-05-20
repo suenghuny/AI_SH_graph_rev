@@ -49,7 +49,7 @@ def train(agent, env, e, t):
         interval_min = False
 
     interval_constant = random.uniform(0, 5)
-
+    enemy_action_for_transition = [0] * len(env.enemies_fixed_list)
     step_checker = 0
     while not done:
         if env.now % (decision_timestep) <= 0.00001:
@@ -71,11 +71,10 @@ def train(agent, env, e, t):
             n_node_feature_missile = env.friendlies_fixed_list[0].air_tracking_limit + \
                                      env.friendlies_fixed_list[0].air_engagement_limit + \
                                      env.friendlies_fixed_list[0].num_m_sam + 1
-
-
+            agent.eval_check(eval=True)
             node_representation = agent.get_node_representation(missile_node_feature, ship_feature, edge_index,n_node_feature_missile, mini_batch=False)  # 차원 : n_agents X n_representation_comm
-            print(node_representation)
-            action_blue = agent.sample_action(node_representation, avail_action_blue, epsilon, action_feature)
+
+            action_blue = agent.sample_action(node_representation, avail_action_blue, action_feature)
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
 
             reward, win_tag, done = env.step(action_blue, action_yellow)
@@ -86,76 +85,15 @@ def train(agent, env, e, t):
             step_checker += 1
 
 
-            if e >= train_start:
-                t += 1
-                if agent.beta <= 1:
-                    agent.beta -= anneal_step
-                agent.eval_check(eval=False)
-                agent.learn(regularizer=0, vdn=vdn)
+
+
+
         else:
             pass_transition = True
-            env.step(action_blue=[0, 0, 0, 0, 0, 0, 0, 0], action_yellow=enemy_action_for_transition,
-                     pass_transition=pass_transition)
+            env.step(action_blue=[0, 0, 0, 0, 0, 0, 0, 0], action_yellow=enemy_action_for_transition,pass_transition=pass_transition)
 
-        if done == True:
-            if step_checker < n_step:
-                while len(n_step_rewards) < n_step:
-                    n_step_dones.append(True)
-                    n_step_rewards.append(0)
-                    n_step_action_blue.append([0] * agent.num_agent)
-                    n_step_avail_action_blue.append(dummy_avail_action)
-                    n_step_missile_node_features.append(np.zeros_like(missile_node_feature).tolist())
-                    n_step_ship_feature.append(np.zeros_like(ship_feature).tolist())
-                    n_step_enemy_feature.append(None)
-                    n_step_edge_index.append([[], []])
-                    n_step_enemy_edge_index.append([[], []])
-                    n_step_action_feature.append(np.zeros_like(action_blue))
-                    n_step_action_features.append(np.zeros_like(action_feature))
-
-                agent.buffer.memory(n_step_missile_node_features[0],
-                                    n_step_ship_feature[0],
-                                    n_step_edge_index[0],
-                                    n_step_action_blue[0],
-                                    n_step_rewards,
-
-                                    n_step_dones,
-                                    n_step_avail_action_blue[0],
-
-                                    n_step_enemy_feature[0],
-                                    n_step_enemy_edge_index[0],
-
-                                    status,
-                                    n_step_action_feature[0],
-                                    n_step_action_features[0])
-            else:
-                for i in range(step):
-                    n_step_dones.append(True)
-                    n_step_rewards.append(0)
-                    n_step_action_blue.append([0] * agent.num_agent)
-                    n_step_avail_action_blue.append(dummy_avail_action)
-                    n_step_missile_node_features.append(np.zeros_like(missile_node_feature).tolist())
-                    n_step_ship_feature.append(np.zeros_like(ship_feature).tolist())
-                    n_step_edge_index.append([[], []])
-                    n_step_enemy_feature.append(None)
-                    n_step_enemy_edge_index.append([[], []])
-                    n_step_action_feature.append(np.zeros_like(action_blue))
-                    n_step_action_features.append(np.zeros_like(action_feature))
-                    agent.buffer.memory(n_step_missile_node_features[0],
-                                        n_step_ship_feature[0],
-                                        n_step_edge_index[0],
-                                        n_step_action_blue[0],
-                                        n_step_rewards,
-
-                                        n_step_dones,
-                                        n_step_avail_action_blue[0],
-
-                                        n_step_enemy_feature[0],
-                                        n_step_enemy_edge_index[0],
-
-                                        status,
-                                        n_step_action_feature[0],
-                                        n_step_action_features[0])
-            break
+    agent.eval_check(eval=False)
+    agent.learn(regularizer=0)
     return episode_reward, epsilon, t, eval
 
 

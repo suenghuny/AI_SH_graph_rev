@@ -139,13 +139,25 @@ class Agent:
         self.optimizer2 = optim.Adam(self.network.parameters(), lr=learning_rate_critic)
 
         #self.scheduler = OneCycleLR(optimizer=self.optimizer, max_lr=self.learning_rate, total_steps=30000)
+    def eval_check(self, eval):
+        if eval == True:
+            self.network.eval()
+            self.node_representation_action_feature.eval()
+            self.node_representation_ship_feature.eval()
+            self.node_representation.eval()
+            self.func_missile_obs.eval()
+        else:
+            self.network.train()
+            self.node_representation_action_feature.train()
+            self.node_representation_ship_feature.train()
+            self.node_representation.train()
+            self.func_missile_obs.train()
+
     def get_node_representation(self, missile_node_feature, ship_features, edge_index_missile,n_node_features_missile,mini_batch=False):
         #print("??????????????")
         if mini_batch == False:
             with torch.no_grad():
-                print("????????????????????")
                 ship_features = torch.tensor(ship_features, dtype=torch.float, device=device)
-                print(ship_features.shape, "skskskds")
                 node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
                 missile_node_feature = torch.tensor(missile_node_feature,dtype=torch.float,device=device).clone().detach()
                 node_embedding_missile_node = self.node_representation(missile_node_feature, missile=True)
@@ -196,10 +208,14 @@ class Agent:
 
         return s, a, r, s_prime, prob_a, mask, done
 
-    def get_action(self, s, possible_actions= [True, True]):
-        self.network.eval()
-        s = torch.tensor(s).to(device).unsqueeze(0)
-        s = s.expand([self.action_size, self.state_size])
+    def sample_action(self, s, possible_actions, action_feature):
+        #s = torch.tensor(s).to(device).unsqueeze(0)
+        action_feature_dummy = action_feature
+        action_feature = torch.tensor(action_feature, dtype = torch.float).to(device)
+        node_embedding_action = self.node_representation_action_feature(action_feature)
+
+
+        s = s.expand([node_embedding_action.shape[0], s.shape[1]])
         obs_n_action = torch.concat([s, self.action_encoding], dim = 1)
         logit = self.network.pi(obs_n_action).squeeze(1)
         mask = torch.tensor(possible_actions, device=device).bool()

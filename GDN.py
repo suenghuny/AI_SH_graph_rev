@@ -242,13 +242,11 @@ class NodeEmbedding(nn.Module):
                 self.linears['linear{}'.format(i)] = nn.Linear(last_layer, n_representation_obs)
 
         self.node_embedding = nn.Sequential(self.linears)
-        print(self.node_embedding)
+        #print(self.node_embedding)
         self.node_embedding.apply(weight_init_xavier_uniform)
 
 
     def forward(self, node_feature, missile=False):
-        #node_feature = node_feature
-        print("asdfajsdfljals", node_feature.shape)
         node_representation = self.node_embedding(node_feature)
         return node_representation
 
