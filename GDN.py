@@ -40,8 +40,6 @@ class IQN(nn.Module):
 
         self.state_size_advantage = state_size_advantage
         self.state_size_value = state_size_value
-
-
         self.batch_size = batch_size
         self.action_size = action_size
         self.N = N
@@ -244,10 +242,13 @@ class NodeEmbedding(nn.Module):
                 self.linears['linear{}'.format(i)] = nn.Linear(last_layer, n_representation_obs)
 
         self.node_embedding = nn.Sequential(self.linears)
+        print(self.node_embedding)
         self.node_embedding.apply(weight_init_xavier_uniform)
 
 
     def forward(self, node_feature, missile=False):
+        #node_feature = node_feature
+        print("asdfajsdfljals", node_feature.shape)
         node_representation = self.node_embedding(node_feature)
         return node_representation
 
@@ -629,11 +630,13 @@ class Agent:
 
 
             self.DuelingQ = DuelingDQN().to(device)
+            self.DuelingQtar = DuelingDQN().to(device)
 
             self.Q = IQN(state_size_advantage = n_representation_ship+n_representation_missile + 2 + n_representation_action,
                          state_size_value = n_representation_ship + n_representation_missile + 2,
                          action_size = self.action_size,
                          batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos = n_cos, layers = iqn_layers).to(device)
+
 
             self.Q_tar = IQN(
                 state_size_advantage=n_representation_ship + n_representation_missile + 2 + n_representation_action,
@@ -643,8 +646,9 @@ class Agent:
                 device)
 
 
-            #self.V_tar.load_state_dict(self.V.state_dict())
+
             self.Q_tar.load_state_dict(self.Q.state_dict())
+            self.DuelingQtar.load_state_dict(self.DuelingQtar.state_dict())
             self.eval_params = list(self.DuelingQ.parameters()) + \
                                list(self.Q.parameters()) + \
                                list(self.node_representation_action_feature.parameters()) + \
@@ -738,6 +742,7 @@ class Agent:
             if mini_batch == False:
                 with torch.no_grad():
                     ship_features = torch.tensor(ship_features, dtype=torch.float, device=device)
+                    print(ship_features.shape, "?")
                     node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
                     missile_node_feature = torch.tensor(missile_node_feature,dtype=torch.float,device=device).clone().detach()
                     node_embedding_missile_node = self.node_representation(missile_node_feature, missile=True)
@@ -748,7 +753,6 @@ class Agent:
                     node_representation = torch.cat([node_embedding_ship_features, node_representation[0].unsqueeze(0)], dim=1)
             else:
                 ship_features = torch.tensor(ship_features,dtype=torch.float).to(device).squeeze(1)
-                #print(dir(self.eval_params))
                 node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
 
                 missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float).to(device)
@@ -840,8 +844,12 @@ class Agent:
 
                 A_tar = torch.stack([self.Q_tar.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
                 A_tar = torch.einsum('ijk->jik', A_tar)
-                V_tar = self.Q_tar.value_forward(obs, cos, mini_batch=True)
-                Q_tar = self.DuelingQ(V_tar, A_tar, mask, past_action=None, training=True)
+                V_tar = self.Q_tar.value_forward(obs,
+                                                 cos,
+                                                 mini_batch = True)
+                Q_tar = self.DuelingQtar(V_tar,
+                                         A_tar,
+                                         mask, past_action=None, training=True)
 
                 action_max = Q.max(dim = 1)[1].long().unsqueeze(1)
                 Q_tar_max = torch.gather(Q_tar, 1, action_max)
@@ -973,6 +981,7 @@ class Agent:
         self.buffer.update_transition_priority(batch_index = batch_index, delta = delta)
 
         loss = F.huber_loss(weight*q_tot, weight*td_target.detach())#
+
         self.optimizer.zero_grad()
         loss.backward()
 
@@ -981,6 +990,10 @@ class Agent:
         self.scheduler.step()
         tau = 1e-3
         for target_param, local_param in zip(self.Q_tar.parameters(), self.Q.parameters()):
+            target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
+
+
+        for target_param, local_param in zip(self.DuelingQtar.parameters(), self.DuelingQ.parameters()):
             target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
 
 

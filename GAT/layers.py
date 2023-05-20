@@ -56,9 +56,8 @@ class GraphAttentionLayer(nn.Module):
                                            torch.ones(edge_index.clone().detach().shape[1]).to(device).clone().detach(),
                                            (n_node_features, n_node_features)).to_dense().to(device).clone().detach()
 
-#            print(adj[2])
-
             adj = adj.to(device).long()
+
             attention = adj * e
             attention = F.softmax(attention, dim=1)                                     # attention : (n_node, n_node)
             h_prime =self.teleport_probability * torch.mm(attention, Wh) + (1-self.teleport_probability) * Wh

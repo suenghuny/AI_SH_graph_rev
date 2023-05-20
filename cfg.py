@@ -19,10 +19,11 @@ def get_cfg():
     parser.add_argument("--hidden_size_comm", type=int, default=56, help="GNN hidden layer")
     parser.add_argument("--hidden_size_enemy", type=int, default=64, help="GNN hidden layer")
     parser.add_argument("--iqn_layers", type=str, default= '[128,64,48,39,32]', help="layer 구조")
+    parser.add_argument("--ppo_layers", type=str, default='[128,64,48,39,32]', help="layer 구조")
     parser.add_argument("--ship_layers", type=str, default='[64,48]', help="layer 구조")
-    parser.add_argument("--missile_layers", type=str, default='[36, 23]', help="layer 구조")
-    parser.add_argument("--enemy_layers", type=str, default='[48, 32]', help="layer 구조")
-    parser.add_argument("--action_layers", type=str, default='[32, 24]', help="layer 구조")
+    parser.add_argument("--missile_layers", type=str, default='[36,23]', help="layer 구조")
+    parser.add_argument("--enemy_layers", type=str, default='[48,32]', help="layer 구조")
+    parser.add_argument("--action_layers", type=str, default='[32,24]', help="layer 구조")
     parser.add_argument("--n_representation_ship", type=int, default=42, help="")
     parser.add_argument("--n_representation_missile", type=int, default=12, help="")
     parser.add_argument("--n_representation_enemy", type=int, default=28, help="")
@@ -35,7 +36,8 @@ def get_cfg():
     parser.add_argument("--teleport_probability", type=float, default=1.0, help="teleport_probability")
     parser.add_argument("--gtn_beta", type=float, default=0.05, help="teleport_probability")
     parser.add_argument("--gamma", type=float, default=.99, help="discount ratio")
-    parser.add_argument("--lr", type=float, default=2.5e-5, help="learning rate")
+    parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
+    parser.add_argument("--lr_critic", type=float, default=1e-3, help="learning rate")
     parser.add_argument("--n_multi_head", type=int, default=1, help="number of multi head")
     parser.add_argument("--num_episode", type=int, default=1000000, help="number of episode")
     parser.add_argument("--scheduler_step", type =int, default=100000, help= "scheduler step")
@@ -57,5 +59,14 @@ def get_cfg():
     parser.add_argument("--test_epi", type=int, default=1800, help="interval_constant_blue")
     parser.add_argument("--scheduler", type=str, default='step', help="step 형태")
     parser.add_argument("--t_max", type=int, default=40000, help="interval_constant_blue")
+
+    parser.add_argument("--lmbda", type=float, default=0.95, help="GAE lmbda")
+    parser.add_argument("--eps_clip", type=float, default=0.2, help="clipping epsilon")
+    parser.add_argument("--K_epoch", type=int, default=3, help="K-epoch")
+
+
+    # lmbda = cfg.lmbda,
+    # eps_clip,
+    # K_epoch):
 
     return parser.parse_args()

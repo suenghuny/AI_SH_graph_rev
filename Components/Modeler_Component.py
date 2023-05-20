@@ -491,9 +491,7 @@ class Environment:
         ship = self.friendlies_fixed_list[0]
         len_ssm_detections = len(ship.ssm_detections)
         len_flying_sams_friendly = len(self.flying_sams_friendly)
-        # print("==================")
-        # print("ssm 길이", len_ssm_detections)
-        # print("sam 길이", len_flying_sams_friendly)
+
         for i in range(1, len_ssm_detections+1):
             edge_index[0].append(0)
             edge_index[1].append(i)
@@ -502,8 +500,6 @@ class Environment:
 
         for i in range(1, len_ssm_detections+1):
             for j in range(len_flying_sams_friendly):
-                #print("후", i, len_ssm_detections+j+1, "전체 길이", 1+len_ssm_detections+len_flying_sams_friendly)
-
                 ssm_i = ship.ssm_detections[i-1]
                 sam_j = self.flying_sams_friendly[j]
 
@@ -511,7 +507,6 @@ class Environment:
                     edge_index[0].append(i)
                     edge_index[1].append(len_ssm_detections+j+1)
 
-                    #print(i, len_ssm_detections+j+1)
 
 
 
@@ -624,7 +619,6 @@ class Environment:
                 0,
                 0]
         node_features = [dummy]
-        #print("node_길이 1", len(node_features))
         for ship in self.friendlies_fixed_list:
             for missile in ship.ssm_detections:
                 if rad_coordinate == True:
@@ -638,31 +632,20 @@ class Environment:
                     ax = missile.a_x - ship.a_x
                     ay = missile.a_y - ship.a_y
                     node_features.append([px/missile.attack_range, py/missile.attack_range, vx/missile.speed, vy/missile.speed, ax, ay])
-        #print("ssm detection 추가", len(node_features))
-        # if ship.air_tracking_limit+1-len(node_features) > 0:
-        #     for _ in range(ship.air_tracking_limit+1-len(node_features)):
-        #         node_features.append(dummy)
-        # print("ssm detection 추가", len(node_features))
+
         len_flying_sams_friendly = len(self.flying_sams_friendly)
         for j in range(len_flying_sams_friendly):
             missile = self.flying_sams_friendly[j]
             original_target = missile.original_target
             f1, f2, f3, f4, f5, f6 = self.get_feature(original_target, missile)
             node_features.append([f1, f2, f3, f4, f5, f6])
-        #print("flying sam 추가", len(node_features))
 
 
         if ship.air_tracking_limit +ship.air_engagement_limit+ship.num_m_sam+1-len(node_features) > 0:
             for _ in range(ship.air_tracking_limit +ship.air_engagement_limit+ship.num_m_sam+1-len(node_features)):
                 node_features.append(dummy)
 
-        #print("마지막", len(node_features))
-
-
-        #print("후", len(node_features), ship.air_tracking_limit + 1 - len(node_features))
-
         return node_features
-                #print([px/missile.attack_range, py/missile.attack_range, vx/missile.speed, vy/missile.speed, ax/5, ay/5])
 
 
 
