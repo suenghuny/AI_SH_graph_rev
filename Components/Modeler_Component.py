@@ -567,12 +567,7 @@ class Environment:
 
     def get_feature(self, ship, target):
         r = ((target.position_x - ship.position_x) ** 2 + (target.position_y - ship.position_y) ** 2) ** 0.5 / 600
-
-        #print(ship.cla, target.cla)
-
-
         v = ((target.v_x - ship.v_x) ** 2 + (target.v_y - ship.v_y) ** 2) ** 0.5 / (self.missile_speed_scaler)
-
         theta_r = math.atan2(target.position_y - ship.position_y, target.position_x - ship.position_x)
         theta_v = math.atan2(ship.v_y - target.v_y, ship.v_x - target.v_x)
 
@@ -583,7 +578,7 @@ class Environment:
             a = 0
             theta_a = 0
 
-        return r, v, a, theta_v, theta_r - theta_v, theta_v - theta_a
+        return r, v, a, theta_v, (theta_r - theta_v)*5, theta_v - theta_a
 
     def get_action_feature(self):
         dummy = [0,0,0,0,0,0,0,0]
@@ -623,6 +618,7 @@ class Environment:
             for missile in ship.ssm_detections:
                 if rad_coordinate == True:
                     f1, f2, f3, f4, f5, f6 = self.get_feature(ship, missile)
+                    #print(missile.id, missile.target.cla, missile.status, missile.seeker.on, ship.status, "각 차이1", f4, "각 차이2", f5, "거리", f1)
                     node_features.append([f1, f2, f3, f4, f5, f6])
                 else:
                     px = missile.position_x - ship.position_x

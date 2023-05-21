@@ -140,7 +140,7 @@ class Agent:
         self.n_node_feature_missile = n_node_feature_missile
 
 
-        self.optimizer = optim.Adam(self.network.parameters(), lr=learning_rate)
+        self.optimizer = optim.Adam(self.eval_params, lr=learning_rate)
 
         #self.scheduler = OneCycleLR(optimizer=self.optimizer, max_lr=self.learning_rate, total_steps=30000)
     def eval_check(self, eval):
@@ -158,7 +158,6 @@ class Agent:
             self.func_missile_obs.train()
 
     def get_node_representation(self, missile_node_feature, ship_features, edge_index_missile,n_node_features_missile,mini_batch=False):
-        #print("??????????????")
         if mini_batch == False:
             with torch.no_grad():
                 ship_features = torch.tensor(ship_features, dtype=torch.float, device=device)
@@ -171,18 +170,30 @@ class Agent:
                 node_representation = torch.cat([node_embedding_ship_features, node_representation[0].unsqueeze(0)], dim=1)
         else:
             ship_features = torch.tensor(ship_features,dtype=torch.float).to(device).squeeze(1)
+            #print("ship_features.shape", ship_features.shape)
             node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
+            #print("node_embedding_ship_features.shape", node_embedding_ship_features.shape)
             missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float).to(device)
+            #print("missile_node_feature.shape", missile_node_feature.shape)
+            #print(missile_node_feature[:, 0])
             empty = list()
             for i in range(n_node_features_missile):
                 node_embedding_missile_node = self.node_representation(missile_node_feature[:, i, :], missile=True)
                 empty.append(node_embedding_missile_node)
             node_embedding_missile_node = torch.stack(empty)
+            #print("node_embedding_missile_node.shape1", node_embedding_missile_node.shape)
             node_embedding_missile_node = torch.einsum('ijk->jik', node_embedding_missile_node)
+
+            #print("node_embedding_missile_node.shape2", node_embedding_missile_node.shape)
             edge_index_missile = torch.stack(edge_index_missile)
             node_representation = self.func_missile_obs(node_embedding_missile_node, edge_index_missile,
                                                          n_node_features_missile, mini_batch=mini_batch)
+
+            #print("node_representation.shape", node_representation.shape)
             node_representation = torch.cat([node_embedding_ship_features, node_representation[:, 0, :],  ], dim=1)
+
+            #print("cat_feature.shape", node_representation.shape)
+            #print("========================================")
         return node_representation
 
 
@@ -362,10 +373,12 @@ class Agent:
 
             surr1 = ratio * advantage
             surr2 = torch.clamp(ratio, 1 - self.eps_clip, 1 + self.eps_clip) * advantage
-            loss = -torch.min(surr1, surr2)+0.2 * F.smooth_l1_loss(v_s, td_target.detach())
+            loss = -torch.min(surr1, surr2) + 0.2 * F.smooth_l1_loss(v_s, td_target.detach())
             self.optimizer.zero_grad()
             loss.mean().backward()
+            torch.nn.utils.clip_grad_norm_(self.eval_params, cfg.grad_clip)
             self.optimizer.step()
+
             #avg_loss += loss.mean().item()
 
         return avg_loss / self.K_epoch
