@@ -207,7 +207,7 @@ class Environment:
 
         self.event_log = list()
         self.debug_monitors = list()
-
+        self.bonus_reward = 0
         self.temp_max_air_engagement = list()
         self.temp_rcs = list()
         self.f7 = 0
@@ -685,7 +685,6 @@ class Environment:
         for i in range(len(self.friendlies_fixed_list)):
             num_f += 1
             ship = self.friendlies_fixed_list[i]
-
             self.temp_max_air_engagement.append(len(ship.air_engagement_managing_list))
             if ship.status != 'destroyed':
                 ship.target_allot_by_action_feature(action_blue)
@@ -781,8 +780,6 @@ class Environment:
             sam.flying()
             sam.seeker_operation()
             sam.rotate_arc_beam_angle()
-
-
             if self.visualize == True:
                 sam.show()
                 font1 = pygame.font.Font(None, 15)
@@ -828,9 +825,6 @@ class Environment:
             for i in range(len(self.friendlies_fixed_list)):
                 ship = self.friendlies_fixed_list[i]
                 if ship.status != 'destroyed':pass
-                    #reward += (ship.health - ship.last_health)*10
-                    #ship.last_health = deepcopy(ship.health)
-                    #print(reward, ship.health, ship.last_health, self.now)
                 else:
                     ship_destroyed_cal += 1
 
@@ -848,7 +842,9 @@ class Environment:
             #reward = self.
             reward = 2000 * (enemy_destroyed_cal - self.last_destroyed_enemy) \
                      -6000 * (ship_destroyed_cal - self.last_destroyed_ship) +  \
-                     50 * (missile_destroyed_cal - self.last_destroyed_missile)
+                     25 * (missile_destroyed_cal - self.last_destroyed_missile)
+            reward += self.bonus_reward*100
+            self.bonus_reward = 0
             reward = reward / 200
             self.last_destroyed_missile = missile_destroyed_cal
             self.last_destroyed_enemy = enemy_destroyed_cal

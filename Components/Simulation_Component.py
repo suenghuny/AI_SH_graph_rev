@@ -250,14 +250,12 @@ class Missile:
                                     ship.ssm_detections.remove(self)  # self는          blue의 ssm -> self를 detecting하는 주체는 yellow
                         else:
                             if self.target.cla == 'decoy':
-
                                 """
                                 state feature 만들기
                                 """
+                                if self.launcher.side == 'yellow':
+                                    self.env.bonus_reward += 1
                                 self.original_target.missile_destroying_history += 1
-
-
-
                                 flying_ssms_friendly.remove(self)  # self는          blue의 ssm
                                 self.env.event_log.append({"time": self.env.now, "friend_or_foe": self.launcher.side,
                                                            "launcher_id": self.launcher.id, "missile_id": self.id,
@@ -275,7 +273,6 @@ class Missile:
                                 if self.cla == 'LSAM':
                                     self.launcher.air_engagement_managing_list.remove([self, self.target])
                                     if np.random.uniform(0, 1) < self.p_h:  # probability of hitting에 따른 명중여부 판단
-
                                         """
                                         state feature 만들기
                                         """
@@ -378,6 +375,7 @@ class Missile:
                     """
                     if self.fly_mode == 'ccm':
                         if r_est_hitting_point <= self.env.epsilon:  # estimation은 가까운데 실제 표적 거리는 먼 상황(seeker의 작동 또는 lock on 여부와 상관없이 자폭로직을 수행)
+
                             self.status = 'destroyed'  # 나(유도탄)의 상태를 파괴 상태로 전환
                             if self.target.cla != 'decoy':
                                 if self.target.cla == 'ship':
@@ -444,6 +442,7 @@ class Missile:
                                 self.status = 'destroyed'  # 나(유도탄)의 상태를 파괴 상태로 전환
                                 if self.target.cla != 'decoy':
                                     if self.target.cla == 'ship':
+
                                         self.original_target.missile_destroying_history += 1  # 표적(ship)의 입장에서는 하나가 격추된 느낌이다.
                                         self.target.monitors["ssm_mishit"] += 1
                                     if self.target.cla == 'SSM':pass
