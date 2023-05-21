@@ -476,6 +476,7 @@ class Environment:
             f4 = len(ship.m_sam_launcher)/ship.num_m_sam
             f5 = len(ship.l_sam_launcher) /ship.num_l_sam
             f6 = len(ship.ssm_launcher)/ship.num_ssm
+
             f7 = self.f7 / enemy_ssm
             f8 = self.f8 / enemy_ship
             f9 = self.f9 / self.simtime_per_framerate
@@ -844,6 +845,7 @@ class Environment:
                      -6000 * (ship_destroyed_cal - self.last_destroyed_ship) +  \
                      25 * (missile_destroyed_cal - self.last_destroyed_missile)
             reward += self.bonus_reward*100
+            #print(self.bonus_reward*100)
             self.bonus_reward = 0
             reward = reward / 200
             self.last_destroyed_missile = missile_destroyed_cal
