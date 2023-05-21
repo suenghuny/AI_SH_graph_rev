@@ -849,7 +849,7 @@ class Environment:
             reward = 2000 * (enemy_destroyed_cal - self.last_destroyed_enemy) \
                      -6000 * (ship_destroyed_cal - self.last_destroyed_ship) +  \
                      50 * (missile_destroyed_cal - self.last_destroyed_missile)
-            reward = reward / 2000
+            reward = reward / 200
             self.last_destroyed_missile = missile_destroyed_cal
             self.last_destroyed_enemy = enemy_destroyed_cal
             self.last_destroyed_ship = ship_destroyed_cal
