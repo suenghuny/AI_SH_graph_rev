@@ -222,7 +222,7 @@ class Environment:
 
     def get_env_info(self):
         env_info = {"n_agents" : 1,
-                    "ship_feature_shape": 10+1+8,  # + self.n_agents,
+                    "ship_feature_shape": 10+1+8-1,  # + self.n_agents,
                     "missile_feature_shape" : 6,  #9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
                     "enemy_feature_shape": 12,
                     "action_feature_shape": 8,
@@ -482,8 +482,7 @@ class Environment:
             f9 = self.f9 / self.simtime_per_framerate
             f10 = self.f10 / self.simtime_per_framerate
             f11 = self.f11
-            f12 = ship.health /ship.init_health
-            ship_feature.append(np.concatenate([[f1,f2,f3,f4,f5,f6,f7,f8,f9,f10, f12], f11]).tolist())
+            ship_feature.append(np.concatenate([[f1,f2,f3,f4,f5,f6,f7,f8,f9,f10], f11]).tolist())
         #print(len(f11), len(ship_feature[0]),"dddd")
         return ship_feature
 
