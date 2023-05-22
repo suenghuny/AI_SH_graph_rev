@@ -288,11 +288,11 @@ class Agent:
         edge_indices = edge_indices_list
         edge_indices_next = edge_indices_next_list
 
-        r = torch.tensor(r_list).float()
-        prob_a = torch.tensor(prob_list).float()
-        done = torch.tensor(done_list).float()
-        avail_action = torch.tensor(avail_action_list).bool()
-        a_indices = torch.tensor(a_indices_list).long()
+        r = torch.tensor(r_list).float().to(device)
+        prob_a = torch.tensor(prob_list).float().to(device)
+        done = torch.tensor(done_list).float().to(device)
+        avail_action = torch.tensor(avail_action_list).bool().to(device)
+        a_indices = torch.tensor(a_indices_list).long().to(device)
 
         self.data = []
 

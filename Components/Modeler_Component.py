@@ -222,7 +222,7 @@ class Environment:
 
     def get_env_info(self):
         env_info = {"n_agents" : 1,
-                    "ship_feature_shape": 10+1+8-1,  # + self.n_agents,
+                    "ship_feature_shape": 10+1-1+32,  # + self.n_agents,
                     "missile_feature_shape" : 6,  #9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
                     "enemy_feature_shape": 12,
                     "action_feature_shape": 8,
@@ -482,7 +482,18 @@ class Environment:
             f9 = self.f9 / self.simtime_per_framerate
             f10 = self.f10 / self.simtime_per_framerate
             f11 = self.f11
-            ship_feature.append(np.concatenate([[f1,f2,f3,f4,f5,f6,f7,f8,f9,f10], f11]).tolist())
+            z = [[f1,f2,f3,f4,f5,f6,f7,f8,f9,f10]]
+            for i in range(len(ship.action_history)):
+                if ship.action_history[i] != None:
+                    x1, x2, x3, x4, x5, x6 = self.get_feature(ship, ship.action_history[i])
+                    if ship.action_history[i].cla == 'ship':
+                        z.append([x1, x2, x3, x4, x5, x6, 0, 1])
+                    else:
+                        z.append([x1, x2, x3, x4, x5, x6, 1, 0])
+                else:
+                    z.append([0,0,0,0,0,0,0,0])
+            ship_feature.append(np.concatenate(z).tolist())
+            #ship_feature.append(np.concatenate([[f1,f2,f3,f4,f5,f6,f7,f8,f9,f10], f11]).tolist())
         #print(len(f11), len(ship_feature[0]),"dddd")
         return ship_feature
 
@@ -506,6 +517,10 @@ class Environment:
                 if sam_j.original_target==ssm_i:
                     edge_index[0].append(i)
                     edge_index[1].append(len_ssm_detections+j+1)
+
+        # from networkx import nx
+        # A = np.matrix(edge_index)
+        # G = nx.from_numpy_matrix(A)
 
 
 
@@ -828,7 +843,8 @@ class Environment:
                 else:
                     ship_destroyed_cal += 1
 
-
+            # for ssm in self.flying_ssms_enemy:
+            #     print(self.now, ssm.id, ssm.status, ssm.seeker.on, ssm.target.cla, ssm.original_target.status)
             for i in range(len(self.enemies_fixed_list)):
                 ship = self.enemies_fixed_list[i]
                 missile_destroyed_cal += sum([1 for ssm in ship.debug_ssm_launcher if ssm.status == 'destroyed'])
@@ -851,15 +867,15 @@ class Environment:
             self.last_destroyed_enemy = enemy_destroyed_cal
             self.last_destroyed_ship = ship_destroyed_cal
 
-            if (len(self.friendlies) == 0):
-                suceptibility = 1
-                win_tag = "lose"
-                done = True
-                if self.visualize == True:
-                    for event in pygame.event.get():
-                        if event.type == pygame.QUIT:
-                            pygame.quit()
-                            exit()
+            # if (len(self.friendlies) == 0):
+            #     suceptibility = 1
+            #     win_tag = "lose"
+            #     done = True
+            #     if self.visualize == True:
+            #         for event in pygame.event.get():
+            #             if event.type == pygame.QUIT:
+            #                 pygame.quit()
+            #                 exit()
 
             # if (len(self.enemies) == 0):
             #     suceptibility = 0

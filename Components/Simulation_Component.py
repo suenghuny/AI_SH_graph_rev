@@ -6,7 +6,7 @@ import pandas as pd
 from math import pi
 import math
 import pygame
-
+from collections import deque
 
 class Decoy:
     def __init__(self, env, launcher, launched_time, position_x, position_y, rcs, decoy_duration, decoy_decaying_rate):
@@ -1119,7 +1119,10 @@ class Ship:
         self.last_v_y = 0
         self.a_x = 0
         self.a_y = 0
-
+        num = 4
+        self.action_history = deque(maxlen = num)
+        for _ in range(num):
+            self.action_history.append(None)
         self.monitors = {"ssm_destroying_from_lsam": 0,
                          "ssm_destroying_from_msam": 0,
                          "ssm_destroying_from_ciws": 0,
@@ -1414,7 +1417,7 @@ class Ship:
 
 
         if target_id == 0:
-            pass
+            target = None
         if (target_id >= 1) and (target_id <= self.surface_tracking_limit):  # 대함표적에 대한 prelaunching process logic
             target_idx = target_id - 1  # no_ops를 제외하고 index한다.
             if self.side == 'blue':
@@ -1424,11 +1427,8 @@ class Ship:
             idle_ssm_launcher = [missile for missile in self.ssm_launcher if
                                  missile.status == 'idle']  # idle한 유도탄 중에서 유도탄을 할당
             missile = idle_ssm_launcher[0]
-
             missile.target = target
             missile.original_target = target
-
-
             missile.status = 'target_allocated'
             launching_time = self.env.now + np.random.uniform(self.ssm_launching_duration_min,
                                                               self.ssm_launching_duration_max)  # 대함 발사 소요시간
@@ -1482,6 +1482,7 @@ class Ship:
             if (d <= self.ciws_max_range):
                 self.CIWS.target = target
                 self.CIWS.original_target = target
+        self.action_history.append(target)
     def target_allocation_process(self, target_id):
         if target_id == 0:
             pass
