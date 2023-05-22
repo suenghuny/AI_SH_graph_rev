@@ -60,7 +60,7 @@ class Environment:
         self.last_destroyed_enemy = 0
         self.last_destroyed_ship = 0
 
-
+        self.max_a = list()
 
         self.ships = list()
         self.patrol_aircrafts = list()
@@ -84,9 +84,7 @@ class Environment:
 
         inception_data = self.data.inception_data
         noise = np.random.uniform(-10, 10)
-
         self.missile_speed_list = list()
-
         for key, value in data.ship_data.items():
             if key == 1:
                 speed = 25
@@ -457,9 +455,13 @@ class Environment:
 
     def get_avail_actions_temp(self, interval_min, interval_constant, side='blue'):
         if side != 'blue':
-            avail_actions, target_distance_list, air_alert = self.get_target_availability(self.enemies_fixed_list, self.avail_action_enemy, self.friendlies_fixed_list, self.flying_ssms_friendly, interval_min, interval_constant)
+            avail_actions, \
+            target_distance_list, \
+            air_alert = self.get_target_availability(self.enemies_fixed_list, self.avail_action_enemy, self.friendlies_fixed_list, self.flying_ssms_friendly, interval_min, interval_constant)
         else:
-            avail_actions, target_distance_list, air_alert = self.get_target_availability(self.friendlies_fixed_list, self.avail_action_friendly, self.enemies_fixed_list, self.flying_ssms_enemy, interval_min, interval_constant)
+            avail_actions, \
+            target_distance_list, \
+            air_alert = self.get_target_availability(self.friendlies_fixed_list, self.avail_action_friendly, self.enemies_fixed_list, self.flying_ssms_enemy, interval_min, interval_constant)
         return avail_actions, target_distance_list, air_alert
 
     def get_ship_feature(self):
@@ -588,18 +590,16 @@ class Environment:
         return node_features
 
     def get_feature(self, ship, target):
-        r = ((target.position_x - ship.position_x) ** 2 + (target.position_y - ship.position_y) ** 2) ** 0.5 / 600
-        v = ((target.v_x - ship.v_x) ** 2 + (target.v_y - ship.v_y) ** 2) ** 0.5 / (self.missile_speed_scaler)
+        r = ((target.position_x - ship.position_x) ** 2 + (target.position_y - ship.position_y) ** 2) ** 0.5 / ((target.speed+ship.speed)*2000)
+        v = ((target.v_x - ship.v_x) ** 2 + (target.v_y - ship.v_y) ** 2) ** 0.5 / (target.speed+ship.speed)
         theta_r = math.atan2(target.position_y - ship.position_y, target.position_x - ship.position_x)
         theta_v = math.atan2(ship.v_y - target.v_y, ship.v_x - target.v_x)
-
-        a = ((target.a_x - ship.a_x) ** 2 + (target.a_y - ship.a_y) ** 2) ** 0.5
+        a = ((target.a_x - ship.a_x) ** 2 + (target.a_y - ship.a_y) ** 2) ** 0.5 / (target.speed+ship.speed)
         theta_a = math.atan2(ship.a_y - target.a_y, ship.a_x - target.a_x)
-
         if a <= 0.01:
             a = 0
             theta_a = 0
-
+        #print(a)
         return r, v, a, theta_v, (theta_r - theta_v)*5, theta_v - theta_a
 
     def get_action_feature(self):
@@ -640,7 +640,6 @@ class Environment:
             for missile in ship.ssm_detections:
                 if rad_coordinate == True:
                     f1, f2, f3, f4, f5, f6 = self.get_feature(ship, missile)
-                    #print(missile.id, missile.target.cla, missile.status, missile.seeker.on, ship.status, "각 차이1", f4, "각 차이2", f5, "거리", f1)
                     node_features.append([f1, f2, f3, f4, f5, f6])
                 else:
                     px = missile.position_x - ship.position_x
