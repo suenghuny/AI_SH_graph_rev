@@ -893,7 +893,6 @@ class Agent:
             action.append(u)
 
         action_blue = action_feature_dummy[u]
-        print(action_blue)
         return action_blue
 
     def learn(self, regularizer, vdn = False):
