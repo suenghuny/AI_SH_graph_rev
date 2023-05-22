@@ -486,10 +486,17 @@ class Environment:
             for i in range(len(ship.action_history)):
                 if ship.action_history[i] != None:
                     x1, x2, x3, x4, x5, x6 = self.get_feature(ship, ship.action_history[i])
-                    if ship.action_history[i].cla == 'ship':
-                        z.append([x1, x2, x3, x4, x5, x6, 0, 1])
+                    target = ship.action_history[i]
+                    if target.cla == 'ship':
+                        if target.status != 'destroyed':
+                            z.append([x1, x2, x3, x4, x5, x6, 0, 1])
+                        else:
+                            z.append([0, 0, 0, 0, 0, 0, 0, 0])
                     else:
-                        z.append([x1, x2, x3, x4, x5, x6, 1, 0])
+                        if target.status != 'destroyed':
+                            z.append([x1, x2, x3, x4, x5, x6, 1, 0])
+                        else:
+                            z.append([0, 0, 0, 0, 0, 0, 0, 0])
                 else:
                     z.append([0,0,0,0,0,0,0,0])
             ship_feature.append(np.concatenate(z).tolist())
