@@ -90,6 +90,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
             enemy_node_feature = None# env.get_enemy_node_feature()
             action_feature = env.get_action_feature()
 
+
             n_node_feature_missile = env.friendlies_fixed_list[0].air_tracking_limit +env.friendlies_fixed_list[0].air_engagement_limit+env.friendlies_fixed_list[0].num_m_sam+1
             n_node_feature_enemy = env.friendlies_fixed_list[0].surface_tracking_limit + 1
             agent.eval_check(eval=True)

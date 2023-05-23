@@ -511,12 +511,22 @@ class Environment:
         ship = self.friendlies_fixed_list[0]
         len_ssm_detections = len(ship.ssm_detections)
         len_flying_sams_friendly = len(self.flying_sams_friendly)
-
         for i in range(1, len_ssm_detections+1):
             edge_index[0].append(0)
             edge_index[1].append(i)
             edge_index[0].append(i)
             edge_index[1].append(0)
+
+        for j in range(len_ssm_detections-1, -1, -1):
+            for k in range(j-1, -1, -1):
+                missile_j = ship.ssm_detections[j]
+                missile_k = ship.ssm_detections[k]
+                #print(cal_distance(missile_j, missile_k))
+                if cal_distance(missile_j, missile_k) <= 15:
+                    edge_index[0].append(j+1)
+                    edge_index[1].append(k+1)
+                    edge_index[0].append(k+1)
+                    edge_index[1].append(j+1)
 
 
         for i in range(1, len_ssm_detections+1):
@@ -528,8 +538,14 @@ class Environment:
                     edge_index[1].append(len_ssm_detections+j+1)
                     edge_index[0].append(len_ssm_detections+j+1)
                     edge_index[1].append(i)
-
-
+        import networkx as nx
+        import matplotlib.pyplot as plt
+        # if len(edge_index[0])>1:
+        #     A = np.array(edge_index)
+        #     print(A)
+            # G = nx.from_numpy_array(A)
+            # nx.draw(G, with_labels = True)
+            # plt.savefig("filename.png")
         return edge_index
 
     def get_enemy_edge_index(self):
