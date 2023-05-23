@@ -916,9 +916,8 @@ class Agent:
                         deg_row] * value  # degree_matrix의 inverse 중에서 row에 해당되는(즉, node의 차원이 1이상인) node들만 골라서 value_tmp를 곱한다
             A.append((edge, value))
 
-        edge = torch.stack((torch.arange(0, n_node_features), torch.arange(0, n_node_features))).type(
-            torch.cuda.LongTensor)
-        value = torch.ones(n_node_features).type(torch.cuda.FloatTensor)
+        edge = torch.stack((torch.arange(0, n_node_features), torch.arange(0, n_node_features))).type(torch.LongTensor).to(device)
+        value = torch.ones(n_node_features).type(torch.FloatTensor).to(device)
         A.append((edge, value))
         return A
 
