@@ -515,39 +515,21 @@ class Environment:
         for i in range(1, len_ssm_detections+1):
             edge_index[0].append(0)
             edge_index[1].append(i)
-            #print("전", 0, i, "전체 길이", 1+len_ssm_detections+len_flying_sams_friendly)
+            edge_index[0].append(i)
+            edge_index[1].append(0)
 
 
         for i in range(1, len_ssm_detections+1):
             for j in range(len_flying_sams_friendly):
                 ssm_i = ship.ssm_detections[i-1]
                 sam_j = self.flying_sams_friendly[j]
-
                 if sam_j.original_target==ssm_i:
                     edge_index[0].append(i)
                     edge_index[1].append(len_ssm_detections+j+1)
-
-        # from networkx import nx
-        # A = np.matrix(edge_index)
-        # G = nx.from_numpy_matrix(A)
+                    edge_index[0].append(len_ssm_detections+j+1)
+                    edge_index[1].append(i)
 
 
-
-
-        #     for k in range(j - 1, -1, -1):
-        #
-        #         missile_j = ship.l
-        #
-        # for j in range(len_ssm_detections-1, -1, -1):
-        #     for k in range(j-1, -1, -1):
-        #         missile_j = ship.ssm_detections[j]
-        #         missile_k = ship.ssm_detections[k]
-        #         #print(cal_distance(missile_j, missile_k))
-        #         if cal_distance(missile_j, missile_k) <= 20:
-        #             edge_index[0].append(j+1)
-        #             edge_index[1].append(k+1)
-        #             edge_index[0].append(k+1)
-        #             edge_index[1].append(j+1)
         return edge_index
 
     def get_enemy_edge_index(self):
@@ -599,7 +581,6 @@ class Environment:
         if a <= 0.01:
             a = 0
             theta_a = 0
-        #print(a)
         return r, v, a, theta_v, (theta_r - theta_v)*5, theta_v - theta_a
 
     def get_action_feature(self):

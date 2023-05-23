@@ -1044,7 +1044,6 @@ class Ship:
         else:
             self.detection_range = 1.23 * ((3.28084 * self.height)**0.5+(3.28084 * 5)**0.5)
         self.side = side
-
         self.decoy_rcs = decoy_rcs
         self.decoy_launching_distance = decoy_launching_distance*10
         self.decoy_launching_bearing = decoy_launching_bearing
