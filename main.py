@@ -33,6 +33,8 @@ def preprocessing(scenarios):
     return data
 
 def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, initializer, output_dir, vdn, n_step, anneal_epsilon):
+
+
     temp = random.uniform(0, 50)
     agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
     done = False
@@ -59,6 +61,8 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
     n_step_action_feature = deque(maxlen=n_step)
     n_step_action_features = deque(maxlen=n_step)
 
+    n_step_heterogeneous_edges = deque(maxlen=n_step)
+
 
     if random.uniform(0, 1) > 0.5:
         interval_min = True
@@ -82,23 +86,41 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
             avail_action_yellow, target_distance_yellow, air_alert_yellow = env.get_avail_actions_temp(interval_min,
                                                                                                        interval_constant,
                                                                                                        side='yellow')
+            if cfg.GNN == 'FastGTN':
+                edge_index_ssm_to_ship = env.get_ssm_to_ship_edge_index()
+                edge_index_ssm_to_ssm = env.get_ssm_to_ssm_edge_index()
+                edge_index_sam_to_ssm =  env.get_sam_to_ssm_edge_index()
+                heterogeneous_edges = (edge_index_ssm_to_ship, edge_index_ssm_to_ssm, edge_index_sam_to_ssm)
+            else:
+                pass
 
             ship_feature = env.get_ship_feature()
             edge_index   = env.get_edge_index()
+
+
             missile_node_feature = env.get_missile_node_feature()
             enemy_edge_index = [[],[]]#env.get_enemy_edge_index()
             enemy_node_feature = None# env.get_enemy_node_feature()
             action_feature = env.get_action_feature()
 
 
-            n_node_feature_missile = env.friendlies_fixed_list[0].air_tracking_limit +env.friendlies_fixed_list[0].air_engagement_limit+env.friendlies_fixed_list[0].num_m_sam+1
-            n_node_feature_enemy = env.friendlies_fixed_list[0].surface_tracking_limit + 1
+
             agent.eval_check(eval=True)
-            node_representation = agent.get_node_representation(missile_node_feature, ship_feature,edge_index,n_node_feature_missile,
-                                                                enemy_node_feature = enemy_node_feature,
-                                                                enemy_edge_index = enemy_edge_index,
-                                                                n_node_features_enemy = n_node_feature_enemy,
-                                                                mini_batch=False)  # 차원 : n_agents X n_representation_comm
+
+
+            if cfg.GNN == 'GAT':
+                node_representation = agent.get_node_representation(missile_node_feature, ship_feature,edge_index,n_node_feature_missile,
+                                                                    enemy_node_feature = enemy_node_feature,
+                                                                    enemy_edge_index = enemy_edge_index,
+                                                                    n_node_features_enemy = n_node_feature_enemy,
+                                                                    mini_batch=False)  # 차원 : n_agents X n_representation_comm
+            else:
+                node_representation = agent.get_node_representation(missile_node_feature, ship_feature, heterogeneous_edges,
+                                                                    n_node_feature_missile,
+                                                                    enemy_node_feature=enemy_node_feature,
+                                                                    enemy_edge_index=enemy_edge_index,
+                                                                    n_node_features_enemy=n_node_feature_enemy,
+                                                                    mini_batch=False)  # 차원 : n_agents X n_representation_comm
             action_blue = agent.sample_action(node_representation, avail_action_blue, epsilon, action_feature)
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
             reward, win_tag, done = env.step(action_blue, action_yellow)
@@ -115,6 +137,8 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
             n_step_enemy_edge_index.append(enemy_edge_index)
             n_step_action_feature.append(action_blue)
             n_step_action_features.append(action_feature)
+
+            n_step_heterogeneous_edges.append(heterogeneous_edges)
 
             status = None
             step_checker += 1
@@ -133,16 +157,14 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                                     n_step_edge_index[idx],
                                     n_step_action_blue[idx],
                                     n_step_rewards,
-
                                     n_step_dones,
                                     n_step_avail_action_blue[idx],
-
                                     n_step_enemy_feature[idx],
                                     n_step_enemy_edge_index[idx],
-
                                     status,
                                     n_step_action_feature[idx],
-                                    n_step_action_features[idx]
+                                    n_step_action_features[idx],
+                                    n_step_heterogeneous_edges[idx]
                                     )
 
 
@@ -172,6 +194,9 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                     n_step_action_feature.append(np.zeros_like(action_blue))
                     n_step_action_features.append(np.zeros_like(action_feature))
 
+                    heterogeneous_edges = ([[], []], [[], []], [[], []])
+                    n_step_heterogeneous_edges.append(heterogeneous_edges)
+
                 agent.buffer.memory(n_step_missile_node_features[0],
                                     n_step_ship_feature[0],
                                     n_step_edge_index[0],
@@ -186,7 +211,9 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
 
                                     status,
                                     n_step_action_feature[0],
-                                    n_step_action_features[0])
+                                    n_step_action_features[0],
+                                    n_step_heterogeneous_edges[0]
+                                    )
             else:
                 for i in range(step):
                     n_step_dones.append(True)
@@ -200,6 +227,9 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                     n_step_enemy_edge_index.append([[], []])
                     n_step_action_feature.append(np.zeros_like(action_blue))
                     n_step_action_features.append(np.zeros_like(action_feature))
+
+                    heterogeneous_edges = ([[], []], [[], []], [[], []])
+                    n_step_heterogeneous_edges.append(heterogeneous_edges)
                     agent.buffer.memory(n_step_missile_node_features[0],
                                         n_step_ship_feature[0],
                                         n_step_edge_index[0],
@@ -214,7 +244,9 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
 
                                         status,
                                         n_step_action_feature[0],
-                                        n_step_action_features[0])
+                                        n_step_action_features[0],
+                                        n_step_heterogeneous_edges[0]
+                                        )
             break
     return episode_reward, epsilon, t, eval
 
@@ -284,6 +316,11 @@ if __name__ == "__main__":
                   simtime_per_framerate=simtime_per_frame,
                   ciws_threshold=ciws_threshold,
                   action_history_step=cfg.action_history_step)
+
+
+    n_node_feature_missile = env.friendlies_fixed_list[0].air_tracking_limit + env.friendlies_fixed_list[
+        0].air_engagement_limit + env.friendlies_fixed_list[0].num_m_sam + 1
+    n_node_feature_enemy = env.friendlies_fixed_list[0].surface_tracking_limit + 1
     agent = Agent(num_agent=1,
                   feature_size_ship=env.get_env_info()["ship_feature_shape"],
                   feature_size_enemy=env.get_env_info()["enemy_feature_shape"],
@@ -296,9 +333,6 @@ if __name__ == "__main__":
                   node_embedding_layers_missile=list(eval(cfg.missile_layers)),
                   node_embedding_layers_enemy=list(eval(cfg.enemy_layers)),
                   node_embedding_layers_action=list(eval(cfg.action_layers)),
-
-
-
                   hidden_size_comm = cfg.hidden_size_comm,
                   hidden_size_enemy =  cfg.hidden_size_enemy,#### 수정요망
 
@@ -317,19 +351,23 @@ if __name__ == "__main__":
                   GNN='GAT',
                   teleport_probability=cfg.teleport_probability,
                   gtn_beta=0.1,
+
                   n_node_feature_missile = env.friendlies_fixed_list[0].air_tracking_limit +
                                            env.friendlies_fixed_list[0].air_engagement_limit+
                                            env.friendlies_fixed_list[0].num_m_sam+
                                            1,
+
                   n_node_feature_enemy =env.friendlies_fixed_list[0].surface_tracking_limit + 1,
                   n_step= n_step,
                   beta = cfg.per_beta,
                   per_alpha = cfg.per_alpha,
                   iqn_layer_size = cfg.iqn_layer_size,
                   iqn_N=cfg.iqn_N,
-                  n_cos = cfg.n_cos
+                  n_cos = cfg.n_cos,
+                  num_nodes = n_node_feature_missile
 
                   )
+
     anneal_episode = cfg.anneal_episode
     anneal_step = (cfg.per_beta - 1) / anneal_episode
 
