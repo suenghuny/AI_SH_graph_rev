@@ -65,6 +65,7 @@ class FastGTNs(nn.Module):
 
         if num_nodes == None:
             num_nodes = self.num_nodes
+
         """
         GNN layer의 층수를 의미
         """

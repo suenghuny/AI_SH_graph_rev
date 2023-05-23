@@ -506,6 +506,44 @@ class Environment:
         #print(len(f11), len(ship_feature[0]),"dddd")
         return ship_feature
 
+    def get_ssm_to_ship_edge_index(self):
+        edge_index = [[],[]]
+        ship = self.friendlies_fixed_list[0]
+        len_ssm_detections = len(ship.ssm_detections)
+        len_flying_sams_friendly = len(self.flying_sams_friendly)
+        for i in range(1, len_ssm_detections+1):
+            edge_index[0].append(0)
+            edge_index[1].append(i)
+        return edge_index
+    def get_ssm_to_ssm_edge_index(self):
+        edge_index = [[],[]]
+        ship = self.friendlies_fixed_list[0]
+        len_ssm_detections = len(ship.ssm_detections)
+        len_flying_sams_friendly = len(self.flying_sams_friendly)
+        for j in range(len_ssm_detections-1, -1, -1):
+            for k in range(j-1, -1, -1):
+                missile_j = ship.ssm_detections[j]
+                missile_k = ship.ssm_detections[k]
+                #print(cal_distance(missile_j, missile_k))
+                if cal_distance(missile_j, missile_k) <= 15:
+                    edge_index[0].append(j+1)
+                    edge_index[1].append(k+1)
+        return edge_index
+    def get_sam_to_ssm_edge_index(self):
+        edge_index = [[],[]]
+        ship = self.friendlies_fixed_list[0]
+        len_ssm_detections = len(ship.ssm_detections)
+        len_flying_sams_friendly = len(self.flying_sams_friendly)
+        for i in range(1, len_ssm_detections+1):
+            for j in range(len_flying_sams_friendly):
+                ssm_i = ship.ssm_detections[i-1]
+                sam_j = self.flying_sams_friendly[j]
+                if sam_j.original_target==ssm_i:
+                    edge_index[0].append(i)
+                    edge_index[1].append(len_ssm_detections+j+1)
+
+        return edge_index
+
     def get_edge_index(self):
         edge_index = [[],[]]
         ship = self.friendlies_fixed_list[0]
