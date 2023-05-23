@@ -644,10 +644,10 @@ class Agent:
             self.func_meta_path = FastGTNs(num_edge_type=7,
                                            feature_size=n_representation_missile,
                                            num_nodes=self.num_nodes,
-                                           num_FastGTN_layers=2,
+                                           num_FastGTN_layers=cfg.num_GT_layers,
                                            hidden_size=n_representation_missile+2,
-                                           num_channels=2,
-                                           num_layers=2,
+                                           num_channels=cfg.channels,
+                                           num_layers=cfg.num_layers,
                                            teleport_probability=self.teleport_probability,
                                            gtn_beta=cfg.gtn_beta
                                            ).to(device)
@@ -691,6 +691,7 @@ class Agent:
                                list(self.func_meta_path.parameters())
 
         self.optimizer = optim.RMSprop(self.eval_params, lr=learning_rate)
+
 
         if cfg.scheduler == 'step':
             self.scheduler = StepLR(optimizer=self.optimizer, step_size=cfg.scheduler_step, gamma=cfg.scheduler_ratio)

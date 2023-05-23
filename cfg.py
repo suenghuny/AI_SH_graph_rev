@@ -62,9 +62,8 @@ def get_cfg():
     parser.add_argument("--eps_clip", type=float, default=0.2, help="clipping epsilon")
     parser.add_argument("--K_epoch", type=int, default=3, help="K-epoch")
 
-
-    # lmbda = cfg.lmbda,
-    # eps_clip,
-    # K_epoch):
+    parser.add_argument("--num_GT_layers", type=int, default=2, help="num GT layers")
+    parser.add_argument("--channels", type=int, default=1, help="channels")
+    parser.add_argument("--num_layers", type=int, default=2, help="num layers")
 
     return parser.parse_args()
