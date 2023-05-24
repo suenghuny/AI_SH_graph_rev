@@ -1131,7 +1131,11 @@ class Agent:
         torch.nn.utils.clip_grad_norm_(self.eval_params, cfg.grad_clip)
         self.optimizer.step()
         self.scheduler.step()
-        tau = 1e-3
+
+        if cfg.epsilon_greedy == False:
+            self.reset_noise_net()
+
+        tau = 5e-4
         for target_param, local_param in zip(self.Q_tar.parameters(), self.Q.parameters()):
             target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
 
