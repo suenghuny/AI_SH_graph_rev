@@ -74,9 +74,6 @@ class IQN(nn.Module):
 
 
     def reset_noise_net(self):
-        for layer in self.v_layer:
-            if type(layer) is NoisyLinear:
-                layer.reset_noise()
         for layer in self.advantage_layer:
             if type(layer) is NoisyLinear:
                 layer.reset_noise()
@@ -985,6 +982,9 @@ class Agent:
         action_feature 차원      : action_size X n_action_feature
         avail_action 차원        : n_agents X action_size
         """
+        if cfg.epsilon_greedy == False:
+            self.Q.reset_noise_net()
+
         action_feature_dummy = action_feature
         action_feature = torch.tensor(action_feature, dtype = torch.float).to(device)
         node_embedding_action = self.node_representation_action_feature(action_feature)
@@ -1133,7 +1133,8 @@ class Agent:
         self.scheduler.step()
 
         if cfg.epsilon_greedy == False:
-            self.reset_noise_net()
+            self.Q.reset_noise_net()
+            self.Q_tar.reset_noise_net()
 
         tau = 5e-4
         for target_param, local_param in zip(self.Q_tar.parameters(), self.Q.parameters()):

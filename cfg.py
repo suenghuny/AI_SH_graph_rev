@@ -44,7 +44,7 @@ def get_cfg():
     parser.add_argument("--scheduler_step", type =int, default=100000, help= "scheduler step")
     parser.add_argument("--scheduler_ratio", type=float, default=0.2, help= "scheduler ratio")
     parser.add_argument("--train_start", type=int, default=1, help="number of train start")
-    parser.add_argument("--epsilon_greedy", type=bool, default=True, help="epsilon_greedy")
+    parser.add_argument("--epsilon_greedy", type=bool, default=False, help="epsilon_greedy")
     parser.add_argument("--epsilon", type=float, default=0.3, help="epsilon")
     parser.add_argument("--min_epsilon", type=float, default=0.01, help="epsilon")
     parser.add_argument("--anneal_step", type=int, default=20000, help="epsilon")
@@ -57,7 +57,6 @@ def get_cfg():
     parser.add_argument("--test_epi", type=int, default=1800, help="interval_constant_blue")
     parser.add_argument("--scheduler", type=str, default='step', help="step 형태")
     parser.add_argument("--t_max", type=int, default=40000, help="interval_constant_blue")
-
     parser.add_argument("--lmbda", type=float, default=0.95, help="GAE lmbda")
     parser.add_argument("--eps_clip", type=float, default=0.2, help="clipping epsilon")
     parser.add_argument("--K_epoch", type=int, default=3, help="K-epoch")
