@@ -920,7 +920,7 @@ class Agent:
         A.append((edge, value))
         return A
 
-    def cal_Q(self, obs, action_feature, action_features, avail_actions, agent_id, cos, vdn, target=False):
+    def cal_Q(self, obs, action_feature, action_features, avail_actions, agent_id, cos, vdn, episode, target=False):
         """
         node_representation
         - training 시        : batch_size X num_nodes X feature_size
@@ -940,7 +940,11 @@ class Agent:
             obs_expand = obs.unsqueeze(1)
             obs_expand = obs_expand.expand([self.batch_size, self.action_size, obs_expand.shape[2]])  # batch-size, action_size, obs_size
             obs_n_action = torch.cat([obs_expand, node_representation_action], dim=2)
-            A = torch.stack([self.Q.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
+            if episode > cfg.embedding_train_stop:
+                A = torch.stack([self.Q.advantage_forward(obs_n_action[:, i, :].detach(), cos, mini_batch=True) for i in
+                                 range(self.action_size)])
+            else:
+                A = torch.stack([self.Q.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
             A = torch.einsum('ijk->jik', A)
             V = self.Q.value_forward(obs, cos, mini_batch = True)
             Q = self.DuelingQ(V, A, mask, past_action = A_a, training = True)
@@ -957,12 +961,25 @@ class Agent:
                 obs_expand = obs_expand.expand(
                     [self.batch_size, self.action_size, obs_expand.shape[2]])  # batch-size, action_size, obs_size
                 obs_n_action = torch.cat([obs_expand, node_representation_action], dim=2)
-                A = torch.stack([self.Q.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
+                if episode > cfg.embedding_train_stop:
+                    A = torch.stack(
+                        [self.Q.advantage_forward(obs_n_action[:, i, :].detach(), cos, mini_batch=True) for i in
+                         range(self.action_size)])
+                else:
+                    A = torch.stack([self.Q.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in
+                                     range(self.action_size)])
+
                 A = torch.einsum('ijk->jik', A)
                 V = self.Q.value_forward(obs, cos, mini_batch=True)
                 Q = self.DuelingQ(V, A, mask, past_action=None, training=True)
-
-                A_tar = torch.stack([self.Q_tar.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
+                if episode > cfg.embedding_train_stop:
+                    A_tar = torch.stack(
+                        [self.Q_tar.advantage_forward(obs_n_action[:, i, :].detach(), cos, mini_batch=True) for i in
+                         range(self.action_size)])
+                else:
+                    A_tar = torch.stack([self.Q_tar.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in
+                                     range(self.action_size)])
+                #A_tar = torch.stack([self.Q_tar.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
                 A_tar = torch.einsum('ijk->jik', A_tar)
                 V_tar = self.Q_tar.value_forward(obs,
                                                  cos,
