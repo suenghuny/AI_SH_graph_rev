@@ -690,6 +690,7 @@ class Agent:
                                list(self.node_representation.parameters()) + \
                                list(self.func_meta_path.parameters())
 
+
         self.optimizer = optim.RMSprop(self.eval_params, lr=learning_rate)
 
 
@@ -1015,7 +1016,7 @@ class Agent:
         action_blue = action_feature_dummy[u]
         return action_blue
 
-    def learn(self, regularizer, vdn = False):
+    def learn(self, regularizer, episode, vdn = False, ):
 
         node_features_missile, \
         ship_features, \
@@ -1090,6 +1091,11 @@ class Agent:
                 edge_index_enemy_next,
                 n_node_features_enemy,
                 mini_batch=True)
+
+        if episode > cfg.embedding_train_stop:
+            obs = obs.detach()
+            obs_next = obs_next.detach()
+
 
         dones = torch.tensor(dones, device=device, dtype=torch.float)
         rewards = torch.tensor(rewards, device=device, dtype=torch.float)

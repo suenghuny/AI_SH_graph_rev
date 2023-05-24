@@ -65,5 +65,6 @@ def get_cfg():
     parser.add_argument("--num_GT_layers", type=int, default=2, help="num GT layers")
     parser.add_argument("--channels", type=int, default=1, help="channels")
     parser.add_argument("--num_layers", type=int, default=2, help="num layers")
+    parser.add_argument("--embedding_train_stop", type=int, default=100, help="embedding_train_stop")
 
     return parser.parse_args()
