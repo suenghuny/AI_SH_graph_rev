@@ -920,7 +920,7 @@ class Agent:
         A.append((edge, value))
         return A
 
-    def cal_Q(self, obs, action_feature, action_features, avail_actions, agent_id, cos, vdn, episode, target=False):
+    def cal_Q(self, obs, action_feature, action_features, avail_actions, agent_id, cos, vdn, target=False):
         """
         node_representation
         - training 시        : batch_size X num_nodes X feature_size
@@ -940,11 +940,7 @@ class Agent:
             obs_expand = obs.unsqueeze(1)
             obs_expand = obs_expand.expand([self.batch_size, self.action_size, obs_expand.shape[2]])  # batch-size, action_size, obs_size
             obs_n_action = torch.cat([obs_expand, node_representation_action], dim=2)
-            if episode > cfg.embedding_train_stop:
-                A = torch.stack([self.Q.advantage_forward(obs_n_action[:, i, :].detach(), cos, mini_batch=True) for i in
-                                 range(self.action_size)])
-            else:
-                A = torch.stack([self.Q.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
+            A = torch.stack([self.Q.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
             A = torch.einsum('ijk->jik', A)
             V = self.Q.value_forward(obs, cos, mini_batch = True)
             Q = self.DuelingQ(V, A, mask, past_action = A_a, training = True)
@@ -961,25 +957,12 @@ class Agent:
                 obs_expand = obs_expand.expand(
                     [self.batch_size, self.action_size, obs_expand.shape[2]])  # batch-size, action_size, obs_size
                 obs_n_action = torch.cat([obs_expand, node_representation_action], dim=2)
-                if episode > cfg.embedding_train_stop:
-                    A = torch.stack(
-                        [self.Q.advantage_forward(obs_n_action[:, i, :].detach(), cos, mini_batch=True) for i in
-                         range(self.action_size)])
-                else:
-                    A = torch.stack([self.Q.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in
-                                     range(self.action_size)])
-
+                A = torch.stack([self.Q.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
                 A = torch.einsum('ijk->jik', A)
                 V = self.Q.value_forward(obs, cos, mini_batch=True)
                 Q = self.DuelingQ(V, A, mask, past_action=None, training=True)
-                if episode > cfg.embedding_train_stop:
-                    A_tar = torch.stack(
-                        [self.Q_tar.advantage_forward(obs_n_action[:, i, :].detach(), cos, mini_batch=True) for i in
-                         range(self.action_size)])
-                else:
-                    A_tar = torch.stack([self.Q_tar.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in
-                                     range(self.action_size)])
-                #A_tar = torch.stack([self.Q_tar.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
+
+                A_tar = torch.stack([self.Q_tar.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
                 A_tar = torch.einsum('ijk->jik', A_tar)
                 V_tar = self.Q_tar.value_forward(obs,
                                                  cos,
@@ -1033,7 +1016,8 @@ class Agent:
         action_blue = action_feature_dummy[u]
         return action_blue
 
-    def learn(self, regularizer, episode, vdn = False):
+    def learn(self, regularizer, episode, vdn = False, ):
+
         node_features_missile, \
         ship_features, \
         edge_indices_missile, \
@@ -1107,9 +1091,7 @@ class Agent:
                 edge_index_enemy_next,
                 n_node_features_enemy,
                 mini_batch=True)
-        if episode > cfg.embedding_train_stop:
-            obs = obs.detach()
-            obs_next = obs_next.detach()
+
 
 
         dones = torch.tensor(dones, device=device, dtype=torch.float)
@@ -1122,18 +1104,14 @@ class Agent:
                         avail_actions=avail_actions,
                         agent_id=0,
                         target=False,
-                        cos=cos,
-                       vdn = vdn,
-                       episode = episode)
+                        cos=cos,vdn = vdn)
         q_tar = self.cal_Q(obs=obs_next,
                             action_feature=None,
                             action_features=action_features_next,
                             avail_actions=avail_actions_next,
                             agent_id=0,
                             target=True,
-                            cos=cos, vdn = vdn,
-                           episode = episode)
-
+                            cos=cos, vdn = vdn)
         q_tot = q
         q_tot_tar = q_tar
         rewards_1_step = rewards[:, 0].unsqueeze(1)
