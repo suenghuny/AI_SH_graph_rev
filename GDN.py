@@ -1122,14 +1122,18 @@ class Agent:
                         avail_actions=avail_actions,
                         agent_id=0,
                         target=False,
-                        cos=cos,vdn = vdn)
+                        cos=cos,
+                       vdn = vdn,
+                       episode = episode)
         q_tar = self.cal_Q(obs=obs_next,
                             action_feature=None,
                             action_features=action_features_next,
                             avail_actions=avail_actions_next,
                             agent_id=0,
                             target=True,
-                            cos=cos, vdn = vdn)
+                            cos=cos, vdn = vdn,
+                           episode = episode)
+
         q_tot = q
         q_tot_tar = q_tar
         rewards_1_step = rewards[:, 0].unsqueeze(1)
