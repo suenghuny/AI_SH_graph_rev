@@ -641,7 +641,7 @@ class Agent:
                                          batch_size=self.batch_size,
                                          teleport_probability=self.teleport_probability).to(device)  # 수정사항
         if cfg.GNN == 'FastGTN':
-            self.func_meta_path = FastGTNs(num_edge_type=7,
+            self.func_meta_path = FastGTNs(num_edge_type=4,
                                            feature_size=n_representation_missile,
                                            num_nodes=self.num_nodes,
                                            num_FastGTN_layers=cfg.num_GT_layers,
@@ -901,11 +901,8 @@ class Agent:
         edge_index_3_transpose[1] = edge_index_3[0]
         edge_index_3_transpose[0] = edge_index_3[1]
         edges = [edge_index_1,
-                 edge_index_1_transpose,
                  edge_index_2,
-                 edge_index_2_transpose,
                  edge_index_3,
-                 edge_index_3_transpose
                  ]
         for i, edge in enumerate(edges):
             edge = torch.tensor(edge, dtype=torch.long, device=device)

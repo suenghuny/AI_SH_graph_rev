@@ -514,6 +514,9 @@ class Environment:
         for i in range(1, len_ssm_detections+1):
             edge_index[0].append(0)
             edge_index[1].append(i)
+
+            edge_index[0].append(i)
+            edge_index[1].append(0)
         return edge_index
     def range_checking(self, missile):
         ship = self.friendlies_fixed_list[0]
@@ -542,9 +545,13 @@ class Environment:
             for k in range(j-1, -1, -1):
                 missile_j = ship.ssm_detections[j]
                 missile_k = ship.ssm_detections[k]
-                if self.range_checking(missile_j) == self.range_checking(missile_k):
+                #print(cal_distance(missile_j, missile_k))
+
+                if cal_distance(missile_j, missile_k)<=20:
                     edge_index[0].append(j+1)
                     edge_index[1].append(k+1)
+                    edge_index[0].append(k+1)
+                    edge_index[1].append(j+1)
         return edge_index
     def get_sam_to_ssm_edge_index(self):
         edge_index = [[],[]]
@@ -558,7 +565,8 @@ class Environment:
                 if sam_j.original_target==ssm_i:
                     edge_index[0].append(i)
                     edge_index[1].append(len_ssm_detections+j+1)
-
+                    edge_index[1].append(i)
+                    edge_index[0].append(len_ssm_detections + j + 1)
         return edge_index
 
     def get_edge_index(self):
