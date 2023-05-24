@@ -174,7 +174,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                 if agent.beta <= 1:
                     agent.beta -= anneal_step
                 agent.eval_check(eval=False)
-                agent.learn(regularizer=0, vdn=vdn)
+                agent.learn(regularizer=0, vdn=vdn, episode = e)
         else:
             pass_transition = True
             env.step(action_blue=[0,0,0,0,0,0,0,0],action_yellow=enemy_action_for_transition, pass_transition = pass_transition)
