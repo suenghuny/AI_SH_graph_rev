@@ -928,7 +928,7 @@ class Environment:
             reward += self.bonus_reward*100
             #print(self.bonus_reward*100)
             self.bonus_reward = 0
-            reward = reward / 200
+            reward = reward / 2000
             self.last_destroyed_missile = missile_destroyed_cal
             self.last_destroyed_enemy = enemy_destroyed_cal
             self.last_destroyed_ship = ship_destroyed_cal
