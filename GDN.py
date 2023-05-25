@@ -79,12 +79,9 @@ class IQN(nn.Module):
                 layer.reset_noise()
 
     def remove_noise_net(self):
-        for layer in self.v_layer:
-            if type(layer) is NoisyLinear:
-                layer.remove_noise()
         for layer in self.advantage_layer:
             if type(layer) is NoisyLinear:
-                layer.remove_noise()
+                layer.reset_noise()
 
 
 

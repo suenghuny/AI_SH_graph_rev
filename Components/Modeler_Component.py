@@ -651,12 +651,18 @@ class Environment:
         return node_features
 
     def get_feature(self, ship, target):
-        r = ((target.position_x - ship.position_x) ** 2 + (target.position_y - ship.position_y) ** 2) ** 0.5 / ((target.speed+ship.speed)*2000)
-        v = ((target.v_x - ship.v_x) ** 2 + (target.v_y - ship.v_y) ** 2) ** 0.5 / (target.speed+ship.speed)
+        r = ((target.position_x - ship.position_x) ** 2 + (target.position_y - ship.position_y) ** 2) ** 0.5 / 600
+
+        # print(ship.cla, target.cla)
+
+        v = ((target.v_x - ship.v_x) ** 2 + (target.v_y - ship.v_y) ** 2) ** 0.5 / (self.missile_speed_scaler)
+
         theta_r = math.atan2(target.position_y - ship.position_y, target.position_x - ship.position_x)
         theta_v = math.atan2(ship.v_y - target.v_y, ship.v_x - target.v_x)
-        a = ((target.a_x - ship.a_x) ** 2 + (target.a_y - ship.a_y) ** 2) ** 0.5 / (target.speed+ship.speed)
+
+        a = ((target.a_x - ship.a_x) ** 2 + (target.a_y - ship.a_y) ** 2) ** 0.5
         theta_a = math.atan2(ship.a_y - target.a_y, ship.a_x - target.a_x)
+
         if a <= 0.01:
             a = 0
             theta_a = 0
@@ -709,6 +715,8 @@ class Environment:
                     ax = missile.a_x - ship.a_x
                     ay = missile.a_y - ship.a_y
                     node_features.append([px/missile.attack_range, py/missile.attack_range, vx/missile.speed, vy/missile.speed, ax, ay])
+
+
 
         len_flying_sams_friendly = len(self.flying_sams_friendly)
         for j in range(len_flying_sams_friendly):
@@ -921,12 +929,10 @@ class Environment:
             self.f8 = enemy_destroyed_cal
             self.f9 = missile_destroyed_cal - self.last_destroyed_missile
             self.f10 = enemy_destroyed_cal - self.last_destroyed_enemy
-            #reward = self.
             reward = 2000 * (enemy_destroyed_cal - self.last_destroyed_enemy) \
                      -6000 * (ship_destroyed_cal - self.last_destroyed_ship) +  \
                      25 * (missile_destroyed_cal - self.last_destroyed_missile)
             reward += self.bonus_reward*100
-            #print(self.bonus_reward*100)
             self.bonus_reward = 0
             reward = reward / 2000
             self.last_destroyed_missile = missile_destroyed_cal
