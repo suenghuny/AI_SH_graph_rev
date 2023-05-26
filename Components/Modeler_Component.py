@@ -656,7 +656,7 @@ class Environment:
         theta_r = math.atan2(target.position_y - ship.position_y, target.position_x - ship.position_x)
         theta_v = math.atan2(ship.v_y - target.v_y, ship.v_x - target.v_x)
         a = ((target.a_x - ship.a_x) ** 2 + (target.a_y - ship.a_y) ** 2) ** 0.5 / (target.speed+ship.speed)
-        theta_a = math.atan2(ship.a_y - target.a_y, ship.a_x - target.a_x)
+        theta_a = math.atan2(ship.a_y - target.a_y, ship.a_x - target.a_x) #
         if a <= 0.01:
             a = 0
             theta_a = 0
