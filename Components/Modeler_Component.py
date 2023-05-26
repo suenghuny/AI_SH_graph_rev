@@ -651,18 +651,12 @@ class Environment:
         return node_features
 
     def get_feature(self, ship, target):
-        r = ((target.position_x - ship.position_x) ** 2 + (target.position_y - ship.position_y) ** 2) ** 0.5 / 600
-
-        # print(ship.cla, target.cla)
-
-        v = ((target.v_x - ship.v_x) ** 2 + (target.v_y - ship.v_y) ** 2) ** 0.5 / (self.missile_speed_scaler)
-
+        r = ((target.position_x - ship.position_x) ** 2 + (target.position_y - ship.position_y) ** 2) ** 0.5 / ((target.speed+ship.speed)*2000)
+        v = ((target.v_x - ship.v_x) ** 2 + (target.v_y - ship.v_y) ** 2) ** 0.5 / (target.speed+ship.speed)
         theta_r = math.atan2(target.position_y - ship.position_y, target.position_x - ship.position_x)
         theta_v = math.atan2(ship.v_y - target.v_y, ship.v_x - target.v_x)
-
-        a = ((target.a_x - ship.a_x) ** 2 + (target.a_y - ship.a_y) ** 2) ** 0.5
+        a = ((target.a_x - ship.a_x) ** 2 + (target.a_y - ship.a_y) ** 2) ** 0.5 / (target.speed+ship.speed)
         theta_a = math.atan2(ship.a_y - target.a_y, ship.a_x - target.a_x)
-
         if a <= 0.01:
             a = 0
             theta_a = 0
