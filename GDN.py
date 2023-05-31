@@ -413,7 +413,11 @@ class Replay_Buffer:
             p /= p.sum()
             p_sampled = p
             p = p.tolist()
-            sampled_batch_idx = np.random.choice(step_count_list[:-self.n_step], size=self.batch_size, p = p)
+            try:
+                sampled_batch_idx = np.random.choice(step_count_list[:-self.n_step], size=self.batch_size, p = p)
+            except ValueError as VE:
+                sampled_batch_idx = np.random.choice(step_count_list[:-self.n_step], size=self.batch_size)
+                print("value error 발생 중")
 
             p_sampled = p_sampled[sampled_batch_idx]
 
