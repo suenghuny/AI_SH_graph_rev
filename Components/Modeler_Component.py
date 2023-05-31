@@ -221,7 +221,7 @@ class Environment:
     def get_env_info(self):
         ship=self.friendlies[0]
         env_info = {"n_agents" : 1,
-                    "ship_feature_shape": 10+6*ship.surface_engagement_limit+7*ship.air_engagement_limit,  # + self.n_agents,
+                    "ship_feature_shape": 10+1-1+32,  # + self.n_agents,
                     "missile_feature_shape" : 6,  #9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
                     "enemy_feature_shape": 12,
                     "action_feature_shape": 8,
@@ -485,45 +485,45 @@ class Environment:
             f11 = self.f11
             z = [[f1,f2,f3,f4,f5,f6,f7,f8,f9,f10]]
 
-            surface_prelaunching_managing_list = ship.surface_prelaunching_managing_list[:]
-            for prelaunching_info in surface_prelaunching_managing_list:
-                target         = prelaunching_info[2]
-                t1, t2, t3, t4, t5, t6 = self.get_feature(ship, target)
-                z.append([t1,t2,t3,t4,t5,t6])
-
-            for _ in range(ship.surface_engagement_limit - len(surface_prelaunching_managing_list)):
-                z.append([0,0,0,0,0,0])
-
-            air_prelaunching_managing_list = ship.air_prelaunching_managing_list[:]
-            for prelaunching_info in air_prelaunching_managing_list:
-                sam = prelaunching_info[1]
-                target = prelaunching_info[2]
-                t1, t2, t3, t4, t5, t6 = self.get_feature(ship, target)
-                if sam.cla == 'LSAM':
-                    z.append([t1,t2,t3,t4,t5,t6,1])
-                else:
-                    z.append([t1, t2, t3, t4, t5, t6, 0])
-
-            for _ in range(ship.air_engagement_limit - len(air_prelaunching_managing_list)):
-                z.append([0,0,0,0,0,0,0])
-
-            # for i in range(len(ship.action_history)):
-            #     if ship.action_history[i] != None:
-            #         x1, x2, x3, x4, x5, x6 = self.get_feature(ship, ship.action_history[i])
-            #         target = ship.action_history[i]
-            #         if target.cla == 'ship':
-            #             if target.status != 'destroyed':
-            #                 z.append([x1, x2, x3, x4, x5, x6, 0, 1])
-            #             else:
-            #                 z.append([0, 0, 0, 0, 0, 0, 0, 0])
-            #         else:
-            #             if target.status != 'destroyed':
-            #                 z.append([x1, x2, x3, x4, x5, x6, 1, 0])
-            #             else:
-            #                 z.append([0, 0, 0, 0, 0, 0, 0, 0])
+            # surface_prelaunching_managing_list = ship.surface_prelaunching_managing_list[:]
+            # for prelaunching_info in surface_prelaunching_managing_list:
+            #     target         = prelaunching_info[2]
+            #     t1, t2, t3, t4, t5, t6 = self.get_feature(ship, target)
+            #     z.append([t1,t2,t3,t4,t5,t6])
+            #
+            # for _ in range(ship.surface_engagement_limit - len(surface_prelaunching_managing_list)):
+            #     z.append([0,0,0,0,0,0])
+            # air_prelaunching_managing_list = ship.air_prelaunching_managing_list[:]
+            # for prelaunching_info in air_prelaunching_managing_list:
+            #     sam = prelaunching_info[1]
+            #     target = prelaunching_info[2]
+            #     t1, t2, t3, t4, t5, t6 = self.get_feature(ship, target)
+            #     if sam.cla == 'LSAM':
+            #         z.append([t1,t2,t3,t4,t5,t6,1])
             #     else:
-            #         z.append([0,0,0,0,0,0,0,0])
+            #         z.append([t1, t2, t3, t4, t5, t6, 0])
+            #
+            # for _ in range(ship.air_engagement_limit - len(air_prelaunching_managing_list)):
+            #     z.append([0,0,0,0,0,0,0])
+
+            for i in range(len(ship.action_history)):
+                if ship.action_history[i] != None:
+                    x1, x2, x3, x4, x5, x6 = self.get_feature(ship, ship.action_history[i])
+                    target = ship.action_history[i]
+                    if target.cla == 'ship':
+                        if target.status != 'destroyed':
+                            z.append([x1, x2, x3, x4, x5, x6, 0, 1])
+                        else:
+                            z.append([0, 0, 0, 0, 0, 0, 0, 0])
+                    else:
+                        if target.status != 'destroyed':
+                            z.append([x1, x2, x3, x4, x5, x6, 1, 0])
+                        else:
+                            z.append([0, 0, 0, 0, 0, 0, 0, 0])
+                else:
+                    z.append([0,0,0,0,0,0,0,0])
             ship_feature.append(np.concatenate(z).tolist())
+
             #ship_feature.append(np.concatenate([[f1,f2,f3,f4,f5,f6,f7,f8,f9,f10], f11]).tolist())
         #print(len(f11), len(ship_feature[0]),"dddd")
         return ship_feature
