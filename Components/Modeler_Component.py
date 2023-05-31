@@ -219,12 +219,12 @@ class Environment:
             self.f11_deque.append(self.f11)
 
     def get_env_info(self):
+        ship=self.friendlies[0]
         env_info = {"n_agents" : 1,
-                    "ship_feature_shape": 10+1-1+32,  # + self.n_agents,
+                    "ship_feature_shape": 10+6*ship.surface_engagement_limit+7*ship.air_engagement_limit,  # + self.n_agents,
                     "missile_feature_shape" : 6,  #9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
                     "enemy_feature_shape": 12,
                     "action_feature_shape": 8,
-                    # 9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
                     "n_actions": (1 + self.ship_friendly_action_space + self.air_friendly_action_space)
                     }
         return env_info
@@ -478,29 +478,51 @@ class Environment:
             f4 = len(ship.m_sam_launcher)/ship.num_m_sam
             f5 = len(ship.l_sam_launcher) /ship.num_l_sam
             f6 = len(ship.ssm_launcher)/ship.num_ssm
-
             f7 = self.f7 / enemy_ssm
             f8 = self.f8 / enemy_ship
             f9 = self.f9 / self.simtime_per_framerate
             f10 = self.f10 / self.simtime_per_framerate
             f11 = self.f11
             z = [[f1,f2,f3,f4,f5,f6,f7,f8,f9,f10]]
-            for i in range(len(ship.action_history)):
-                if ship.action_history[i] != None:
-                    x1, x2, x3, x4, x5, x6 = self.get_feature(ship, ship.action_history[i])
-                    target = ship.action_history[i]
-                    if target.cla == 'ship':
-                        if target.status != 'destroyed':
-                            z.append([x1, x2, x3, x4, x5, x6, 0, 1])
-                        else:
-                            z.append([0, 0, 0, 0, 0, 0, 0, 0])
-                    else:
-                        if target.status != 'destroyed':
-                            z.append([x1, x2, x3, x4, x5, x6, 1, 0])
-                        else:
-                            z.append([0, 0, 0, 0, 0, 0, 0, 0])
+
+            surface_prelaunching_managing_list = ship.surface_prelaunching_managing_list[:]
+            for prelaunching_info in surface_prelaunching_managing_list:
+                target         = prelaunching_info[2]
+                t1, t2, t3, t4, t5, t6 = self.get_feature(ship, target)
+                z.append([t1,t2,t3,t4,t5,t6])
+
+            for _ in range(ship.surface_engagement_limit - len(surface_prelaunching_managing_list)):
+                z.append([0,0,0,0,0,0])
+
+            air_prelaunching_managing_list = ship.air_prelaunching_managing_list[:]
+            for prelaunching_info in air_prelaunching_managing_list:
+                sam = prelaunching_info[1]
+                target = prelaunching_info[2]
+                t1, t2, t3, t4, t5, t6 = self.get_feature(ship, target)
+                if sam.cla == 'LSAM':
+                    z.append([t1,t2,t3,t4,t5,t6,1])
                 else:
-                    z.append([0,0,0,0,0,0,0,0])
+                    z.append([t1, t2, t3, t4, t5, t6, 0])
+
+            for _ in range(ship.air_engagement_limit - len(air_prelaunching_managing_list)):
+                z.append([0,0,0,0,0,0,0])
+
+            # for i in range(len(ship.action_history)):
+            #     if ship.action_history[i] != None:
+            #         x1, x2, x3, x4, x5, x6 = self.get_feature(ship, ship.action_history[i])
+            #         target = ship.action_history[i]
+            #         if target.cla == 'ship':
+            #             if target.status != 'destroyed':
+            #                 z.append([x1, x2, x3, x4, x5, x6, 0, 1])
+            #             else:
+            #                 z.append([0, 0, 0, 0, 0, 0, 0, 0])
+            #         else:
+            #             if target.status != 'destroyed':
+            #                 z.append([x1, x2, x3, x4, x5, x6, 1, 0])
+            #             else:
+            #                 z.append([0, 0, 0, 0, 0, 0, 0, 0])
+            #     else:
+            #         z.append([0,0,0,0,0,0,0,0])
             ship_feature.append(np.concatenate(z).tolist())
             #ship_feature.append(np.concatenate([[f1,f2,f3,f4,f5,f6,f7,f8,f9,f10], f11]).tolist())
         #print(len(f11), len(ship_feature[0]),"dddd")
@@ -933,30 +955,31 @@ class Environment:
             self.last_destroyed_enemy = enemy_destroyed_cal
             self.last_destroyed_ship = ship_destroyed_cal
 
-            # if (len(self.friendlies) == 0):
-            #     suceptibility = 1
-            #     win_tag = "lose"
-            #     done = True
-            #     if self.visualize == True:
-            #         for event in pygame.event.get():
-            #             if event.type == pygame.QUIT:
-            #                 pygame.quit()
-            #                 exit()
+            if (len(self.friendlies) == 0):
+                suceptibility = 1
+                win_tag = "lose"
+                done = True
+                if self.visualize == True:
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            pygame.quit()
+                            exit()
 
-            # if (len(self.enemies) == 0):
-            #     suceptibility = 0
-            #     win_tag = "win"
-            #     done = True
-            #     if self.visualize == True:
-            #         for event in pygame.event.get():
-            #             if event.type == pygame.QUIT:
-            #                 pygame.quit()
-            #                 exit()
+            if (len(self.enemies) == 0):
+                suceptibility = 0
+                win_tag = "win"
+                done = True
+                if self.visualize == True:
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            pygame.quit()
+                            exit()
 
 
             if (len(self.flying_ssms_enemy) == 0) and (len(self.flying_ssms_friendly) == 0):
                 done_checker_A = [True if len(enemy.ssm_launcher) == 0 else False for enemy in self.enemies]
                 done_checker_B = [True if len(ship.ssm_launcher) == 0 else False for ship in self.friendlies]
+                win_tag = "draw"
                 if (False in done_checker_A) or (False in done_checker_B):
                     done = False
                 else:

@@ -251,7 +251,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                                         n_step_heterogeneous_edges[0]
                                         )
             break
-    return episode_reward, epsilon, t, eval
+    return episode_reward, epsilon, t, eval, win_tag
 
 
 
@@ -394,7 +394,7 @@ if __name__ == "__main__":
                       ciws_threshold=ciws_threshold,
                       action_history_step = cfg.action_history_step
                       )
-        episode_reward, epsilon, t, eval = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon, min_epsilon=min_epsilon, anneal_step=anneal_step , initializer=False, output_dir=None, vdn=True, n_step = n_step, anneal_epsilon = anneal_epsilon)
+        episode_reward, epsilon, t, eval, win_tag = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon, min_epsilon=min_epsilon, anneal_step=anneal_step , initializer=False, output_dir=None, vdn=True, n_step = n_step, anneal_epsilon = anneal_epsilon)
         if e >= cfg.train_start:
             if vessl_on == False:
                 writer.add_scalar("episode", episode_reward, e-cfg.train_start)
@@ -405,6 +405,15 @@ if __name__ == "__main__":
         reward_list.append(episode_reward)
         if vessl_on == True:
             vessl.log(step=e, payload={'reward': episode_reward})
+            if win_tag == 'lose':
+                vessl.log(step=e, payload={'lose': -1})
+            else:
+                vessl.log(step=e, payload={'lose': 0})
+
+            if win_tag == 'win':
+                vessl.log(step=e, payload={'lose': 1})
+            else:
+                vessl.log(step=e, payload={'lose': 0})
 
         if e % 10 == 0:
             import os
