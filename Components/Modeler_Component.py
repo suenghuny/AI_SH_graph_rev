@@ -955,31 +955,22 @@ class Environment:
             self.last_destroyed_enemy = enemy_destroyed_cal
             self.last_destroyed_ship = ship_destroyed_cal
 
-            if (len(self.friendlies) == 0):
+            if (len(self.friendlies) == 0) and (len(self.enemies) != 0):
                 suceptibility = 1
                 win_tag = "lose"
-                done = True
-                if self.visualize == True:
-                    for event in pygame.event.get():
-                        if event.type == pygame.QUIT:
-                            pygame.quit()
-                            exit()
 
-            if (len(self.enemies) == 0):
+
+            elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):
                 suceptibility = 0
                 win_tag = "win"
-                done = True
-                if self.visualize == True:
-                    for event in pygame.event.get():
-                        if event.type == pygame.QUIT:
-                            pygame.quit()
-                            exit()
+            else:
+                win_tag = "draw"
 
 
             if (len(self.flying_ssms_enemy) == 0) and (len(self.flying_ssms_friendly) == 0):
                 done_checker_A = [True if len(enemy.ssm_launcher) == 0 else False for enemy in self.enemies]
                 done_checker_B = [True if len(ship.ssm_launcher) == 0 else False for ship in self.friendlies]
-                win_tag = "draw"
+
                 if (False in done_checker_A) or (False in done_checker_B):
                     done = False
                 else:
