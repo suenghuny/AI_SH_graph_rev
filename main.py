@@ -411,9 +411,9 @@ if __name__ == "__main__":
                 vessl.log(step=e, payload={'lose': 0})
 
             if win_tag == 'win':
-                vessl.log(step=e, payload={'lose': 1})
+                vessl.log(step=e, payload={'win': 1})
             else:
-                vessl.log(step=e, payload={'lose': 0})
+                vessl.log(step=e, payload={'win': 0})
 
         if e % 10 == 0:
             import os
