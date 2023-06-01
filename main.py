@@ -456,13 +456,14 @@ if __name__ == "__main__":
                               )
                 episode_reward, win_tag = evaluation(agent, env)
                 print('evaluation', win_tag, episode_reward)
+                print('ㅋㅋㅋ', non_lose_rate, episode_rewards)
                 episode_rewards += episode_reward/n
                 if win_tag != 'lose':
                     non_lose_rate += 1/n
 
             if vessl_on == True:
-                vessl.log(step=e, payload={'episode rewards': episode_rewards})
-                vessl.log(step=e, payload={'non lose rate': non_lose_rate})
+                vessl.log(step=e, payload={'eval_rewards': episode_rewards})
+                vessl.log(step=e, payload={'eval_non_lose_rate': non_lose_rate})
 
         env = modeler(data,
                       visualize=visualize,
