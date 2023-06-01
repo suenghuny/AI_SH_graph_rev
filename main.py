@@ -443,6 +443,7 @@ if __name__ == "__main__":
         if e % 100 ==0:
             n = 32
             non_lose_rate = 0
+            episode_rewards = 0
             for _ in range(n):
                 env = modeler(data,
                               visualize=visualize,
@@ -454,10 +455,13 @@ if __name__ == "__main__":
                               action_history_step = cfg.action_history_step
                               )
                 episode_reward, win_tag = evaluation(agent, env)
+                print('evaluation', win_tag, episode_reward)
+                episode_rewards += episode_reward/n
                 if win_tag != 'lose':
                     non_lose_rate += 1/n
 
             if vessl_on == True:
+                vessl.log(step=e, payload={'episode rewards': episode_rewards})
                 vessl.log(step=e, payload={'non lose rate': non_lose_rate})
 
         env = modeler(data,
