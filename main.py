@@ -456,7 +456,6 @@ if __name__ == "__main__":
                               )
                 episode_reward, win_tag = evaluation(agent, env)
                 print('evaluation', win_tag, episode_reward)
-                print('ㅋㅋㅋ', non_lose_rate, episode_rewards)
                 episode_rewards += episode_reward/n
                 if win_tag != 'lose':
                     non_lose_rate += 1/n

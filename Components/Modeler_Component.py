@@ -1,6 +1,7 @@
 from Components.Adapter_Component import *
 from Components.Simulation_Component import *
 from collections import deque
+import random
 
 
 def modeler(data, visualize, size, detection_by_height, tick, simtime_per_framerate, ciws_threshold, action_history_step, epsilon = 20):
@@ -83,7 +84,7 @@ class Environment:
         #ship_data, enemy_data = self.get_position_inception(self, self.data.inception_data, num_enemy)
 
         inception_data = self.data.inception_data
-        noise = np.random.uniform(-10, 10)
+        noise = random.uniform(-10, 10)
         self.missile_speed_list = list()
         for key, value in data.ship_data.items():
             if key == 1:
@@ -95,22 +96,17 @@ class Environment:
                 if mode == True:
                     speed = 25
                     course = 90
-                    initial_position_x = 50 + 10*inception_data['inception_distance'] * np.cos(inception_data['inception_angle'] * np.pi / 180) + 10*np.random.normal(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
-                    initial_position_y = 50 + 10*inception_data['inception_distance'] * np.sin(inception_data['inception_angle'] * np.pi / 180) + 10*np.random.normal(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                    initial_position_x = 50 + 10*inception_data['inception_distance'] * np.cos(inception_data['inception_angle'] * np.pi / 180) + 10*random.normalvariate(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                    initial_position_y = 50 + 10*inception_data['inception_distance'] * np.sin(inception_data['inception_angle'] * np.pi / 180) + 10*random.normalvariate(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
                 else:
                     speed = 25
                     course = 90
                     initial_position_x = 50 + 10 * inception_data['inception_distance'] * np.cos(
-                        inception_data['inception_angle'] * np.pi / 180) + 10 * np.random.normal(
+                        inception_data['inception_angle'] * np.pi / 180) + 10 * random.normalvariate(
                         inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
                     initial_position_y = 50 + 10 * inception_data['inception_distance'] * np.sin(
-                        inception_data['inception_angle'] * np.pi / 180) + 10 * np.random.normal(
+                        inception_data['inception_angle'] * np.pi / 180) + 10 * random.normalvariate(
                         inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
-
-                    # speed = 25
-                    # course = 90
-                    # initial_position_x = 50 + 10*inception_data['inception_distance'] * np.cos((inception_data['inception_angle']+noise) * np.pi / 180)+10*np.random.normal(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
-                    # initial_position_y = 50 + 10*inception_data['inception_distance'] * np.sin((inception_data['inception_angle']+noise) * np.pi / 180)+10*np.random.normal(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
 
 
 
