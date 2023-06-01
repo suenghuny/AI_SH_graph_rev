@@ -460,7 +460,15 @@ if __name__ == "__main__":
             if vessl_on == True:
                 vessl.log(step=e, payload={'non lose rate': non_lose_rate})
 
-
+        env = modeler(data,
+                      visualize=visualize,
+                      size=size,
+                      detection_by_height=detection_by_height,
+                      tick=tick,
+                      simtime_per_framerate=simtime_per_frame,
+                      ciws_threshold=ciws_threshold,
+                      action_history_step = cfg.action_history_step
+                      )
 
         episode_reward, epsilon, t, eval, win_tag = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon, min_epsilon=min_epsilon, anneal_step=anneal_step , initializer=False, output_dir=None, vdn=True, n_step = n_step, anneal_epsilon = anneal_epsilon)
         if e >= cfg.train_start:
