@@ -81,9 +81,7 @@ class IQN(nn.Module):
     def remove_noise_net(self):
         for layer in self.advantage_layer:
             if type(layer) is NoisyLinear:
-                layer.reset_noise()
-
-
+                layer.remove_noise()
 
     def calc_cos(self, batch_size):
         """
@@ -409,11 +407,13 @@ class Replay_Buffer:
                 sampled_batch_idx = np.random.choice(step_count_list, size=self.batch_size)
         else:
             priority = list(deepcopy(self.buffer[10]))[:-self.n_step]
+
             p = np.array(priority)**self.alpha
             p /= p.sum()
             p_sampled = p
             p = p.tolist()
             try:
+
                 sampled_batch_idx = np.random.choice(step_count_list[:-self.n_step], size=self.batch_size, p = p)
             except ValueError as VE:
                 sampled_batch_idx = np.random.choice(step_count_list[:-self.n_step], size=self.batch_size)
@@ -977,14 +977,17 @@ class Agent:
 
 
     @torch.no_grad()
-    def sample_action(self, node_representation, avail_action, epsilon, action_feature):
+    def sample_action(self, node_representation, avail_action, epsilon, action_feature, training = True):
         """
         node_representation 차원 : n_agents X n_representation_comm
         action_feature 차원      : action_size X n_action_feature
         avail_action 차원        : n_agents X action_size
         """
         if cfg.epsilon_greedy == False:
-            self.Q.reset_noise_net()
+            if training == True:
+                self.Q.reset_noise_net()
+            else:
+                self.Q.remove_noise_net()
 
         action_feature_dummy = action_feature
         action_feature = torch.tensor(action_feature, dtype = torch.float).to(device)

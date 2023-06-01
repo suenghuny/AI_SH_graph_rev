@@ -33,8 +33,6 @@ def preprocessing(scenarios):
     return data
 
 def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, initializer, output_dir, vdn, n_step, anneal_epsilon):
-
-
     temp = random.uniform(0, 50)
     agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
     done = False
@@ -43,8 +41,6 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
     losses = []
     epi_r = list()
     eval = False
-
-
     sum_learn = 0
     enemy_action_for_transition =    [0] * len(env.enemies_fixed_list)
     friendly_action_for_transition = [0] * len(env.friendlies_fixed_list)
@@ -78,8 +74,6 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
     while not done:
         #print(env.now % (decision_timestep))
         if env.now % (decision_timestep) <= 0.00001:
-            #print("다다다", env.now)
-
             avail_action_blue, target_distance_blue, air_alert_blue = env.get_avail_actions_temp(interval_min=True,
                                                                                                  interval_constant=0.5,
                                                                                                  side='blue')
@@ -254,6 +248,69 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
     return episode_reward, epsilon, t, eval, win_tag
 
 
+def evaluation(agent, env):
+    temp = random.uniform(0, 50)
+    agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
+    done = False
+    episode_reward = 0
+    eval = False
+    enemy_action_for_transition =    [0] * len(env.enemies_fixed_list)
+    friendly_action_for_transition = [0] * len(env.friendlies_fixed_list)
+
+    if random.uniform(0, 1) > 0.5:
+        interval_min = True
+
+    else:
+        interval_min = False
+
+    interval_constant = random.uniform(0, 5)
+    while not done:
+        #print(env.now % (decision_timestep))
+        if env.now % (decision_timestep) <= 0.00001:
+            avail_action_blue, target_distance_blue, air_alert_blue = env.get_avail_actions_temp(interval_min=True,
+                                                                                                 interval_constant=0.5,
+                                                                                                 side='blue')
+            avail_action_yellow, target_distance_yellow, air_alert_yellow = env.get_avail_actions_temp(interval_min,
+                                                                                                       interval_constant,
+                                                                                                       side='yellow')
+            if cfg.GNN == 'FastGTN':
+                edge_index_ssm_to_ship = env.get_ssm_to_ship_edge_index()
+                edge_index_ssm_to_ssm = env.get_ssm_to_ssm_edge_index()
+                edge_index_sam_to_ssm =  env.get_sam_to_ssm_edge_index()
+                heterogeneous_edges = (edge_index_ssm_to_ship, edge_index_ssm_to_ssm, edge_index_sam_to_ssm)
+            else:
+                pass
+            ship_feature = env.get_ship_feature()
+            edge_index   = env.get_edge_index()
+            missile_node_feature = env.get_missile_node_feature()
+            enemy_edge_index = [[],[]]#env.get_enemy_edge_index()
+            enemy_node_feature = None# env.get_enemy_node_feature()
+            action_feature = env.get_action_feature()
+            agent.eval_check(eval=True)
+            if cfg.GNN == 'GAT':
+                node_representation = agent.get_node_representation(missile_node_feature, ship_feature,edge_index,n_node_feature_missile,
+                                                                    enemy_node_feature = enemy_node_feature,
+                                                                    enemy_edge_index = enemy_edge_index,
+                                                                    n_node_features_enemy = n_node_feature_enemy,
+                                                                    mini_batch=False)  # 차원 : n_agents X n_representation_comm
+            else:
+                node_representation = agent.get_node_representation(missile_node_feature, ship_feature, heterogeneous_edges,
+                                                                    n_node_feature_missile,
+                                                                    enemy_node_feature=enemy_node_feature,
+                                                                    enemy_edge_index=enemy_edge_index,
+                                                                    n_node_features_enemy=n_node_feature_enemy,
+                                                                    mini_batch=False)  # 차원 : n_agents X n_representation_comm
+            action_blue = agent.sample_action(node_representation, avail_action_blue, epsilon, action_feature, training = False)
+            action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
+            reward, win_tag, done = env.step(action_blue, action_yellow)
+            episode_reward += reward
+        else:
+            pass_transition = True
+            env.step(action_blue=[0,0,0,0,0,0,0,0],action_yellow=enemy_action_for_transition, pass_transition = pass_transition)
+
+
+    return episode_reward, win_tag
+
 
 if __name__ == "__main__":
     cfg = get_cfg()
@@ -382,18 +439,29 @@ if __name__ == "__main__":
     reward_list = list()
     anneal_epsilon = (epsilon - min_epsilon) / cfg.anneal_step
     for e in range(num_iteration):
-        # if e == 6:
-        #     visualize = True
         start = time.time()
-        env = modeler(data,
-                      visualize=visualize,
-                      size=size,
-                      detection_by_height=detection_by_height,
-                      tick=tick,
-                      simtime_per_framerate=simtime_per_frame,
-                      ciws_threshold=ciws_threshold,
-                      action_history_step = cfg.action_history_step
-                      )
+        if e % 100 ==0:
+            n = 32
+            non_lose_rate = 0
+            for _ in range(n):
+                env = modeler(data,
+                              visualize=visualize,
+                              size=size,
+                              detection_by_height=detection_by_height,
+                              tick=tick,
+                              simtime_per_framerate=simtime_per_frame,
+                              ciws_threshold=ciws_threshold,
+                              action_history_step = cfg.action_history_step
+                              )
+                episode_reward, win_tag = evaluation(agent, env)
+                if win_tag != 'lose':
+                    non_lose_rate += 1/n
+
+            if vessl_on == True:
+                vessl.log(step=e, payload={'non lose rate': non_lose_rate})
+
+
+
         episode_reward, epsilon, t, eval, win_tag = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon, min_epsilon=min_epsilon, anneal_step=anneal_step , initializer=False, output_dir=None, vdn=True, n_step = n_step, anneal_epsilon = anneal_epsilon)
         if e >= cfg.train_start:
             if vessl_on == False:
