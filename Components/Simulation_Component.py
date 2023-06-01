@@ -277,13 +277,9 @@ class Missile:
                                         state feature 만들기
                                         """
                                         self.launcher.missile_destroying_history += 1
-
-
-                                        #print('ssm_destroying_from_lsam', self.target.id, self.target.status)
                                         self.target.status = 'destroyed'
                                         flying_ssms_enemy.remove(self.target)  # self.target은 yellow의 ssm
                                         self.launcher.monitors['ssm_destroying_from_lsam'] += 1
-
                                         flying_sams_friendly.remove(self)  # self는          blue의 sam
                                         self.env.event_log.append(
                                             {"time": self.env.now, "friend_or_foe": self.launcher.side,
@@ -376,6 +372,8 @@ class Missile:
                     if self.fly_mode == 'ccm':
                         if r_est_hitting_point <= self.env.epsilon:  # estimation은 가까운데 실제 표적 거리는 먼 상황(seeker의 작동 또는 lock on 여부와 상관없이 자폭로직을 수행)
 
+
+
                             self.status = 'destroyed'  # 나(유도탄)의 상태를 파괴 상태로 전환
                             if self.target.cla != 'decoy':
                                 if self.target.cla == 'ship':
@@ -384,6 +382,12 @@ class Missile:
                                     자신은 SSM  : 자기는 파괴
                                     표적은 SHIP : 표적은 미파괴
                                     """
+
+                                    if self.launcher.side == 'yellow' and self.original_target.status != 'destroyed':
+                                        self.env.bonus_reward += 1
+
+
+
                                     self.original_target.missile_destroying_history += 1  # 표적(ship)의 입장에서는 하나가 격추된 느낌이다.
                                     self.target.monitors["ssm_mishit"] += 1
                                 else:
@@ -431,7 +435,7 @@ class Missile:
                             """
                             if r_est_hitting_point <= self.env.epsilon:
                                 """
-                                표적의 실제거리도 멀고
+                                표적의 실제거리는 멀고
                                 표적의 예상거리는 가까운 상황
                                 그러나 lock on은 아닌 상황
                                 (즉, 표적이 있을거라 생각하는 위치에 도착했는데 아무것도 없음. 또한, 그때까지 아무것도 접촉하지 않았음)
@@ -442,6 +446,10 @@ class Missile:
                                 self.status = 'destroyed'  # 나(유도탄)의 상태를 파괴 상태로 전환
                                 if self.target.cla != 'decoy':
                                     if self.target.cla == 'ship':
+
+                                        if self.launcher.side == 'yellow' and self.original_target.status != 'destroyed':
+                                            self.env.bonus_reward += 1
+
 
                                         self.original_target.missile_destroying_history += 1  # 표적(ship)의 입장에서는 하나가 격추된 느낌이다.
                                         self.target.monitors["ssm_mishit"] += 1
@@ -621,8 +629,6 @@ class Missile:
 
         in_arc_list, probabilities = self.get_in_arc_list()
         probabilities = softmax(probabilities, 50, reverse = False)
-
-
         if len(in_arc_list) >= 1:
             p_d = list()
             p_dc = 1
@@ -636,7 +642,6 @@ class Missile:
                 pass
             else:
                 self.target = detection
-
                 self.seeker.on = 'lock_on'
                 # if self.cla == 'SSM':
                 #     print(self.original_target.cla, self.target.cla)
@@ -668,6 +673,9 @@ class Missile:
                 if self.target.cla == 'ship':
                     theta = self.get_angle_of_incidence(self.target)
                     sigma = self.target.get_sigma(theta)
+
+
+
                     R = 10 * math.log10((cal_distance(self, self.target) / 10) * 1.852 * 10 ** 5)  # [km]
                     S_N = get_signal_to_noise(self.P, self.G, sigma, self.c, R, self.N)
                     T_N = get_threshold_to_noise(self.env.P_fa)

@@ -254,16 +254,16 @@ def evaluation(agent, env):
     done = False
     episode_reward = 0
     eval = False
+
     enemy_action_for_transition =    [0] * len(env.enemies_fixed_list)
     friendly_action_for_transition = [0] * len(env.friendlies_fixed_list)
 
     if random.uniform(0, 1) > 0.5:
         interval_min = True
-
     else:
         interval_min = False
-
     interval_constant = random.uniform(0, 5)
+
     while not done:
         #print(env.now % (decision_timestep))
         if env.now % (decision_timestep) <= 0.00001:
@@ -280,6 +280,8 @@ def evaluation(agent, env):
                 heterogeneous_edges = (edge_index_ssm_to_ship, edge_index_ssm_to_ssm, edge_index_sam_to_ssm)
             else:
                 pass
+
+
             ship_feature = env.get_ship_feature()
             edge_index   = env.get_edge_index()
             missile_node_feature = env.get_missile_node_feature()
