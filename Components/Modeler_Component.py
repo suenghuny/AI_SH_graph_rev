@@ -563,11 +563,11 @@ class Environment:
             for k in range(j-1, -1, -1):
                 missile_j = ship.ssm_detections[j]
                 missile_k = ship.ssm_detections[k]
-                r_j = self.range_checking(missile_j)
-                r_k = self.range_checking(missile_k)
+                # r_j = self.range_checking(missile_j)
+                # r_k = self.range_checking(missile_k)
 
 
-                if cal_distance(missile_j, missile_k)<=10 or (r_j == r_k):
+                if cal_distance(missile_j, missile_k)<=10 :
                     edge_index[0].append(j+1)
                     edge_index[1].append(k+1)
                     edge_index[0].append(k+1)
@@ -947,7 +947,7 @@ class Environment:
             self.f10 = enemy_destroyed_cal - self.last_destroyed_enemy
             reward = 2000 * (enemy_destroyed_cal - self.last_destroyed_enemy) \
                      -6000 * (ship_destroyed_cal - self.last_destroyed_ship) +  \
-                     10 * (missile_destroyed_cal - self.last_destroyed_missile)
+                     25 * (missile_destroyed_cal - self.last_destroyed_missile)
             reward += self.bonus_reward*100
             self.bonus_reward = 0
             reward = reward / 2000
