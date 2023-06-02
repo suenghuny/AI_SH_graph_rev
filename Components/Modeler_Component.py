@@ -564,7 +564,7 @@ class Environment:
                 missile_j = ship.ssm_detections[j]
                 missile_k = ship.ssm_detections[k]
                 #print(cal_distance(missile_j, missile_k))
-
+                print("망했따")
                 if cal_distance(missile_j, missile_k)<=15:
                     edge_index[0].append(j+1)
                     edge_index[1].append(k+1)
