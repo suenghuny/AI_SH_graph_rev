@@ -983,6 +983,8 @@ class Environment:
             leaker = 0
             if done == True:
                 leaker = len(self.enemies_fixed_list)-len(self.enemies)
+                print(len(self.enemies_fixed_list),len(self.enemies))
+
 
 
 

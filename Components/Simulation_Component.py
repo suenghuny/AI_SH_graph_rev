@@ -643,8 +643,8 @@ class Missile:
             else:
                 self.target = detection
                 self.seeker.on = 'lock_on'
-                # if self.cla == 'SSM':
-                #     print(self.original_target.cla, self.target.cla)
+                if self.cla == 'SSM' and self.launcher.side == 'yellow':
+                    print(self.original_target.cla, self.target.cla)
                 if self.target.cla == 'decoy':
                     self.target.launcher.monitors['ssm_decoying'] += 1
                     self.env.event_log.append({"time": self.env.now, "friend_or_foe": self.launcher.side,
