@@ -563,13 +563,17 @@ class Environment:
             for k in range(j-1, -1, -1):
                 missile_j = ship.ssm_detections[j]
                 missile_k = ship.ssm_detections[k]
-                #print(cal_distance(missile_j, missile_k))
-                print("망했따")
-                if cal_distance(missile_j, missile_k)<=15:
+                r_j = self.range_checking(missile_j)
+                r_k = self.range_checking(missile_k)
+
+
+                if cal_distance(missile_j, missile_k)<=15 or (r_j == r_k):
                     edge_index[0].append(j+1)
                     edge_index[1].append(k+1)
                     edge_index[0].append(k+1)
                     edge_index[1].append(j+1)
+
+
         return edge_index
     def get_sam_to_ssm_edge_index(self):
         edge_index = [[],[]]
