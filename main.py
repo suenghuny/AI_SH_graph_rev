@@ -117,7 +117,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                                                                     mini_batch=False)  # 차원 : n_agents X n_representation_comm
             action_blue = agent.sample_action(node_representation, avail_action_blue, epsilon, action_feature)
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
-            reward, win_tag, done = env.step(action_blue, action_yellow)
+            reward, win_tag, done, leakers = env.step(action_blue, action_yellow)
             #print(reward)
             episode_reward += reward
             n_step_missile_node_features.append(missile_node_feature)
@@ -245,7 +245,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                                         n_step_heterogeneous_edges[0]
                                         )
             break
-    return episode_reward, epsilon, t, eval, win_tag
+    return episode_reward, epsilon, t, eval, win_tag, leakers
 
 
 def evaluation(agent, env):
@@ -304,14 +304,14 @@ def evaluation(agent, env):
                                                                     mini_batch=False)  # 차원 : n_agents X n_representation_comm
             action_blue = agent.sample_action(node_representation, avail_action_blue, epsilon, action_feature, training = False)
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
-            reward, win_tag, done = env.step(action_blue, action_yellow)
+            reward, win_tag, done, leakers = env.step(action_blue, action_yellow)
             episode_reward += reward
         else:
             pass_transition = True
             env.step(action_blue=[0,0,0,0,0,0,0,0],action_yellow=enemy_action_for_transition, pass_transition = pass_transition)
 
 
-    return episode_reward, win_tag
+    return episode_reward, win_tag, leakers
 
 
 if __name__ == "__main__":
@@ -445,7 +445,7 @@ if __name__ == "__main__":
         if e % 100 ==0:
             n = 32
             non_lose_rate = 0
-            episode_rewards = 0
+            leakers_rate = 0
             for _ in range(n):
                 env = modeler(data,
                               visualize=visualize,
@@ -456,14 +456,14 @@ if __name__ == "__main__":
                               ciws_threshold=ciws_threshold,
                               action_history_step = cfg.action_history_step
                               )
-                episode_reward, win_tag = evaluation(agent, env)
-                print('evaluation', win_tag, episode_reward)
-                episode_rewards += episode_reward/n
+                episode_reward, win_tag, leakers = evaluation(agent, env)
+                print('evaluation', win_tag, leakers_rate)
+                leakers_rate += leakers/n
                 if win_tag != 'lose':
                     non_lose_rate += 1/n
 
             if vessl_on == True:
-                vessl.log(step=e, payload={'eval_rewards': episode_rewards})
+                vessl.log(step=e, payload={'eval_leakers': leakers_rate})
                 vessl.log(step=e, payload={'eval_non_lose_rate': non_lose_rate})
 
         env = modeler(data,
@@ -476,7 +476,7 @@ if __name__ == "__main__":
                       action_history_step = cfg.action_history_step
                       )
 
-        episode_reward, epsilon, t, eval, win_tag = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon, min_epsilon=min_epsilon, anneal_step=anneal_step , initializer=False, output_dir=None, vdn=True, n_step = n_step, anneal_epsilon = anneal_epsilon)
+        episode_reward, epsilon, t, eval, win_tag, leakers = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon, min_epsilon=min_epsilon, anneal_step=anneal_step , initializer=False, output_dir=None, vdn=True, n_step = n_step, anneal_epsilon = anneal_epsilon)
         if e >= cfg.train_start:
             if vessl_on == False:
                 writer.add_scalar("episode", episode_reward, e-cfg.train_start)
@@ -492,10 +492,9 @@ if __name__ == "__main__":
             else:
                 vessl.log(step=e, payload={'lose': 0})
 
-            if win_tag == 'win':
-                vessl.log(step=e, payload={'win': 1})
-            else:
-                vessl.log(step=e, payload={'win': 0})
+
+            vessl.log(step=e, payload={'win': leakers})
+
 
         if e % 10 == 0:
             import os

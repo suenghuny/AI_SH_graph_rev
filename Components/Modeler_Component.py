@@ -980,7 +980,9 @@ class Environment:
             if self.now >= 2000:
                 done = True
 
-
+            leaker = 0
+            if done == True:
+                leaker = len(self.enemies_fixed_list)-len(self.enemies)
 
 
 
@@ -1004,7 +1006,7 @@ class Environment:
         # #print(done)
         if rl == True:
             if pass_transition == False:
-                return reward, win_tag, done
+                return reward, win_tag, done, leaker
             else:pass
         else:
             return suceptibility, win_tag, done
