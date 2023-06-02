@@ -565,7 +565,7 @@ class Environment:
                 missile_k = ship.ssm_detections[k]
                 #print(cal_distance(missile_j, missile_k))
 
-                if cal_distance(missile_j, missile_k)<=20:
+                if cal_distance(missile_j, missile_k)<=15:
                     edge_index[0].append(j+1)
                     edge_index[1].append(k+1)
                     edge_index[0].append(k+1)
