@@ -442,8 +442,8 @@ if __name__ == "__main__":
     anneal_epsilon = (epsilon - min_epsilon) / cfg.anneal_step
     for e in range(num_iteration):
         start = time.time()
-        if e % 100 ==0:
-            n = 32
+        if e % 25 ==0:
+            n = 20
             non_lose_rate = 0
             leakers_rate = 0
             for _ in range(n):
