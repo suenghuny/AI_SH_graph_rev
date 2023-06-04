@@ -532,7 +532,6 @@ class Missile:
                 self.position_x += self.v_x
                 self.position_y += self.v_y
                 self.course = get_own_course(past_position_x, past_position_y, self.position_x, self.position_y)
-
             if r_est_hitting_point < self.seeker_on_distance:
                 self.fly_mode = 'brm'
                 if self.seeker.on != 'lock_on':
@@ -542,7 +541,6 @@ class Missile:
                     self.last_position_y = self.position_y
                     self.v_x = self.speed * (self.estimated_hitting_point_x - self.position_x) / r_est_hitting_point
                     self.v_y = self.speed * (self.estimated_hitting_point_y - self.position_y) / r_est_hitting_point
-
                     self.position_x += self.v_x
                     self.position_y += self.v_y
                     self.course = get_own_course(past_position_x, past_position_y, self.position_x, self.position_y)
@@ -551,15 +549,12 @@ class Missile:
                     past_position_y = self.position_y
                     self.last_position_x = self.position_x
                     self.last_position_y = self.position_y
-
                     self.v_x = self.speed * (self.target.position_x - self.position_x) / r
                     self.v_y = self.speed * (self.target.position_y - self.position_y) / r
-
                     self.position_x += self.v_x
                     self.position_y += self.v_y
                     self.course = get_own_course(past_position_x, past_position_y, self.position_x, self.position_y)
         else:
-
             if self.fly_mode == 'ccm':
                 past_position_x = self.position_x
                 past_position_y = self.position_y
@@ -643,8 +638,6 @@ class Missile:
             else:
                 self.target = detection
                 self.seeker.on = 'lock_on'
-                if self.cla == 'SSM' and self.launcher.side == 'yellow':
-                    print(self.original_target.cla, self.target.cla)
                 if self.target.cla == 'decoy':
                     self.target.launcher.monitors['ssm_decoying'] += 1
                     self.env.event_log.append({"time": self.env.now, "friend_or_foe": self.launcher.side,

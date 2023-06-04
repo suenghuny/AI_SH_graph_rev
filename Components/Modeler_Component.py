@@ -945,12 +945,10 @@ class Environment:
             self.f8 = enemy_destroyed_cal
             self.f9 = missile_destroyed_cal - self.last_destroyed_missile
             self.f10 = enemy_destroyed_cal - self.last_destroyed_enemy
-            reward = 3 * (enemy_destroyed_cal - self.last_destroyed_enemy) + \
-                     -2 * (ship_destroyed_cal - self.last_destroyed_ship) +  \
+            reward = 3 * (enemy_destroyed_cal - self.last_destroyed_enemy) +\
                      0.5 * (missile_destroyed_cal - self.last_destroyed_missile)
-            # reward += self.bonus_reward*100
-            # self.bonus_reward = 0
-            reward = reward/4
+
+
             self.last_destroyed_missile = missile_destroyed_cal
             self.last_destroyed_enemy = enemy_destroyed_cal
             self.last_destroyed_ship = ship_destroyed_cal
@@ -958,14 +956,15 @@ class Environment:
             if (len(self.friendlies) == 0) and (len(self.enemies) != 0):
                 suceptibility = 1
                 win_tag = "lose"
-
-
             elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):
                 suceptibility = 0
                 win_tag = "win"
+                reward += 100
             else:
                 win_tag = "draw"
+                reward += 20
 
+            reward = reward / 4
 
             if (len(self.flying_ssms_enemy) == 0) and (len(self.flying_ssms_friendly) == 0):
                 done_checker_A = [True if len(enemy.ssm_launcher) == 0 else False for enemy in self.enemies]
@@ -983,7 +982,6 @@ class Environment:
             leaker = 0
             if done == True:
                 leaker = len(self.enemies_fixed_list)-len(self.enemies)
-                print(len(self.enemies_fixed_list),len(self.enemies))
 
 
 
