@@ -950,7 +950,7 @@ class Environment:
                      1 * (missile_destroyed_cal - self.last_destroyed_missile)
             # reward += self.bonus_reward*100
             # self.bonus_reward = 0
-            reward = reward
+            reward = reward/4
             self.last_destroyed_missile = missile_destroyed_cal
             self.last_destroyed_enemy = enemy_destroyed_cal
             self.last_destroyed_ship = ship_destroyed_cal
