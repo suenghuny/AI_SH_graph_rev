@@ -953,18 +953,7 @@ class Environment:
             self.last_destroyed_enemy = enemy_destroyed_cal
             self.last_destroyed_ship = ship_destroyed_cal
 
-            if (len(self.friendlies) == 0) and (len(self.enemies) != 0):
-                suceptibility = 1
-                win_tag = "lose"
-            elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):
-                suceptibility = 0
-                win_tag = "win"
-                reward += 100
-            else:
-                win_tag = "draw"
-                reward += 20
 
-            reward = reward / 4
 
             if (len(self.flying_ssms_enemy) == 0) and (len(self.flying_ssms_friendly) == 0):
                 done_checker_A = [True if len(enemy.ssm_launcher) == 0 else False for enemy in self.enemies]
@@ -984,7 +973,20 @@ class Environment:
                 leaker = len(self.enemies_fixed_list)-len(self.enemies)
 
 
+            if (len(self.friendlies) == 0) and (len(self.enemies) != 0):
+                suceptibility = 1
+                win_tag = "lose"
+            elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):
+                suceptibility = 0
+                win_tag = "win"
+                if done == True:
+                    reward += 100
+            else:
+                win_tag = "draw"
+                if done == True:
+                    reward += 20
 
+            reward = reward / 4
 
 
 
