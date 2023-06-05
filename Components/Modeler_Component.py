@@ -995,7 +995,7 @@ class Environment:
                 if win_tag =='draw':
                     reward += 30
 
-                print(win_tag,len(self.friendlies), len(self.enemies))
+            print(win_tag,len(self.friendlies), len(self.enemies), reward)
 
             reward = reward / 4
 
