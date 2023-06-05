@@ -977,19 +977,15 @@ class Environment:
             if (self.last_check_lose == False) and\
                 (self.last_check_win == False) and\
                 (self.last_check_draw == False):
-
                 if (len(self.friendlies) == 0) and (len(self.enemies) != 0):
                     reward += 0
                     self.last_check_lose = True
-
                 elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):
                     reward += 30
                     self.last_check_draw = True
-
                 else:
                     reward += 40
                     self.last_check_win = True
-
 
 
             if (len(self.friendlies) == 0) and (len(self.enemies) != 0):

@@ -457,7 +457,7 @@ if __name__ == "__main__":
                               action_history_step = cfg.action_history_step
                               )
                 episode_reward, win_tag, leakers = evaluation(agent, env)
-                print('evaluation', win_tag, leakers_rate)
+                print('evaluation', win_tag, leakers_rate, episode_reward)
                 leakers_rate += leakers/n
                 if win_tag != 'lose':
                     non_lose_rate += 1/n
