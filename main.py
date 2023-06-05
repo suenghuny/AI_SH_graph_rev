@@ -447,8 +447,8 @@ if __name__ == "__main__":
     anneal_epsilon = (epsilon - min_epsilon) / cfg.anneal_step
     for e in range(num_iteration):
         start = time.time()
-        if e % 25 ==0:
-            n = 20
+        if e % 10 ==0:
+            n = 10
             non_lose_rate = 0
             leakers_rate = 0
             for j in range(n):
@@ -474,7 +474,6 @@ if __name__ == "__main__":
             else:
                 eval_win_ratio.append(leakers_rate)
                 eval_lose_ratio.append(non_lose_rate)
-
 
 
         env = modeler(data,
