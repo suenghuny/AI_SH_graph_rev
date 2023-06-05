@@ -955,7 +955,6 @@ class Environment:
             if ship.status != 'destroyed':
                 reward = 20 * (enemy_destroyed_cal - self.last_destroyed_enemy) +\
                          0.833 * (missile_destroyed_cal - self.last_destroyed_missile)
-                print((missile_destroyed_cal, self.last_destroyed_missile), reward)
             else:
                 reward = 0
 
