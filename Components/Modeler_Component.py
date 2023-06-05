@@ -951,8 +951,6 @@ class Environment:
             self.f10 = enemy_destroyed_cal - self.last_destroyed_enemy
             reward = 20 * (enemy_destroyed_cal - self.last_destroyed_enemy) +\
                      0.833 * (missile_destroyed_cal - self.last_destroyed_missile)
-
-
             self.last_destroyed_missile = missile_destroyed_cal
             self.last_destroyed_enemy = enemy_destroyed_cal
             self.last_destroyed_ship = ship_destroyed_cal
@@ -978,14 +976,19 @@ class Environment:
 
             if (self.last_check_lose == False) and\
                 (self.last_check_win == False) and\
-                (self.last_check_draw == False) :
+                (self.last_check_draw == False):
 
                 if (len(self.friendlies) == 0) and (len(self.enemies) != 0):
                     reward += 0
+                    self.last_check_lose = True
+
                 elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):
                     reward += 30
+                    self.last_check_draw = True
+
                 else:
                     reward += 40
+                    self.last_check_win = True
 
 
 
