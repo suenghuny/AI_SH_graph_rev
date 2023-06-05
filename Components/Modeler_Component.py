@@ -941,7 +941,8 @@ class Environment:
             for i in range(len(self.enemies_fixed_list)):
                 enemy= self.enemies_fixed_list[i]
                 missile_destroyed_cal += sum([1 for ssm in enemy.debug_ssm_launcher
-                                              if (ssm.status == 'destroyed') and (ship.status != 'destroyed')])
+                                              if (ssm.status == 'destroyed')])
+                #print([ssm.status for ssm in enemy.debug_ssm_launcher])
                 if enemy.status != 'destroyed':pass
                 else:
                     enemy_destroyed_cal += 1
@@ -949,8 +950,16 @@ class Environment:
             self.f8 = enemy_destroyed_cal
             self.f9 = missile_destroyed_cal - self.last_destroyed_missile
             self.f10 = enemy_destroyed_cal - self.last_destroyed_enemy
-            reward = 20 * (enemy_destroyed_cal - self.last_destroyed_enemy) +\
-                     0.833 * (missile_destroyed_cal - self.last_destroyed_missile)
+            # reward = 20 * (enemy_destroyed_cal - self.last_destroyed_enemy) + \
+            #          0.833 * (missile_destroyed_cal - self.last_destroyed_missile)
+            if ship.status != 'destroyed':
+                reward = 20 * (enemy_destroyed_cal - self.last_destroyed_enemy) +\
+                         0.833 * (missile_destroyed_cal - self.last_destroyed_missile)
+                print((missile_destroyed_cal, self.last_destroyed_missile), reward)
+            else:
+                reward = 0
+
+            #print(missile_destroyed_cal - self.last_destroyed_missile)
             self.last_destroyed_missile = missile_destroyed_cal
             self.last_destroyed_enemy = enemy_destroyed_cal
 
@@ -976,13 +985,14 @@ class Environment:
                     self.last_check_lose = True
                 elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):  # win
                     done = True
-                    reward += 40
+                    reward += 100
                     win_tag = 'win'
                     self.last_check_win = True
+                    #print(reward, len(self.friendlies), len(self.enemies))
                 elif (False not in done_checker_A) and (False not in done_checker_B): # draw
                     done = True
                     win_tag = 'draw'
-                    reward += 30
+                    reward += 90
                 else: pass
                 leaker = len(self.enemies_fixed_list) - len(self.enemies)
 

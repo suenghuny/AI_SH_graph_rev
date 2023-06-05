@@ -451,7 +451,11 @@ if __name__ == "__main__":
             n = 20
             non_lose_rate = 0
             leakers_rate = 0
-            for _ in range(n):
+            for j in range(n):
+                if j == 11:
+                    visualize = True
+                else:
+                    visualize = False
                 env = modeler(data,
                               visualize=visualize,
                               size=size,
