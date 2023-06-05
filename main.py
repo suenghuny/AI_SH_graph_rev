@@ -438,6 +438,10 @@ if __name__ == "__main__":
     epsilon = cfg.epsilon
     min_epsilon = cfg.min_epsilon
 
+    eval_lose_ratio = list()
+    eval_win_ratio = list()
+    lose_ratio = list()
+    win_ratio = list()
     reward_list = list()
     anneal_epsilon = (epsilon - min_epsilon) / cfg.anneal_step
     for e in range(num_iteration):
@@ -456,6 +460,7 @@ if __name__ == "__main__":
                               ciws_threshold=ciws_threshold,
                               action_history_step = cfg.action_history_step
                               )
+
                 episode_reward, win_tag, leakers = evaluation(agent, env)
                 print('evaluation', win_tag, leakers_rate, episode_reward)
                 leakers_rate += leakers/n
@@ -465,6 +470,11 @@ if __name__ == "__main__":
             if vessl_on == True:
                 vessl.log(step=e, payload={'eval_leakers': leakers_rate})
                 vessl.log(step=e, payload={'eval_non_lose_rate': non_lose_rate})
+            else:
+                eval_win_ratio.append(leakers_rate)
+                eval_lose_ratio.append(non_lose_rate)
+
+
 
         env = modeler(data,
                       visualize=visualize,
@@ -477,31 +487,46 @@ if __name__ == "__main__":
                       )
 
         episode_reward, epsilon, t, eval, win_tag, leakers = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon, min_epsilon=min_epsilon, anneal_step=anneal_step , initializer=False, output_dir=None, vdn=True, n_step = n_step, anneal_epsilon = anneal_epsilon)
-        if e >= cfg.train_start:
-            if vessl_on == False:
-                writer.add_scalar("episode", episode_reward, e-cfg.train_start)
-        else:
-            if vessl_on == False:
-                writer.add_scalar("data aggregation", episode_reward, e)
+
 
         reward_list.append(episode_reward)
+
+        win_ratio = list()
         if vessl_on == True:
             vessl.log(step=e, payload={'reward': episode_reward})
             if win_tag == 'lose':
                 vessl.log(step=e, payload={'lose': -1})
+                lose_ratio.append(-1)
             else:
                 vessl.log(step=e, payload={'lose': 0})
+                lose_ratio.append(0)
+        else:
+            if win_tag == 'lose':
+                lose_ratio.append(-1)
+            else:
+                lose_ratio.append(0)
+
 
 
             vessl.log(step=e, payload={'win': leakers})
 
 
-        if e % 10 == 0:
+        if e % 1 == 0:
             import os
             import pandas as pd
 
             df = pd.DataFrame(reward_list)
             df.to_csv(output_dir + 'episode_reward.csv')
+
+            df_eval_lose = pd.DataFrame(eval_lose_ratio)
+            df_eval_win = pd.DataFrame(eval_win_ratio)
+            df_lose = pd.DataFrame(lose_ratio)
+            df_win = pd.DataFrame(win_ratio)
+
+            df_eval_lose.to_csv(output_dir + 'eval_lose.csv')
+            df_eval_win.to_csv(output_dir + 'eval_win.csv')
+            df_lose.to_csv(output_dir+'lose_ratio.csv')
+            df_win.to_csv(output_dir+'win_ratio.csv')
 
         if e % 200 == 0:
             agent.save_model(e, t, epsilon, output_dir + "{}.pt".format(e))
