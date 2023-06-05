@@ -325,6 +325,7 @@ if __name__ == "__main__":
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
     else:
+        print("시작")
         from torch.utils.tensorboard import SummaryWriter
         output_dir = "../output_susceptibility/"
         writer = SummaryWriter('./logs2')
