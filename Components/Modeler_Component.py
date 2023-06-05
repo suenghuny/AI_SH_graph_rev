@@ -970,8 +970,8 @@ class Environment:
 
             if (len(self.flying_ssms_enemy) == 0) and (len(self.flying_ssms_friendly) == 0):
 
-                done_checker_A = [True if (len(enemy.ssm_launcher) == 0) else False for enemy in self.enemies_fixed_list]
-                done_checker_B = [True if (len(ship.ssm_launcher) == 0) else False for ship in self.friendlies_fixed_list]
+                done_checker_A = [True if (len(enemy.ssm_launcher) == 0) else False for enemy in self.enemies]
+                done_checker_B = [True if (len(ship.ssm_launcher) == 0) else False for ship in self.friendlies]
                 if (len(self.friendlies) == 0) and (len(self.enemies) != 0):  # lose
                     done = True
                     reward += 0

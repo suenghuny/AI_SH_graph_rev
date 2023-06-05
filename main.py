@@ -485,13 +485,11 @@ if __name__ == "__main__":
                       ciws_threshold=ciws_threshold,
                       action_history_step = cfg.action_history_step
                       )
-
         episode_reward, epsilon, t, eval, win_tag, leakers = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon, min_epsilon=min_epsilon, anneal_step=anneal_step , initializer=False, output_dir=None, vdn=True, n_step = n_step, anneal_epsilon = anneal_epsilon)
 
 
         reward_list.append(episode_reward)
 
-        win_ratio = list()
         if vessl_on == True:
             vessl.log(step=e, payload={'reward': episode_reward})
             if win_tag == 'lose':
@@ -510,7 +508,7 @@ if __name__ == "__main__":
         if e % 1 == 0:
             import os
             import pandas as pd
-
+            print("?????")
             df = pd.DataFrame(reward_list)
             df.to_csv(output_dir + 'episode_reward.csv')
 
