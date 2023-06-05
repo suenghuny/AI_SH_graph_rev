@@ -973,16 +973,21 @@ class Environment:
                 if (len(self.friendlies) == 0) and (len(self.enemies) != 0):      # lose
                     reward += 0
                     self.last_check_lose = True
-                if (len(self.enemies) == 0) and (len(self.friendlies) != 0):    # win
+                elif (len(self.enemies) == 0) and (len(self.friendlies) == 0):    # win
+                    reward += 0
+                    self.last_check_lose = True
+                elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):    # win
                     reward += 40
                     self.last_check_win = True
 
             if (len(self.friendlies) == 0) and (len(self.enemies) != 0):
                 suceptibility = 1
                 win_tag = "lose"
-            if (len(self.enemies) == 0) and (len(self.friendlies) != 0):
+            elif (len(self.enemies) == 0) and (len(self.friendlies) == 0):
                 suceptibility = 0
-                win_tag = "win"
+                win_tag = "lose"
+            elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):  # win
+                win_tag = 'win'
 
             leaker = 0
             if done == True:
