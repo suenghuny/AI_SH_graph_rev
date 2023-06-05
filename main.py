@@ -508,10 +508,6 @@ if __name__ == "__main__":
                 lose_ratio.append(0)
 
 
-
-            vessl.log(step=e, payload={'win': leakers})
-
-
         if e % 1 == 0:
             import os
             import pandas as pd
