@@ -970,21 +970,16 @@ class Environment:
             if self.now >= 2000:
                 done = True
 
-            leaker = 0
-            if done == True:
-                leaker = len(self.enemies_fixed_list)-len(self.enemies)
 
-                if (len(self.enemies) != 0) and (len(self.friendlies) != 0):pass
-                    #reward += 30
 
             win_tag = 'draw'
             if (self.last_check_lose == False) and\
                (self.last_check_win == False):
                 if (len(self.friendlies) == 0) and (len(self.enemies) != 0):      # lose
-                    #reward += 0
+                    reward += 0
                     self.last_check_lose = True
                 elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):    # win
-                    #reward += 40
+                    reward += 40
                     self.last_check_win = True
 
             if (len(self.friendlies) == 0) and (len(self.enemies) != 0):
@@ -994,8 +989,12 @@ class Environment:
                 suceptibility = 0
                 win_tag = "win"
 
+            leaker = 0
             if done == True:
-                print(win_tag, len(self.enemies), len(self.friendlies))
+                leaker = len(self.enemies_fixed_list) - len(self.enemies)
+                if win_tag =='draw':
+                    reward += 30
+
             reward = reward / 4
 
 
