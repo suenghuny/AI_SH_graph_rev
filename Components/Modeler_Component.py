@@ -934,15 +934,15 @@ class Environment:
             for i in range(len(self.friendlies_fixed_list)):
                 ship = self.friendlies_fixed_list[i]
                 if ship.status != 'destroyed':pass
-                else:
-                    ship_destroyed_cal += 1
+                else:pass
 
             # for ssm in self.flying_ssms_enemy:
             #     print(self.now, ssm.id, ssm.status, ssm.seeker.on, ssm.target.cla, ssm.original_target.status)
             for i in range(len(self.enemies_fixed_list)):
-                ship = self.enemies_fixed_list[i]
-                missile_destroyed_cal += sum([1 for ssm in ship.debug_ssm_launcher if ssm.status == 'destroyed'])
-                if ship.status != 'destroyed':pass
+                enemy= self.enemies_fixed_list[i]
+                missile_destroyed_cal += sum([1 for ssm in enemy.debug_ssm_launcher
+                                              if (ssm.status == 'destroyed') and (ship.status != 'destroyed')])
+                if enemy.status != 'destroyed':pass
                 else:
                     enemy_destroyed_cal += 1
             self.f7 = missile_destroyed_cal
@@ -953,49 +953,47 @@ class Environment:
                      0.833 * (missile_destroyed_cal - self.last_destroyed_missile)
             self.last_destroyed_missile = missile_destroyed_cal
             self.last_destroyed_enemy = enemy_destroyed_cal
-            self.last_destroyed_ship = ship_destroyed_cal
 
-
-
-            if (len(self.flying_ssms_enemy) == 0) and (len(self.flying_ssms_friendly) == 0):
-                done_checker_A = [True if len(enemy.ssm_launcher) == 0 else False for enemy in self.enemies_fixed_list]
-                done_checker_B = [True if len(ship.ssm_launcher) == 0 else False for ship in self.friendlies_fixed_list]
-                if (False in done_checker_A) or (False in done_checker_B):
-                    done = False
-                else:
-                    done = True
-            if self.now >= 2000:
-                done = True
 
             win_tag = 'draw'
-            if (self.last_check_lose == False) and\
-               (self.last_check_win == False):
-                if (len(self.friendlies) == 0) and (len(self.enemies) != 0):      # lose
-                    reward += 0
-                    self.last_check_lose = True
-                elif (len(self.enemies) == 0) and (len(self.friendlies) == 0):    # win
-                    reward += 0
-                    self.last_check_lose = True
-                elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):    # win
-                    reward += 40
-                    self.last_check_win = True
-
-            if (len(self.friendlies) == 0) and (len(self.enemies) != 0):
-                suceptibility = 1
-                win_tag = "lose"
-            elif (len(self.enemies) == 0) and (len(self.friendlies) == 0):
-                suceptibility = 0
-                win_tag = "lose"
-            elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):  # win
-                win_tag = 'win'
+            susceptibility= 0
 
             leaker = 0
-            if done == True:
-                leaker = len(self.enemies_fixed_list) - len(self.enemies)
-                if win_tag =='draw':
-                    reward += 30
 
-            print(win_tag,len(self.friendlies), len(self.enemies), reward)
+            if (len(self.flying_ssms_enemy) == 0) and (len(self.flying_ssms_friendly) == 0):
+
+                done_checker_A = [True if (len(enemy.ssm_launcher) == 0) else False for enemy in self.enemies_fixed_list]
+                done_checker_B = [True if (len(ship.ssm_launcher) == 0) else False for ship in self.friendlies_fixed_list]
+                if (len(self.friendlies) == 0) and (len(self.enemies) != 0):  # lose
+                    done = True
+                    reward += 0
+                    win_tag = "lose"
+                    self.last_check_lose = True
+                elif (len(self.enemies) == 0) and (len(self.friendlies) == 0):  # lose
+                    done = True
+                    reward += 0
+                    win_tag = "lose"
+                    self.last_check_lose = True
+                elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):  # win
+                    done = True
+                    reward += 40
+                    win_tag = 'win'
+                    self.last_check_win = True
+                elif (False not in done_checker_A) and (False not in done_checker_B): # draw
+                    done = True
+                    win_tag = 'draw'
+                    reward += 30
+                else: pass
+                leaker = len(self.enemies_fixed_list) - len(self.enemies)
+
+            #print(reward, len(self.friendlies), len(self.enemies))
+
+
+
+
+
+
+            #print(win_tag,len(self.friendlies), len(self.enemies), reward)
 
             reward = reward / 4
 
@@ -1007,16 +1005,6 @@ class Environment:
                         pygame.quit()
                         exit()
 
-        # else:
-        #     suceptibility = 0
-        #     win_tag = "draw"
-        #     done = True
-        #     if self.visualize == True:
-        #         for event in pygame.event.get():
-        #             if event.type == pygame.QUIT:
-        #                 pygame.quit()
-        #                 exit()
-        # #print(done)
         if rl == True:
             if pass_transition == False:
                 return reward, win_tag, done, leaker

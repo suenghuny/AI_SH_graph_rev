@@ -997,13 +997,12 @@ class Agent:
 
         # print(obs_n_action[0].unsqueeze(0).shape, "dddd")
         mask = torch.tensor(avail_action, device=device).bool()
+
         action = []
         cos, taus = self.Q.calc_cos(1)
-        #print(node_representation.shape)
         V = self.Q.value_forward(node_representation, cos, mini_batch=False)
         A = torch.stack([self.Q.advantage_forward(obs_n_action[i].unsqueeze(0), cos, mini_batch=False) for i in range(self.action_size)]).squeeze(1).squeeze(1).unsqueeze(0)
         Q = self.DuelingQ(V, A, mask)
-
         greedy_u = torch.argmax(Q)
         if cfg.epsilon_greedy == True:
             if np.random.uniform(0, 1) >= epsilon:
