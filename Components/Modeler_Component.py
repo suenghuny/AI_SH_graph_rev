@@ -949,9 +949,8 @@ class Environment:
             self.f8 = enemy_destroyed_cal
             self.f9 = missile_destroyed_cal - self.last_destroyed_missile
             self.f10 = enemy_destroyed_cal - self.last_destroyed_enemy
-            # reward = 20 * (enemy_destroyed_cal - self.last_destroyed_enemy) +\
-            #          0.833 * (missile_destroyed_cal - self.last_destroyed_missile)
-            reward = 0.833 * (missile_destroyed_cal - self.last_destroyed_missile)
+            reward = 20 * (enemy_destroyed_cal - self.last_destroyed_enemy) #+\
+                     #0.833 * (missile_destroyed_cal - self.last_destroyed_missile)
             self.last_destroyed_missile = missile_destroyed_cal
             self.last_destroyed_enemy = enemy_destroyed_cal
             self.last_destroyed_ship = ship_destroyed_cal
@@ -975,19 +974,18 @@ class Environment:
             if done == True:
                 leaker = len(self.enemies_fixed_list)-len(self.enemies)
 
-            if (self.last_check_lose == False) and\
-                (self.last_check_win == False) and\
-                (self.last_check_draw == False):
-                if (len(self.friendlies) == 0) and (len(self.enemies) != 0):
-                    reward += 0
-                    self.last_check_lose = True
-                elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):
+                if (len(self.enemies) != 0) and (len(self.friendlies) != 0):pass
                     #reward += 30
-                    self.last_check_draw = True
-                else:
+
+            win_tag = 'draw'
+            if (self.last_check_lose == False) and\
+               (self.last_check_win == False):
+                if (len(self.friendlies) == 0) and (len(self.enemies) != 0):      # lose
+                    #reward += 0
+                    self.last_check_lose = True
+                elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):    # win
                     #reward += 40
                     self.last_check_win = True
-
 
             if (len(self.friendlies) == 0) and (len(self.enemies) != 0):
                 suceptibility = 1
@@ -995,9 +993,9 @@ class Environment:
             elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):
                 suceptibility = 0
                 win_tag = "win"
-            else:
-                win_tag = "draw"
 
+            if done == True:
+                print(win_tag, len(self.enemies), len(self.friendlies))
             reward = reward / 4
 
 
