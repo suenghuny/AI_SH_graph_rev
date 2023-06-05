@@ -949,8 +949,8 @@ class Environment:
             self.f8 = enemy_destroyed_cal
             self.f9 = missile_destroyed_cal - self.last_destroyed_missile
             self.f10 = enemy_destroyed_cal - self.last_destroyed_enemy
-            reward = 20 * (enemy_destroyed_cal - self.last_destroyed_enemy) #+\
-                     #0.833 * (missile_destroyed_cal - self.last_destroyed_missile)
+            reward = 20 * (enemy_destroyed_cal - self.last_destroyed_enemy) +\
+                     0.833 * (missile_destroyed_cal - self.last_destroyed_missile)
             self.last_destroyed_missile = missile_destroyed_cal
             self.last_destroyed_enemy = enemy_destroyed_cal
             self.last_destroyed_ship = ship_destroyed_cal
@@ -958,19 +958,14 @@ class Environment:
 
 
             if (len(self.flying_ssms_enemy) == 0) and (len(self.flying_ssms_friendly) == 0):
-                done_checker_A = [True if len(enemy.ssm_launcher) == 0 else False for enemy in self.enemies]
-                done_checker_B = [True if len(ship.ssm_launcher) == 0 else False for ship in self.friendlies]
-
+                done_checker_A = [True if len(enemy.ssm_launcher) == 0 else False for enemy in self.enemies_fixed_list]
+                done_checker_B = [True if len(ship.ssm_launcher) == 0 else False for ship in self.friendlies_fixed_list]
                 if (False in done_checker_A) or (False in done_checker_B):
                     done = False
                 else:
-                    #print("여긴가?", self.friendlies_fixed_list[0].status)
                     done = True
-
             if self.now >= 2000:
                 done = True
-
-
 
             win_tag = 'draw'
             if (self.last_check_lose == False) and\
@@ -978,14 +973,14 @@ class Environment:
                 if (len(self.friendlies) == 0) and (len(self.enemies) != 0):      # lose
                     reward += 0
                     self.last_check_lose = True
-                elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):    # win
+                if (len(self.enemies) == 0) and (len(self.friendlies) != 0):    # win
                     reward += 40
                     self.last_check_win = True
 
             if (len(self.friendlies) == 0) and (len(self.enemies) != 0):
                 suceptibility = 1
                 win_tag = "lose"
-            elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):
+            if (len(self.enemies) == 0) and (len(self.friendlies) != 0):
                 suceptibility = 0
                 win_tag = "win"
 
@@ -994,6 +989,8 @@ class Environment:
                 leaker = len(self.enemies_fixed_list) - len(self.enemies)
                 if win_tag =='draw':
                     reward += 30
+
+                print(win_tag,len(self.friendlies), len(self.enemies))
 
             reward = reward / 4
 
