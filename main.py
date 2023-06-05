@@ -357,7 +357,7 @@ if __name__ == "__main__":
     lose_ratio = list()
     remains_ratio = list()
     polar_chart_scenario1 = [33, 29, 25, 33, 30, 30, 55, 27, 27, 35, 25, 30, 40]  # RCS의 polarchart 적용
-
+    print(cfg)
     polar_chart = [polar_chart_scenario1]
     df_dict = {}
     #scenario = np.random.choice(scenarios)
