@@ -793,6 +793,7 @@ class Environment:
   #      reward = 0
         for i in range(len(self.friendlies_fixed_list)):
             num_f += 1
+
             ship = self.friendlies_fixed_list[i]
             self.temp_max_air_engagement.append(len(ship.air_engagement_managing_list))
             if ship.status != 'destroyed':
@@ -810,11 +811,11 @@ class Environment:
 
         for i in range(len(self.enemies_fixed_list)):
             ship = self.enemies_fixed_list[i]
-            for ssm in ship.debug_ssm_launcher:
-                if (ssm.status == 'flying') or (ssm.status == 'destroyed'):
-                    self.debug_monitors.append(
-                        ["debug", ssm.id, ssm.status, self.now, cal_distance(ssm, ssm.target), ssm.target.cla,
-                         ssm.target.status])
+            # for ssm in ship.debug_ssm_launcher:
+            #     if (ssm.status == 'flying') or (ssm.status == 'destroyed'):
+            #         self.debug_monitors.append(
+            #             ["debug", ssm.id, ssm.status, self.now, cal_distance(ssm, ssm.target), ssm.target.cla,
+            #              ssm.target.status])
             if ship.status != 'destroyed':
                 ship.target_allocation_process(action_yellow[i])
                 ship.air_prelaunching_process()
@@ -953,12 +954,9 @@ class Environment:
             # reward = 20 * (enemy_destroyed_cal - self.last_destroyed_enemy) + \
             #          0.833 * (missile_destroyed_cal - self.last_destroyed_missile)
             if ship.status != 'destroyed':
-                reward = 20 * (enemy_destroyed_cal - self.last_destroyed_enemy) +\
-                         0.833 * (missile_destroyed_cal - self.last_destroyed_missile)
+                reward = 1 * (missile_destroyed_cal - self.last_destroyed_missile)
             else:
                 reward = 0
-
-            #print(missile_destroyed_cal - self.last_destroyed_missile)
             self.last_destroyed_missile = missile_destroyed_cal
             self.last_destroyed_enemy = enemy_destroyed_cal
 
@@ -983,14 +981,14 @@ class Environment:
                     self.last_check_lose = True
                 elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):  # win
                     done = True
-                    reward += 150
+                    reward += 4
                     win_tag = 'win'
                     self.last_check_win = True
                     #print(reward, len(self.friendlies), len(self.enemies))
                 elif (False not in done_checker_A) and (False not in done_checker_B): # draw
                     done = True
                     win_tag = 'draw'
-                    reward += 150
+                    reward += 4
                 else: pass
                 leaker = len(self.enemies_fixed_list) - len(self.enemies)
 
