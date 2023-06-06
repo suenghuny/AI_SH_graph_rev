@@ -954,7 +954,8 @@ class Environment:
             # reward = 20 * (enemy_destroyed_cal - self.last_destroyed_enemy) + \
             #          0.833 * (missile_destroyed_cal - self.last_destroyed_missile)
             if ship.status != 'destroyed':
-                reward = 1 * (missile_destroyed_cal - self.last_destroyed_missile)
+                reward = 1 * (missile_destroyed_cal - self.last_destroyed_missile)+ \
+                         1 * (enemy_destroyed_cal - self.last_destroyed_enemy)
             else:
                 reward = 0
             self.last_destroyed_missile = missile_destroyed_cal
