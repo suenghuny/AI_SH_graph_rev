@@ -571,7 +571,7 @@ class Environment:
                 # r_k = self.range_checking(missile_k)
 
 
-                if cal_distance(missile_j, missile_k)<=25 :
+                if cal_distance(missile_j, missile_k)<=20 :
                     edge_index[0].append(j+1)
                     edge_index[1].append(k+1)
                     edge_index[0].append(k+1)
