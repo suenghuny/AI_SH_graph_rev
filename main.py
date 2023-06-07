@@ -248,7 +248,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
     return episode_reward, epsilon, t, eval, win_tag, leakers
 
 
-def evaluation(agent, env):
+def evaluation(agent, env, with_noise = False):
     temp = random.uniform(0, 50)
     agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
     done = False
@@ -302,7 +302,7 @@ def evaluation(agent, env):
                                                                     enemy_edge_index=enemy_edge_index,
                                                                     n_node_features_enemy=n_node_feature_enemy,
                                                                     mini_batch=False)  # 차원 : n_agents X n_representation_comm
-            action_blue = agent.sample_action(node_representation, avail_action_blue, epsilon, action_feature, training = False)
+            action_blue = agent.sample_action(node_representation, avail_action_blue, epsilon, action_feature, training = False, with_noise = with_noise)
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
             reward, win_tag, done, leakers = env.step(action_blue, action_yellow)
             episode_reward += reward
@@ -444,6 +444,9 @@ if __name__ == "__main__":
     lose_ratio = list()
     win_ratio = list()
     reward_list = list()
+
+    eval_lose_ratio1 = list()
+    eval_win_ratio1 = list()
     anneal_epsilon = (epsilon - min_epsilon) / cfg.anneal_step
     for e in range(num_iteration):
         start = time.time()
@@ -461,9 +464,8 @@ if __name__ == "__main__":
                               ciws_threshold=ciws_threshold,
                               action_history_step = cfg.action_history_step
                               )
-
-                episode_reward, win_tag, leakers = evaluation(agent, env)
-                print('evaluation', win_tag, leakers_rate, episode_reward)
+                episode_reward, win_tag, leakers = evaluation(agent, env, with_noise = True)
+                print('evaluation', win_tag, episode_reward)
                 leakers_rate += leakers/n
                 if win_tag != 'lose':
                     non_lose_rate += 1/n

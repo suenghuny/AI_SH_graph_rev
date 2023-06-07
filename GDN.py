@@ -977,7 +977,7 @@ class Agent:
 
 
     @torch.no_grad()
-    def sample_action(self, node_representation, avail_action, epsilon, action_feature, training = True):
+    def sample_action(self, node_representation, avail_action, epsilon, action_feature, training = True, with_noise = False):
         """
         node_representation 차원 : n_agents X n_representation_comm
         action_feature 차원      : action_size X n_action_feature
@@ -987,7 +987,10 @@ class Agent:
             if training == True:
                 self.Q.reset_noise_net()
             else:
-                self.Q.remove_noise_net()
+                if with_noise == True:
+                    self.Q.reset_noise_net()
+                else:
+                    self.Q.remove_noise_net()
 
         action_feature_dummy = action_feature
         action_feature = torch.tensor(action_feature, dtype = torch.float).to(device)
