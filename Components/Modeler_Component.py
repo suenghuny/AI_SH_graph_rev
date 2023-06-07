@@ -953,11 +953,19 @@ class Environment:
             self.f10 = enemy_destroyed_cal - self.last_destroyed_enemy
             # reward = 20 * (enemy_destroyed_cal - self.last_destroyed_enemy) + \
             #          0.833 * (missile_destroyed_cal - self.last_destroyed_missile)
-            if ship.status != 'destroyed':
-                reward = 1 * (missile_destroyed_cal - self.last_destroyed_missile)+ \
-                         1 * (enemy_destroyed_cal - self.last_destroyed_enemy)
-            else:
-                reward = 0
+            # if ship.status != 'destroyed':
+            #     reward = 1 * (missile_destroyed_cal - self.last_destroyed_missile)+ \
+            #              1 * (enemy_destroyed_cal - self.last_destroyed_enemy)
+            # else:
+            #     reward = 0
+
+            reward = 2000 * (enemy_destroyed_cal - self.last_destroyed_enemy) \
+                     -6000 * (ship_destroyed_cal - self.last_destroyed_ship) +  \
+                     25 * (missile_destroyed_cal - self.last_destroyed_missile)
+            reward += self.bonus_reward*100
+            self.bonus_reward = 0
+            reward = reward / 2000
+
             self.last_destroyed_missile = missile_destroyed_cal
             self.last_destroyed_enemy = enemy_destroyed_cal
 
@@ -982,14 +990,14 @@ class Environment:
                     self.last_check_lose = True
                 elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):  # win
                     done = True
-                    reward += 4
+                    reward += 0
                     win_tag = 'win'
                     self.last_check_win = True
                     #print(reward, len(self.friendlies), len(self.enemies))
                 elif (False not in done_checker_A) and (False not in done_checker_B): # draw
                     done = True
                     win_tag = 'draw'
-                    reward += 4
+                    reward += 0
                 else: pass
                 leaker = len(self.enemies_fixed_list) - len(self.enemies)
 
@@ -1008,18 +1016,18 @@ class Environment:
                     self.last_check_lose = True
                 elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):  # win
                     done = True
-                    reward += 4
+                    reward += 0
                     win_tag = 'win'
                     self.last_check_win = True
                     #print(reward, len(self.friendlies), len(self.enemies))
                 elif (False not in done_checker_A) and (False not in done_checker_B): # draw
                     done = True
                     win_tag = 'draw'
-                    reward += 4
+                    reward += 0
                 else:
                     done = True
                     win_tag = 'draw'
-                    reward += 4
+                    reward += 0
                 leaker = len(self.enemies_fixed_list) - len(self.enemies)
 
 
@@ -1033,7 +1041,7 @@ class Environment:
 
             #print(win_tag,len(self.friendlies), len(self.enemies), reward)
 
-            reward = reward / 4
+            #reward = reward / 4
 
 
 
