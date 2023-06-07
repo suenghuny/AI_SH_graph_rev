@@ -218,15 +218,15 @@ class Missile:
                                 self.original_target.missile_destroying_history += 1
                                 enemies.remove(self.target)  # self.target은 yellow의 ship
 
-                                for m in self.target.m_sam_launcher:
-                                    m.status = 'destroyed'
-                                    m.fly_mode = 'destroyed'
-                                for m in self.target.l_sam_launcher:
-                                    m.status = 'destroyed'
-                                    m.fly_mode = 'destroyed'
-                                for m in self.target.ssm_launcher:
-                                    m.status = 'destroyed'
-                                    m.fly_mode = 'destroyed'
+                                # for m in self.target.m_sam_launcher:
+                                #     m.status = 'destroyed'
+                                #     m.fly_mode = 'destroyed'
+                                # for m in self.target.l_sam_launcher:
+                                #     m.status = 'destroyed'
+                                #     m.fly_mode = 'destroyed'
+                                # for m in self.target.ssm_launcher:
+                                #     m.status = 'destroyed'
+                                #     m.fly_mode = 'destroyed'
 
 
                                 self.target.monitors['enemy_flying_ssms'] = len(flying_ssms_friendly)
