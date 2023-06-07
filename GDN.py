@@ -142,6 +142,7 @@ class DuelingDQN(nn.Module):
             mean_A = torch.where(A == float('-inf'), zeros, A).sum()
             mean_A = mean_A/nA
             Q = V+A-mean_A
+
         if (past_action != None) and (training == True):
             A = A.squeeze(2)
             mask = mask.squeeze(1)
@@ -413,7 +414,6 @@ class Replay_Buffer:
             p_sampled = p
             p = p.tolist()
             try:
-
                 sampled_batch_idx = np.random.choice(step_count_list[:-self.n_step], size=self.batch_size, p = p)
             except ValueError as VE:
                 sampled_batch_idx = np.random.choice(step_count_list[:-self.n_step], size=self.batch_size)
