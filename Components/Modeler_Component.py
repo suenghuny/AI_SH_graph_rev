@@ -28,6 +28,7 @@ class Environment:
                  tick = 24,
                  ciws_threshold = 2.5,
                  mode = False):
+        print("바뀐거 맞지?")
         self.simtime_per_framerate = simtime_per_framerate # 시뮬레이션 시간 / 프레임 주기
         self.nautical_mile_scaler = self.simtime_per_framerate / 3600 * 10
         self.detection_by_height = detection_by_height
