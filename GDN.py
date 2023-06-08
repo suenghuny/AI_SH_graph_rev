@@ -1121,6 +1121,7 @@ class Agent:
                             agent_id=0,
                             target=True,
                             cos=cos, vdn = vdn)
+
         q_tot = q
         q_tot_tar = q_tar
         rewards_1_step = rewards[:, 0].unsqueeze(1)
