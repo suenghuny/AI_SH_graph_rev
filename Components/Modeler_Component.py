@@ -28,7 +28,6 @@ class Environment:
                  tick = 24,
                  ciws_threshold = 2.5,
                  mode = False):
-
         self.simtime_per_framerate = simtime_per_framerate # 시뮬레이션 시간 / 프레임 주기
         self.nautical_mile_scaler = self.simtime_per_framerate / 3600 * 10
         self.detection_by_height = detection_by_height
@@ -991,14 +990,14 @@ class Environment:
                     self.last_check_lose = True
                 elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):  # win
                     done = True
-                    reward += 16
+                    reward += 4
                     win_tag = 'win'
                     self.last_check_win = True
                     #print(reward, len(self.friendlies), len(self.enemies))
                 elif (False not in done_checker_A) and (False not in done_checker_B): # draw
                     done = True
                     win_tag = 'draw'
-                    reward += 16
+                    reward += 4
                 else: pass
                 leaker = len(self.enemies_fixed_list) - len(self.enemies)
 
@@ -1017,18 +1016,18 @@ class Environment:
                     self.last_check_lose = True
                 elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):  # win
                     done = True
-                    reward += 16
+                    reward += 4
                     win_tag = 'win'
                     self.last_check_win = True
                     #print(reward, len(self.friendlies), len(self.enemies))
                 elif (False not in done_checker_A) and (False not in done_checker_B): # draw
                     done = True
                     win_tag = 'draw'
-                    reward += 16
+                    reward += 4
                 else:
                     done = True
                     win_tag = 'draw'
-                    reward += 16
+                    reward += 4
                 leaker = len(self.enemies_fixed_list) - len(self.enemies)
 
 
