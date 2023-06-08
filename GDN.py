@@ -119,7 +119,7 @@ class IQN(nn.Module):
         y = torch.relu(self.head_v(input.to(device)))  # x의 shape는 batch_size, layer_size
         cos_y = cos.view(batch_size * N, self.n_cos)
         cos_y = torch.relu(self.cos_embedding(cos_y)).view(batch_size, N, self.layer_size)  # (batch, n_tau, layer)
-
+        #print(y.unsqueeze(1).shape, cos_y.shape)
         y = (y.unsqueeze(1) * cos_y).view(batch_size * N, self.layer_size)  # 이부분이 phsi * phi에 해당하는 부분
         out_v = self.advantage_layer(y)
         quantiles_v = out_v.view(batch_size, N, 1)
@@ -979,9 +979,11 @@ class Agent:
     @torch.no_grad()
     def sample_action(self, node_representation, avail_action, epsilon, action_feature, training = True, with_noise = False):
         """
+
         node_representation 차원 : n_agents X n_representation_comm
         action_feature 차원      : action_size X n_action_feature
         avail_action 차원        : n_agents X action_size
+
         """
         if cfg.epsilon_greedy == False:
             if training == True:
@@ -1046,6 +1048,7 @@ class Agent:
             p_sampled, action_feature, action_features, action_features_next, heterogenous_edges,heterogenous_edges_next = self.buffer.sample(vdn = vdn)
 
         weight = ((len(self.buffer.buffer[10])-self.n_step)*torch.tensor(priority, dtype=torch.float, device = device))**(-self.beta)
+
         weight /= weight.max()
 
 
@@ -1122,7 +1125,7 @@ class Agent:
         q_tot_tar = q_tar
         rewards_1_step = rewards[:, 0].unsqueeze(1)
         rewards_k_step = rewards[:, 1:]
-        masked_n_step_bootstrapping = dones*torch.cat([rewards_k_step, q_tot_tar], dim = 1)
+        masked_n_step_bootstrapping = (1-dones)*torch.cat([rewards_k_step, q_tot_tar], dim = 1)
         discounted_n_step_bootstrapping = self.gamma_n_step*torch.cat([rewards_1_step, masked_n_step_bootstrapping], dim = 1)
         td_target = discounted_n_step_bootstrapping.sum(dim=1, keepdims = True)
 

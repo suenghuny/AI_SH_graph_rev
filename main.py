@@ -505,34 +505,24 @@ if __name__ == "__main__":
                 lose_ratio.append(-1)
             else:
                 lose_ratio.append(0)
-
-
         if e % 10 == 0:
             import os
             import pandas as pd
             df = pd.DataFrame(reward_list)
             df.to_csv(output_dir + 'episode_reward.csv')
-
             df_eval_lose = pd.DataFrame(eval_lose_ratio)
             df_eval_win = pd.DataFrame(eval_win_ratio)
             df_lose = pd.DataFrame(lose_ratio)
             df_win = pd.DataFrame(win_ratio)
-
             df_eval_lose.to_csv(output_dir + 'eval_lose.csv')
             df_eval_win.to_csv(output_dir + 'eval_win.csv')
             df_lose.to_csv(output_dir+'lose_ratio.csv')
             df_win.to_csv(output_dir+'win_ratio.csv')
-
         if e % 200 == 0:
             agent.save_model(e, t, epsilon, output_dir + "{}.pt".format(e))
-
-        #print(len(agent.buffer.buffer[2]))
         print(
             "Total reward in episode {} = {}, epsilon : {}, time_step : {}, episode_duration : {}".format(
                 e,
                 np.round(episode_reward, 3),
                 np.round(epsilon, 3),
                 t, np.round(time.time() - start, 3)))
-
-        # del data
-        # del env
