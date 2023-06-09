@@ -690,7 +690,7 @@ class Agent:
 
 
         #self.optimizer = optim.RMSprop(self.eval_params, lr=learning_rate)
-        self.optimizer = AdaHessian(self.eval_params)
+        self.optimizer = AdaHessian(self.eval_params, learning_rate = learning_rate)
 
         if cfg.scheduler == 'step':
             self.scheduler = StepLR(optimizer=self.optimizer, step_size=cfg.scheduler_step, gamma=cfg.scheduler_ratio)
