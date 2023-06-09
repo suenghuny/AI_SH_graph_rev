@@ -1,7 +1,7 @@
 from torch.optim.lr_scheduler import StepLR
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
-from ada_hessian  import AdaHessian
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -689,8 +689,8 @@ class Agent:
                                list(self.func_meta_path.parameters())
 
 
-        #self.optimizer = optim.RMSprop(self.eval_params, lr=learning_rate)
-        self.optimizer = AdaHessian(self.eval_params, lr = learning_rate)
+        self.optimizer = optim.Adamax(self.eval_params, lr=learning_rate)
+
 
         if cfg.scheduler == 'step':
             self.scheduler = StepLR(optimizer=self.optimizer, step_size=cfg.scheduler_step, gamma=cfg.scheduler_ratio)
@@ -1136,11 +1136,11 @@ class Agent:
         loss = F.huber_loss(weight*q_tot, weight*td_target.detach())#
 
         self.optimizer.zero_grad()
-        loss.backward(create_graph=True)
+        loss.backward()
 
         torch.nn.utils.clip_grad_norm_(self.eval_params, cfg.grad_clip)
         self.optimizer.step()
-        #self.scheduler.step()
+        self.scheduler.step()
 
         if cfg.epsilon_greedy == False:
             self.Q.reset_noise_net()
