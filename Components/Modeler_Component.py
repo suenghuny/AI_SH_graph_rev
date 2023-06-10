@@ -954,8 +954,7 @@ class Environment:
             # reward = 20 * (enemy_destroyed_cal - self.last_destroyed_enemy) + \
             #          0.833 * (missile_destroyed_cal - self.last_destroyed_missile)
             if ship.status != 'destroyed':
-                reward = 1 * (missile_destroyed_cal - self.last_destroyed_missile)+ \
-                         1 * (enemy_destroyed_cal - self.last_destroyed_enemy)
+                reward = 1 * (missile_destroyed_cal - self.last_destroyed_missile)
             else:
                 reward = 0
 
@@ -1035,7 +1034,7 @@ class Environment:
             #print(reward, len(self.friendlies), len(self.enemies))
             #print(win_tag,len(self.friendlies), len(self.enemies), reward)
 
-            reward = reward
+            reward = reward/2
 
 
 

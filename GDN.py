@@ -689,7 +689,7 @@ class Agent:
                                list(self.func_meta_path.parameters())
 
 
-        self.optimizer = optim.Adamax(self.eval_params, lr=learning_rate)
+        self.optimizer = optim.Adam(self.eval_params, lr=learning_rate)
 
 
         if cfg.scheduler == 'step':
