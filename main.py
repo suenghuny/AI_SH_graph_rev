@@ -451,7 +451,7 @@ if __name__ == "__main__":
     for e in range(num_iteration):
         start = time.time()
         if e % 10 ==0:
-            n = 1
+            n = cfg.n_eval
             non_lose_rate = 0
             leakers_rate = 0
             for j in range(n):

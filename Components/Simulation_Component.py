@@ -1465,10 +1465,8 @@ class Ship:
                 idle_l_sam = [missile for missile in self.l_sam_launcher if missile.status == 'idle']
                 if len(idle_l_sam) >= 1:
                     missile = idle_l_sam[0]
-
                     missile.target = target
                     missile.original_target = target
-
                     missile.status = 'target_allocated'
                     launching_time = self.env.now + np.random.uniform(self.lsam_launching_duration_min,
                                                                       self.lsam_launching_duration_max)  # 발사 소요시간
