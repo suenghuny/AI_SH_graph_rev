@@ -464,7 +464,7 @@ if __name__ == "__main__":
                               ciws_threshold=ciws_threshold,
                               action_history_step = cfg.action_history_step
                               )
-                episode_reward, win_tag, leakers = evaluation(agent, env, with_noise =False)
+                episode_reward, win_tag, leakers = evaluation(agent, env, with_noise =cfg.with_noise)
                 print('전', win_tag, episode_reward)
                 leakers_rate += leakers/n
                 if win_tag != 'lose':
