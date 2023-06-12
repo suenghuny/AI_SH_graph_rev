@@ -33,7 +33,7 @@ def preprocessing(scenarios):
 
 
 def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, initializer, output_dir, vdn, n_step):
-    temp = random.randint(30, 31)
+    temp = 30
     agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
     done = False
     episode_reward = 0
@@ -43,7 +43,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
     eval = False
 
     sum_learn = 0
-    enemy_action_for_transition = [0] * len(env.enemies_fixed_list)
+    enemy_action_for_transition =  [0] * len(env.enemies_fixed_list)
     friendly_action_for_transition = [0] * len(env.friendlies_fixed_list)
     dummy_avail_action = [[False] * agent.action_size for _ in range(agent.num_agent)]
 

@@ -815,7 +815,10 @@ class Environment:
             ship = self.friendlies_fixed_list[i]
             self.temp_max_air_engagement.append(len(ship.air_engagement_managing_list))
             if ship.status != 'destroyed':
-                ship.target_allot_by_action_feature(action_blue)
+                if rl == True:
+                    ship.target_allot_by_action_feature(action_blue)
+                else:
+                    ship.target_allocation_process(action_blue[i])
                 ship.air_prelaunching_process()
                 ship.surface_prelaunching_process()
                 ship.maneuvering()
@@ -961,7 +964,7 @@ class Environment:
                 enemy= self.enemies_fixed_list[i]
                 missile_destroyed_cal += sum([1 for ssm in enemy.debug_ssm_launcher
                                               if (ssm.status == 'destroyed')])
-                #print([ssm.status for ssm in enemy.debug_ssm_launcher])
+
                 if enemy.status != 'destroyed':pass
                 else:
                     enemy_destroyed_cal += 1
@@ -1065,9 +1068,13 @@ class Environment:
         if rl == True:
             if pass_transition == False:
                 return reward, win_tag, done, leaker
-            else:pass
+            else:
+                pass
         else:
-            return suceptibility, win_tag, done
+            if pass_transition == False:
+                return reward, win_tag, done, leaker
+            else:
+                pass
 
 
 

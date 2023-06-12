@@ -35,7 +35,7 @@ def preprocessing(scenarios):
 def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, initializer, output_dir, vdn, n_step):
     interval_min_blue = cfg.interval_min_blue
     interval_constant_blue = cfg.interval_constant_blue
-    temp = random.randint(30, 31)
+    temp = random.uniform(0, 50)
     agent_blue = Policy(env, rule='rule2', temperatures=[cfg.temperature, cfg.temperature])
     agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
     done = False
@@ -60,7 +60,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
             avail_action_yellow, target_distance_yellow, air_alert_yellow = env.get_avail_actions_temp(interval_min, interval_constant, side='yellow')
             action_blue = agent_blue.get_action(avail_action_blue, target_distance_blue, air_alert_blue)
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
-            reward, win_tag, done = env.step(action_blue, action_yellow)
+            reward, win_tag, done, leaker = env.step(action_blue, action_yellow, rl = False)
             episode_reward += reward
             status = None
             step_checker += 1
@@ -69,11 +69,11 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
         else:
             pass_transition = True
             env.step(action_blue=friendly_action_for_transition,
-                     action_yellow=enemy_action_for_transition, pass_transition=pass_transition)
+                     action_yellow=enemy_action_for_transition, pass_transition=pass_transition, rl = False)
 
         if done == True:
             break
-    return episode_reward, epsilon, t, eval
+    return episode_reward, epsilon, t, eval, win_tag
 
 
 if __name__ == "__main__":
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     """
     환경 시스템 관련 변수들
     """
-    visualize =True # 가시화 기능 사용 여부 / True : 가시화 적용, False : 가시화 미적용
+    visualize =False # 가시화 기능 사용 여부 / True : 가시화 적용, False : 가시화 미적용
     size = [600, 600]  # 화면 size / 600, 600 pixel
     tick = 500  # 가시화 기능 사용 시 빠르기
     n_step = cfg.n_step
@@ -131,7 +131,8 @@ if __name__ == "__main__":
                   detection_by_height=detection_by_height,
                   tick=tick,
                   simtime_per_framerate=simtime_per_frame,
-                  ciws_threshold=ciws_threshold)
+                  ciws_threshold=ciws_threshold,
+                  action_history_step=cfg.action_history_step)
     anneal_episode = cfg.anneal_episode
     anneal_step = (cfg.per_beta - 1) / anneal_episode
     epsilon = 1
@@ -150,8 +151,9 @@ if __name__ == "__main__":
                       detection_by_height=detection_by_height,
                       tick=tick,
                       simtime_per_framerate=simtime_per_frame,
-                      ciws_threshold=ciws_threshold)
-        episode_reward, epsilon, t, eval = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon,
+                      ciws_threshold=ciws_threshold,
+                      action_history_step=cfg.action_history_step)
+        episode_reward, epsilon, t, eval, win_tag = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon,
                                                  min_epsilon=min_epsilon, anneal_step=anneal_step, initializer=False,
                                                  output_dir=None, vdn=True, n_step=n_step)
         if vessl_on == False:
@@ -169,11 +171,11 @@ if __name__ == "__main__":
 
         # print(len(agent.buffer.buffer[2]))
         print(
-            "Total reward in episode {} = {}, epsilon : {}, time_step : {}, episode_duration : {}, mean reward : {}".format(
+            "Total reward in episode {} = {}, epsilon : {}, time_step : {}, episode_duration : {}, mean reward : {}, win_tag : {}".format(
                 e,
                 np.round(episode_reward, 3),
                 np.round(epsilon, 3),
-                t, np.round(time.time() - start, 3), np.mean(reward_list)))
+                t, np.round(time.time() - start, 3), np.mean(reward_list), win_tag))
 
         # del data
         # del env

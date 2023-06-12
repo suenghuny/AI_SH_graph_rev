@@ -1404,7 +1404,6 @@ class Ship:
             #print(noise_x, noise_y)
         else:
             distance = ((target.position_y-self.position_y)**2+(target.position_x-self.position_x)**2)/7000
-
             noise_y = target.position_y+np.random.normal(0, distance)
             noise_x = target.position_x+np.random.normal(0, distance)
 
@@ -1499,7 +1498,8 @@ class Ship:
         if (target_id >= 1) and (target_id <= self.surface_tracking_limit):  # 대함표적에 대한 prelaunching process logic
             target_idx = target_id - 1  # no_ops를 제외하고 index한다.
             if self.side == 'blue':
-                target = self.env.enemies_fixed_list[target_idx]  # 적함에 대한 표적할당
+                target = self.env.enemies_fixed_list[target_idx]     # 적함에 대한 표적할당
+
             else:
                 target = self.env.friendlies_fixed_list[target_idx]  # 우군함에 대한 표적할당
 
