@@ -1131,7 +1131,7 @@ class Ship:
         self.last_v_y = 0
         self.a_x = 0
         self.a_y = 0
-        num = 4
+        num = 3
         self.action_history = deque(maxlen = num)
         for _ in range(num):
             self.action_history.append(None)

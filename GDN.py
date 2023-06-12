@@ -1,6 +1,6 @@
 from torch.optim.lr_scheduler import StepLR
 from torch.optim.lr_scheduler import CosineAnnealingLR
-
+from ada_hessian import AdaHessian
 
 import torch
 import torch.nn as nn
@@ -687,11 +687,7 @@ class Agent:
                                list(self.node_representation_ship_feature.parameters()) + \
                                list(self.node_representation.parameters()) + \
                                list(self.func_meta_path.parameters())
-
-
-        self.optimizer = optim.Adam(self.eval_params, lr=learning_rate)
-
-
+        self.optimizer =AdaHessian(self.eval_params, lr=learning_rate)
         if cfg.scheduler == 'step':
             self.scheduler = StepLR(optimizer=self.optimizer, step_size=cfg.scheduler_step, gamma=cfg.scheduler_ratio)
         elif cfg.scheduler == 'cosine':
@@ -1059,68 +1055,52 @@ class Agent:
         action_feature :     batch_size x action_size x action_feature_size
         avail_actions_next : batch_size x num_agents x action_size 
         """
-
         n_node_features_missile = self.n_node_feature_missile
         n_node_features_enemy = self.n_node_feature_enemy
-        if cfg.GNN == 'GAT':
-            obs = self.get_node_representation(
-                node_features_missile,
-                ship_features,
-                edge_indices_missile,
-                n_node_features_missile,
-                node_feature_enemy,
-                edge_index_enemy,
-                n_node_features_enemy,
-                mini_batch=True)
-            obs_next = self.get_node_representation(
-                node_features_missile_next,
-                ship_features_next,
-                edge_indices_missile_next,
-                n_node_features_missile,
-                node_feature_enemy_next,
-                edge_index_enemy_next,
-                n_node_features_enemy,
-                mini_batch=True)
-        else:
-            obs = self.get_node_representation(
-                node_features_missile,
-                ship_features,
-                heterogenous_edges,
-                n_node_features_missile,
-                node_feature_enemy,
-                edge_index_enemy,
-                n_node_features_enemy,
-                mini_batch=True)
-            obs_next = self.get_node_representation(
-                node_features_missile_next,
-                ship_features_next,
-                heterogenous_edges_next,
-                n_node_features_missile,
-                node_feature_enemy_next,
-                edge_index_enemy_next,
-                n_node_features_enemy,
-                mini_batch=True)
-
-
 
         dones = torch.tensor(dones, device=device, dtype=torch.float)
         rewards = torch.tensor(rewards, device=device, dtype=torch.float)
         cos, taus = self.Q.calc_cos(self.batch_size)
 
+
+        self.eval_check(eval=True)
+        obs_next = self.get_node_representation(
+            node_features_missile_next,
+            ship_features_next,
+            heterogenous_edges_next,
+            n_node_features_missile,
+            node_feature_enemy_next,
+            edge_index_enemy_next,
+            n_node_features_enemy,
+            mini_batch=True)
+        q_tar = self.cal_Q(obs=obs_next,
+                        action_feature=None,
+                        action_features=action_features_next,
+                        avail_actions=avail_actions_next,
+                        agent_id=0,
+                        target=True,
+                        cos=cos, vdn = vdn)
+
+
+        self.eval_check(eval = False)
+        obs = self.get_node_representation(
+            node_features_missile,
+            ship_features,
+            heterogenous_edges,
+            n_node_features_missile,
+            node_feature_enemy,
+            edge_index_enemy,
+            n_node_features_enemy,
+            mini_batch=True)
         q = self.cal_Q(obs=obs,
                        action_feature=action_feature,
-                       action_features =action_features,
-                        avail_actions=avail_actions,
-                        agent_id=0,
-                        target=False,
-                        cos=cos,vdn = vdn)
-        q_tar = self.cal_Q(obs=obs_next,
-                            action_feature=None,
-                            action_features=action_features_next,
-                            avail_actions=avail_actions_next,
-                            agent_id=0,
-                            target=True,
-                            cos=cos, vdn = vdn)
+                       action_features=action_features,
+                       avail_actions=avail_actions,
+                       agent_id=0,
+                       target=False,
+                       cos=cos, vdn=vdn)
+
+
 
         q_tot = q
         q_tot_tar = q_tar
@@ -1136,11 +1116,11 @@ class Agent:
         loss = F.huber_loss(weight*q_tot, weight*td_target.detach())#
 
         self.optimizer.zero_grad()
-        loss.backward()
+        loss.backward(create_graph = True)
 
         torch.nn.utils.clip_grad_norm_(self.eval_params, cfg.grad_clip)
         self.optimizer.step()
-        self.scheduler.step()
+        #self.scheduler.step()
 
         if cfg.epsilon_greedy == False:
             self.Q.reset_noise_net()

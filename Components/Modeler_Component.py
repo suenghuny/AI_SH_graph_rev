@@ -4,7 +4,7 @@ from collections import deque
 import random
 
 
-def modeler(data, visualize, size, detection_by_height, tick, simtime_per_framerate, ciws_threshold, action_history_step, epsilon = 20):
+def modeler(data, visualize, size, detection_by_height, tick, simtime_per_framerate, ciws_threshold, action_history_step, epsilon = 20, discr_n = 20):
     env = Environment(data,
                       visualize,
                       size = size,
@@ -13,7 +13,8 @@ def modeler(data, visualize, size, detection_by_height, tick, simtime_per_framer
                       simtime_per_framerate = simtime_per_framerate,
                       epsilon = epsilon,
                       ciws_threshold = ciws_threshold,
-                      action_history_step = action_history_step)
+                      action_history_step = action_history_step,
+                      discr_n = discr_n)
     return env
 
 class Environment:
@@ -21,14 +22,17 @@ class Environment:
                  data,
                  visualize,
                  action_history_step,
+                 discr_n,
                  epsilon=15,
                  simtime_per_framerate = 2.5,
                  size = [2200, 2200],
                  detection_by_height = True,
                  tick = 24,
                  ciws_threshold = 2.5,
-                 mode = False):
+                 mode = False,
+                 ):
         self.simtime_per_framerate = simtime_per_framerate # 시뮬레이션 시간 / 프레임 주기
+        self.discr_n = discr_n
         self.nautical_mile_scaler = self.simtime_per_framerate / 3600 * 10
         self.detection_by_height = detection_by_height
         self.mach_scaler = self.simtime_per_framerate          / 3600 * 10 * 660.907127
@@ -221,7 +225,7 @@ class Environment:
     def get_env_info(self):
         ship=self.friendlies[0]
         env_info = {"n_agents" : 1,
-                    "ship_feature_shape": 10+1-1+32,  # + self.n_agents,
+                    "ship_feature_shape": 7 + self.discr_n+3*8+8,  # + self.n_agents,
                     "missile_feature_shape" : 6,  #9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
                     "enemy_feature_shape": 12,
                     "action_feature_shape": 8,
@@ -466,45 +470,62 @@ class Environment:
 
     def get_ship_feature(self):
         ship_feature = list()
-        enemy_ssm = 0
-        enemy_ship = 0
+        n_enemy_ssm = 0
+        n_enemy_ship = 0
         for enemy in self.enemies_fixed_list:
-            enemy_ship +=1
-            enemy_ssm += enemy.num_ssm
+            n_enemy_ship +=1
+            n_enemy_ssm += enemy.num_ssm
         for ship in self.friendlies_fixed_list:
-            f1 = len(ship.air_engagement_managing_list)/ship.air_engagement_limit
-            f2 = len(ship.air_prelaunching_managing_list)/ship.air_engagement_limit
-            f3 = len(ship.surface_prelaunching_managing_list)/ship.surface_engagement_limit
-            f4 = len(ship.m_sam_launcher)/ship.num_m_sam
-            f5 = len(ship.l_sam_launcher) /ship.num_l_sam
-            f6 = len(ship.ssm_launcher)/ship.num_ssm
-            f7 = self.f7 / enemy_ssm
-            f8 = self.f8 / enemy_ship
-            f9 = self.f9 / self.simtime_per_framerate
-            f10 = self.f10 / self.simtime_per_framerate
-            f11 = self.f11
-            z = [[f1,f2,f3,f4,f5,f6,f7,f8,f9,f10]]
+            'LSAM : LOCK-ON 상태'
+            'LSAM : BRM 상태'
+            'LSAM : CCM 상태'
+            'LSAM : 발사 준비 중'
+            'MSAM : 발사 준비 중'
+            f1 = 0 # LSAM : LOCK-ON 상태
+            f2 = 0 # LSAM : BRM
+            f3 = 0 # LSAM : CCM
+            f4 = 0 # LSAM : 발사 준비 중
+            f5 = 0 # MSAM : BRM
+            f6 = 0 # MSAM : CCM
+            f7 = 0 # MSAM : 발사 준비 중
+            for message in ship.air_engagement_managing_list:
+                sam = message[0]
+                if sam.cla == 'LSAM':
+                    if sam.fly_mode == 'brm':
+                        if sam.seeker.on == 'lock_on':
+                            f1 += 1/ship.air_engagement_limit
+                        else:
+                            f2 += 1/ship.air_engagement_limit
+                    elif sam.fly_mode == 'ccm':
+                        f3 += 1/ship.air_engagement_limit
+                    elif sam.fly_mode == None:
+                        f4 += 1/ship.air_engagement_limit
+                if sam.cla == 'MSAM':
+                    if sam.fly_mode == 'brm':
+                        f5 += 1/ship.air_engagement_limit
+                    elif sam.fly_mode == 'ccm':
+                        f6 += 1/ship.air_engagement_limit
+                    elif sam.fly_mode == None:
+                        f7 += 1/ship.air_engagement_limit
+            empty0 = [f1,f2,f3,f4,f5,f6,f7]
+            n = self.discr_n
+            empty1 = [0] * n
+            for enemy_ssm in ship.ssm_detections:
+                for k in range(n):
+                    if (k) / n * ship.detection_range < cal_distance(ship, enemy_ssm) <= (k+1)/n * ship.detection_range:
+                        empty1[k] += 1/ship.air_tracking_limit
 
-            # surface_prelaunching_managing_list = ship.surface_prelaunching_managing_list[:]
-            # for prelaunching_info in surface_prelaunching_managing_list:
-            #     target         = prelaunching_info[2]
-            #     t1, t2, t3, t4, t5, t6 = self.get_feature(ship, target)
-            #     z.append([t1,t2,t3,t4,t5,t6])
-            #
-            # for _ in range(ship.surface_engagement_limit - len(surface_prelaunching_managing_list)):
-            #     z.append([0,0,0,0,0,0])
-            # air_prelaunching_managing_list = ship.air_prelaunching_managing_list[:]
-            # for prelaunching_info in air_prelaunching_managing_list:
-            #     sam = prelaunching_info[1]
-            #     target = prelaunching_info[2]
-            #     t1, t2, t3, t4, t5, t6 = self.get_feature(ship, target)
-            #     if sam.cla == 'LSAM':
-            #         z.append([t1,t2,t3,t4,t5,t6,1])
-            #     else:
-            #         z.append([t1, t2, t3, t4, t5, t6, 0])
-            #
-            # for _ in range(ship.air_engagement_limit - len(air_prelaunching_managing_list)):
-            #     z.append([0,0,0,0,0,0,0])
+            empty2 = [len(ship.surface_prelaunching_managing_list)/ship.surface_engagement_limit,
+                      len(ship.m_sam_launcher) / ship.num_m_sam,
+                      len(ship.l_sam_launcher) / ship.num_l_sam,
+                      len(ship.ssm_launcher) / ship.num_ssm,
+                      self.f7 / n_enemy_ssm,
+                      self.f8 / n_enemy_ship,
+                      self.f9 / self.simtime_per_framerate,
+                      self.f10 / self.simtime_per_framerate,
+                      ]
+
+            z = np.concatenate([empty0, empty1, empty2]).reshape(-1, 1).tolist()
 
             for i in range(len(ship.action_history)):
                 if ship.action_history[i] != None:
@@ -512,20 +533,17 @@ class Environment:
                     target = ship.action_history[i]
                     if target.cla == 'ship':
                         if target.status != 'destroyed':
-                            z.append([x1, x2, x3, x4, x5, x6, 0, 1])
-                        else:
-                            z.append([0, 0, 0, 0, 0, 0, 0, 0])
-                    else:
-                        if target.status != 'destroyed':
                             z.append([x1, x2, x3, x4, x5, x6, 1, 0])
                         else:
-                            z.append([0, 0, 0, 0, 0, 0, 0, 0])
+                            z.append([x1, x2, x3, x4, x5, x6, 1, 1])
+                    else:
+                        if target.status != 'destroyed':
+                            z.append([x1, x2, x3, x4, x5, x6, 0, 0])
+                        else:
+                            z.append([x1, x2, x3, x4, x5, x6, 0, 1])
                 else:
                     z.append([0,0,0,0,0,0,0,0])
             ship_feature.append(np.concatenate(z).tolist())
-
-            #ship_feature.append(np.concatenate([[f1,f2,f3,f4,f5,f6,f7,f8,f9,f10], f11]).tolist())
-        #print(len(f11), len(ship_feature[0]),"dddd")
         return ship_feature
 
     def get_ssm_to_ship_edge_index(self):
