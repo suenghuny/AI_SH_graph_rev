@@ -364,7 +364,7 @@ if __name__ == "__main__":
     episode_polar_chart = polar_chart[0]
     records = list()
     import torch, random
-    seed = 1234556
+    seed = 1234
     np.random.seed(seed)
     torch.manual_seed(seed)
     random.seed(seed)
@@ -464,8 +464,8 @@ if __name__ == "__main__":
                               ciws_threshold=ciws_threshold,
                               action_history_step = cfg.action_history_step
                               )
-                episode_reward, win_tag, leakers = evaluation(agent, env, with_noise = True)
-                print('evaluation', win_tag, episode_reward)
+                episode_reward, win_tag, leakers = evaluation(agent, env, with_noise =False)
+                print('전', win_tag, episode_reward)
                 leakers_rate += leakers/n
                 if win_tag != 'lose':
                     non_lose_rate += 1/n

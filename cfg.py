@@ -43,7 +43,7 @@ def get_cfg():
     parser.add_argument("--num_episode", type=int, default=1000000, help="number of episode")
     parser.add_argument("--scheduler_step", type =int, default=100, help= "scheduler step")
     parser.add_argument("--scheduler_ratio", type=float, default=0.992, help= "scheduler ratio")
-    parser.add_argument("--train_start", type=int, default=300, help="number of train start")
+    parser.add_argument("--train_start", type=int, default=1, help="number of train start")
     parser.add_argument("--epsilon_greedy", type=bool, default=False, help="epsilon_greedy")
     parser.add_argument("--epsilon", type=float, default=0.3, help="epsilon")
     parser.add_argument("--min_epsilon", type=float, default=0.01, help="epsilon")
@@ -60,11 +60,9 @@ def get_cfg():
     parser.add_argument("--lmbda", type=float, default=0.95, help="GAE lmbda")
     parser.add_argument("--eps_clip", type=float, default=0.2, help="clipping epsilon")
     parser.add_argument("--K_epoch", type=int, default=3, help="K-epoch")
-
     parser.add_argument("--num_GT_layers", type=int, default=2, help="num GT layers")
     parser.add_argument("--channels", type=int, default=1, help="channels")
     parser.add_argument("--num_layers", type=int, default=2, help="num layers")
     parser.add_argument("--embedding_train_stop", type=int, default=100, help="embedding_train_stop")
-    parser.add_argument("--n_eval", type=int, default=20, help="number of evaluation")
-
+    parser.add_argument("--n_eval", type=int, default=2, help="number of evaluation")
     return parser.parse_args()
