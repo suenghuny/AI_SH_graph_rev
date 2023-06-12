@@ -1131,7 +1131,7 @@ class Agent:
         self.scaler.step(self.optimizer)
         self.scaler.update()
         #print("6 update 계산", time.time() - start)
-        #self.scheduler.step()
+        self.scheduler.step()
 
         if cfg.epsilon_greedy == False:
             self.Q.reset_noise_net()
