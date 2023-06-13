@@ -64,6 +64,6 @@ def get_cfg():
     parser.add_argument("--channels", type=int, default=1, help="channels")
     parser.add_argument("--num_layers", type=int, default=2, help="num layers")
     parser.add_argument("--embedding_train_stop", type=int, default=100, help="embedding_train_stop")
-    parser.add_argument("--n_eval", type=int, default=1, help="number of evaluation")
+    parser.add_argument("--n_eval", type=int, default=20, help="number of evaluation")
     parser.add_argument("--with_noise", type=bool, default=False, help="")
     return parser.parse_args()

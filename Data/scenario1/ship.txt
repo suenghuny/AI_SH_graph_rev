@@ -12,7 +12,7 @@ type_l_sam					1		1		1       1
 num_l_sam					28		10		20      10
 type_ssm					1		1		2       3
 num_ssm					    16		8		4       4
-decoy_launching_bearing		15		8		8       8
+decoy_launching_bearing		20		8		8       8
 decoy_launching_distance	2		2		2       2
 decoy_launching_interval	20		20		20      20
 decoy_rcs					-0.1 	-0.1	-0.1    -0.1
