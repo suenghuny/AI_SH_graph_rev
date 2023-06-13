@@ -109,12 +109,12 @@ class Environment:
                 else:
                     speed = 25
                     course = 90
-                    initial_position_x = 50 + 10 * inception_data['inception_distance'] * np.cos(
-                        inception_data['inception_angle'] * np.pi / 180) + 10 * random.normalvariate(
-                        inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
-                    initial_position_y = 50 + 10 * inception_data['inception_distance'] * np.sin(
-                        inception_data['inception_angle'] * np.pi / 180) + 10 * random.normalvariate(
-                        inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                    initial_position_x = 50 + \
+                                         10 * inception_data['inception_distance'] * np.cos(inception_data['inception_angle'] * np.pi / 180) + \
+                                         10 * random.normalvariate(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                    initial_position_y = 50 + \
+                                         10 * inception_data['inception_distance'] * np.sin(inception_data['inception_angle'] * np.pi / 180) + \
+                                         10 * random.normalvariate(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
 
 
 
@@ -535,12 +535,12 @@ class Environment:
                         if target.status != 'destroyed':
                             z.append([x1, x2, x3, x4, x5, x6, 1, 0])
                         else:
-                            z.append([x1, x2, x3, x4, x5, x6, 1, 1])
+                            z.append([0,0,0,0,0,0,0,0])
                     else:
                         if target.status != 'destroyed':
                             z.append([x1, x2, x3, x4, x5, x6, 0, 0])
                         else:
-                            z.append([x1, x2, x3, x4, x5, x6, 0, 1])
+                            z.append([0,0,0,0,0,0,0,0])
                 else:
                     z.append([0,0,0,0,0,0,0,0])
             ship_feature.append(np.concatenate(z).tolist())

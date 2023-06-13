@@ -1422,10 +1422,6 @@ class Ship:
             for tar in self.ssm_detections:
                 if action_feature == tar.last_action_feature:
                     target_id = self.ssm_detections.index(tar) + 1 + self.surface_tracking_limit
-
-
-
-
         if target_id == 0:
             target = None
         if (target_id >= 1) and (target_id <= self.surface_tracking_limit):  # 대함표적에 대한 prelaunching process logic
