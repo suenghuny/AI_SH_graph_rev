@@ -1415,7 +1415,7 @@ class Ship:
         #print(action_feature)
         if action_feature == [0,0,0,0,0,0,0,0]:
             target_id = 0
-        else:
+        else:#
             for tar in self.env.enemies_fixed_list:
                 if action_feature == tar.last_action_feature:
                     target_id = self.env.enemies_fixed_list.index(tar)+1
