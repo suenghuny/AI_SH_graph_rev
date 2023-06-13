@@ -1401,7 +1401,6 @@ class Ship:
             norm = 500*1/self.env.now
             noise_y = target.position_y + np.random.normal(0, norm)
             noise_x = target.position_x + np.random.normal(0, norm)
-            #print(noise_x, noise_y)
         else:
             distance = ((target.position_y-self.position_y)**2+(target.position_x-self.position_x)**2)/10000
             noise_y = target.position_y+np.random.normal(0, distance)
