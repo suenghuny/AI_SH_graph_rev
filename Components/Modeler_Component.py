@@ -6,7 +6,7 @@ from collections import deque
 import random
 
 
-def modeler(data, visualize, size, detection_by_height, tick, simtime_per_framerate, ciws_threshold, action_history_step, epsilon = 20, discr_n = 20):
+def modeler(data, visualize, size, detection_by_height, tick, simtime_per_framerate, ciws_threshold, action_history_step, epsilon = 20, discr_n = 10):
     env = Environment(data,
                       visualize,
                       size = size,
@@ -498,14 +498,16 @@ class Environment:
                     elif sam.fly_mode == 'ccm':
                         f3 += 1/ship.air_engagement_limit
                     elif sam.fly_mode == None:
-                        f4 += 1/ship.air_engagement_limit
+                        f4 += 1/2
+                if sam.cla == 'MSAM':
+                    if sam.fly_mode == None:
+                        f7 += 1
+            for sam in self.flying_sams_friendly:
                 if sam.cla == 'MSAM':
                     if sam.fly_mode == 'brm':
                         f5 += 1/ship.air_engagement_limit
                     elif sam.fly_mode == 'ccm':
                         f6 += 1/ship.air_engagement_limit
-                    elif sam.fly_mode == None:
-                        f7 += 1/ship.air_engagement_limit
             empty0 = [f1,f2,f3,f4,f5,f6,f7]
             n = self.discr_n
             empty1 = [0] * n
@@ -537,7 +539,7 @@ class Environment:
                             z.append([0,0,0,0,0,0,0,0])
                     else:
                         if target.status != 'destroyed':
-                            z.append([x1, x2, x3, x4, x5, x6, 0, 0])
+                            z.append([x1, x2, x3, x4, x5, x6, 0, 1])
                         else:
                             z.append([0,0,0,0,0,0,0,0])
                 else:
@@ -699,10 +701,13 @@ class Environment:
         theta_r = math.atan2(target.position_y - ship.position_y, target.position_x - ship.position_x)
         theta_v = math.atan2(ship.v_y - target.v_y, ship.v_x - target.v_x)
         a = ((target.a_x - ship.a_x) ** 2 + (target.a_y - ship.a_y) ** 2) ** 0.5 / (target.speed+ship.speed)
+        #print(a)
         theta_a = math.atan2(ship.a_y - target.a_y, ship.a_x - target.a_x) #
         if a <= 0.01:
             a = 0
             theta_a = 0
+        # else:
+        #     print(a)
         return r, v, a, theta_v, (theta_r - theta_v)*5, theta_v - theta_a
 
     def get_action_feature(self):

@@ -11,7 +11,7 @@ num_m_sam					16		12		20      12
 type_l_sam					1		1		1       1
 num_l_sam					28		10		20      10
 type_ssm					1		1		2       3
-num_ssm					    16		8		6       8
+num_ssm					    16		8		4       8
 decoy_launching_bearing		20		8		8       8
 decoy_launching_distance	2		2		2       2
 decoy_launching_interval	20		20		20      20
@@ -33,6 +33,6 @@ ssm_launching_duration_min	10		10		10      10
 ssm_launching_duration_max	11		11		11      11
 lsam_launching_duration_min	6		6		6       6
 lsam_launching_duration_max	7		7		7       7
-msam_launching_duration_min	2		2		2       2
-msam_launching_duration_max	3		3		3       3
+msam_launching_duration_min	4		4		4       4
+msam_launching_duration_max	5		5		5       5
 side						blue	yellow	yellow  yellow
