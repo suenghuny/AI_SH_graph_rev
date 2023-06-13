@@ -66,7 +66,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
     else:
         interval_min = False
 
-    interval_constant = 1
+    interval_constant = random.uniform(3,4)
 
 
 
@@ -262,8 +262,7 @@ def evaluation(agent, env, with_noise = False):
         interval_min = True
     else:
         interval_min = False
-    interval_constant = 1
-
+    interval_constant = random.uniform(3,4)
     while not done:
         #print(env.now % (decision_timestep))
         if env.now % (decision_timestep) <= 0.00001:
