@@ -1404,7 +1404,7 @@ class Ship:
             noise_y = target.position_y + np.random.normal(0, norm)
             noise_x = target.position_x + np.random.normal(0, norm)
         else:
-            distance = ((target.position_y-self.position_y)**2+(target.position_x-self.position_x)**2)/7000
+            distance = ((target.position_y-self.position_y)**2+(target.position_x-self.position_x)**2)/4000
             noise_y = target.position_y+np.random.normal(0, distance)
             noise_x = target.position_x+np.random.normal(0, distance)
 
