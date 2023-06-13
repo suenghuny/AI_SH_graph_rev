@@ -1120,9 +1120,15 @@ class Agent:
         delta = (td_target - q_tot).detach().tolist()
         self.buffer.update_transition_priority(batch_index = batch_index, delta = delta)
 
-        loss = F.huber_loss(weight*q_tot, weight*td_target.detach())#
-        #print("4 loss 계산", time.time() - start)
-        #start = time.time()
+        munchausen_tau = 0.03  # Munchausen temperature parameter
+        munchausen_logsum = torch.logsumexp(
+            (q_tot - q_tot.max(dim=1, keepdim=True)[0]) / munchausen_tau,
+            dim=1, keepdim=True)
+        munchausen_q_tot = q_tot - munchausen_tau * (q_tot - q_tot.max(dim=1, keepdim=True)[0]) + munchausen_logsum
+        munchausen_td_target = td_target + munchausen_tau * (q_tot - q_tot.max(dim=1, keepdim=True)[0]) - munchausen_logsum.detach()
+
+        loss = F.huber_loss(weight * munchausen_q_tot, weight * munchausen_td_target)
+
         self.optimizer.zero_grad()
         loss.backward(create_graph= True)
         #print("5 backprop 계산", time.time() - start)
