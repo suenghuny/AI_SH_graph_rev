@@ -447,6 +447,7 @@ if __name__ == "__main__":
     eval_lose_ratio1 = list()
     eval_win_ratio1 = list()
     anneal_epsilon = (epsilon - min_epsilon) / cfg.anneal_step
+    print("noise", cfg.with_noise)
     for e in range(num_iteration):
         start = time.time()
         if e % 10 ==0:
