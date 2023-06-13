@@ -434,7 +434,7 @@ if __name__ == "__main__":
     anneal_step = (cfg.per_beta - 1) / anneal_episode
 
 
-
+    print("epsilon_greedy", cfg.epsilon_greedy)
     epsilon = cfg.epsilon
     min_epsilon = cfg.min_epsilon
 
