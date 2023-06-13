@@ -139,6 +139,7 @@ if __name__ == "__main__":
     min_epsilon = 0.01
     reward_list = list()
     agent = None
+    non_lose = 0
     for e in range(num_iteration):
         seed = 2 * e
         np.random.seed(seed)
@@ -167,15 +168,19 @@ if __name__ == "__main__":
             df = pd.DataFrame(reward_list)
             df.to_csv(output_dir + 'episode_reward_{}_{}_{}.csv'.format(cfg.temperature, cfg.interval_min_blue, cfg.interval_constant_blue))
 
+        if win_tag != 'lose':
+            non_lose += 1
 
-
-        # print(len(agent.buffer.buffer[2]))
         print(
-            "Total reward in episode {} = {}, epsilon : {}, time_step : {}, episode_duration : {}, mean reward : {}, win_tag : {}".format(
+            "Total reward in episode {} = {}, epsilon : {}, time_step : {}, episode_duration : {}, mean reward : {}, win_tag : {}, non_lose : {}".format(
                 e,
                 np.round(episode_reward, 3),
                 np.round(epsilon, 3),
-                t, np.round(time.time() - start, 3), np.mean(reward_list), win_tag))
+                t,
+                np.round(time.time() - start, 3),
+                np.mean(reward_list),
+                win_tag,
+                non_lose/(e+1)))
 
         # del data
         # del env
