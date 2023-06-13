@@ -1114,6 +1114,7 @@ class Agent:
         rewards_1_step = rewards[:, 0].unsqueeze(1)
         rewards_k_step = rewards[:, 1:]
         masked_n_step_bootstrapping = (1-dones)*torch.cat([rewards_k_step, q_tot_tar], dim = 1)
+
         discounted_n_step_bootstrapping = self.gamma_n_step*torch.cat([rewards_1_step, masked_n_step_bootstrapping], dim = 1)
         td_target = discounted_n_step_bootstrapping.sum(dim=1, keepdims = True)
 
