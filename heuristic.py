@@ -51,7 +51,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
         interval_min = True
     else:
         interval_min = False
-    interval_constant = 1
+    interval_constant = random.uniform(3,4)
     while not done:
         if env.now % (decision_timestep) <= 0.00001:
             avail_action_blue, target_distance_blue, air_alert_blue = env.get_avail_actions_temp(interval_min_blue,
