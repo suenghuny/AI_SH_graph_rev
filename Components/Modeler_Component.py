@@ -1,3 +1,5 @@
+import numpy as np
+
 from Components.Adapter_Component import *
 from Components.Simulation_Component import *
 from collections import deque
@@ -109,12 +111,12 @@ class Environment:
                 else:
                     speed = 25
                     course = 90
-                    initial_position_x = 50 + \
-                                         10 * inception_data['inception_distance'] * np.cos(inception_data['inception_angle'] * np.pi / 180) + \
-                                         10 * random.normalvariate(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
-                    initial_position_y = 50 + \
-                                         10 * inception_data['inception_distance'] * np.sin(inception_data['inception_angle'] * np.pi / 180) + \
-                                         10 * random.normalvariate(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                    initial_position_x = 50 + 10 * inception_data['inception_distance'] * np.cos(
+                        inception_data['inception_angle'] * np.pi / 180) + 10 * random.normalvariate(
+                        inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                    initial_position_y = 50 + 10 * inception_data['inception_distance'] * np.sin(
+                        inception_data['inception_angle'] * np.pi / 180) + 10 * random.normalvariate(
+                        inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
 
 
 
@@ -450,10 +452,7 @@ class Environment:
             if distance_list==list():
                 distance_list.append(1)
             else:
-                if interval_min == True:
-                    distance_list.insert(0, np.min(distance_list)/interval_constant)
-                else:
-                    distance_list.insert(0, np.min(distance_list)/interval_constant)
+                distance_list.insert(0, np.mean(distance_list)/interval_constant)
             target_distance_list.append(distance_list)
         return avail_actions, target_distance_list, air_alert
 

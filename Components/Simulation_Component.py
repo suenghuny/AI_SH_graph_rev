@@ -1400,7 +1400,7 @@ class Ship:
 
     def get_estimated_hitting_point(self, missile, target):
         if missile.cla == 'SSM':
-            norm = 500*1/self.env.now
+            norm = 100*1/self.env.now
             noise_y = target.position_y + np.random.normal(0, norm)
             noise_x = target.position_x + np.random.normal(0, norm)
         else:

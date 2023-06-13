@@ -26,6 +26,7 @@ class Policy:
                 for idx in range(len(avail_action_list)):
                     avail_action = np.array(avail_action_list[idx])
                     avail_actions_index = np.array(np.where(avail_action == True)).reshape(-1)
+                    #print(self.temperature1, softmax(target_distance_list[idx], temperature = self.temperature1))
                     actions.append(np.random.choice(avail_actions_index, p = softmax(target_distance_list[idx], temperature = self.temperature1)))
             else:
                 for idx in range(len(avail_action_list)):
