@@ -930,8 +930,6 @@ class Agent:
             action_feature = self.node_representation_action_feature(action_feature)
             obs_n_action = torch.cat([obs, action_feature], dim = 1)
             A_a = self.Q.advantage_forward(obs_n_action, cos, mini_batch=True)
-
-
             action_features = torch.tensor(action_features, device=device, dtype=torch.float)
             node_representation_action = torch.stack([self.node_representation_action_feature(action_features[:, i, :]) for i in range(self.action_size)])
             node_representation_action = torch.einsum('ijk->jik', node_representation_action)
