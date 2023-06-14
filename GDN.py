@@ -663,7 +663,7 @@ class Agent:
                                list(self.node_representation_ship_feature.parameters()) + \
                                list(self.node_representation.parameters()) + \
                                list(self.func_meta_path.parameters())
-        self.optimizer =optim.Adam(self.eval_params, lr=learning_rate)
+        self.optimizer =AdaHessian(self.eval_params, lr=learning_rate)
         self.scaler = amp.GradScaler()
         if cfg.scheduler == 'step':
             self.scheduler = StepLR(optimizer=self.optimizer, step_size=cfg.scheduler_step, gamma=cfg.scheduler_ratio)
@@ -1041,117 +1041,111 @@ class Agent:
 
     def learn(self, regularizer, episode, vdn = False, ):
         self.optimizer.zero_grad()
+        node_features_missile, \
+        ship_features, \
+        edge_indices_missile, \
+        actions, \
+        rewards, \
+        dones, \
+        node_features_missile_next, \
+        ship_features_next, \
+        edge_indices_missile_next, \
+        avail_actions, \
+        avail_actions_next, \
+        status, \
+        status_next,\
+        priority,\
+        batch_index, \
+            p_sampled, action_feature, action_features, action_features_next, heterogenous_edges,heterogenous_edges_next = self.buffer.sample(vdn = vdn)
 
-        with amp.autocast():
+        weight = ((len(self.buffer.buffer[10])-self.n_step)*torch.tensor(priority, dtype=torch.float, device = device))**(-self.beta)
 
-
-            node_features_missile, \
-            ship_features, \
-            edge_indices_missile, \
-            actions, \
-            rewards, \
-            dones, \
-            node_features_missile_next, \
-            ship_features_next, \
-            edge_indices_missile_next, \
-            avail_actions, \
-            avail_actions_next, \
-            status, \
-            status_next,\
-            priority,\
-            batch_index, \
-                p_sampled, action_feature, action_features, action_features_next, heterogenous_edges,heterogenous_edges_next = self.buffer.sample(vdn = vdn)
-
-            weight = ((len(self.buffer.buffer[10])-self.n_step)*torch.tensor(priority, dtype=torch.float, device = device))**(-self.beta)
-
-            weight /= weight.max()
+        weight /= weight.max()
 
 
-            """간        node_features : batch_size x num_nodes x feature_size
-            actions : batch_size x num_agents
-            action_feature :     batch_size x action_size x action_feature_size
-            avail_actions_next : batch_size x num_agents x action_size 
-            """
-            n_node_features_missile = self.n_node_feature_missile
-            n_node_features_enemy = self.n_node_feature_enemy
+        """간        node_features : batch_size x num_nodes x feature_size
+        actions : batch_size x num_agents
+        action_feature :     batch_size x action_size x action_feature_size
+        avail_actions_next : batch_size x num_agents x action_size 
+        """
+        n_node_features_missile = self.n_node_feature_missile
+        n_node_features_enemy = self.n_node_feature_enemy
 
-            dones = torch.tensor(dones, device=device, dtype=torch.float)
-            rewards = torch.tensor(rewards, device=device, dtype=torch.float)
-            cos, taus = self.Q.calc_cos(self.batch_size)
-
-
-            self.eval_check(eval=True)
-            #start = time.time()
-            obs_next = self.get_node_representation(
-                node_features_missile_next,
-                ship_features_next,
-                heterogenous_edges_next,
-                n_node_features_missile,
-                n_node_features_enemy,
-                mini_batch=True)
-            #print("2 node representation 시간", time.time() - start)
-            #start = time.time()
-            q_tar = self.cal_Q(obs=obs_next,
-                            action_feature=None,
-                            action_features=action_features_next,
-                            avail_actions=avail_actions_next,
-                            agent_id=0,
-                            target=True,
-                            cos=cos, vdn = vdn)
-
-            #print("3 q 함수 시간", time.time() - start)
-            self.eval_check(eval = False)
-            obs = self.get_node_representation(
-                node_features_missile,
-                ship_features,
-                heterogenous_edges,
-                n_node_features_missile,
-                n_node_features_enemy,
-                mini_batch=True)
-            q = self.cal_Q(obs=obs,
-                           action_feature=action_feature,
-                           action_features=action_features,
-                           avail_actions=avail_actions,
-                           agent_id=0,
-                           target=False,
-                           cos=cos, vdn=vdn)
-
-            #start = time.time()
-            q_tot = q
-            q_tot_tar = q_tar
-            rewards_1_step = rewards[:, 0].unsqueeze(1)
-            rewards_k_step = rewards[:, 1:]
-            masked_n_step_bootstrapping = (1-dones)*torch.cat([rewards_k_step, q_tot_tar], dim = 1)
-
-            discounted_n_step_bootstrapping = self.gamma_n_step*torch.cat([rewards_1_step, masked_n_step_bootstrapping], dim = 1)
-            td_target = discounted_n_step_bootstrapping.sum(dim=1, keepdims = True)
-
-            delta = (td_target - q_tot).detach().tolist()
-            self.buffer.update_transition_priority(batch_index = batch_index, delta = delta)
-
-            # munchausen_tau = 0.03  # Munchausen temperature parameter
-            # munchausen_logsum = torch.logsumexp(
-            #     (q_tot - q_tot.max(dim=1, keepdim=True)[0]) / munchausen_tau,
-            #     dim=1, keepdim=True)
-            # munchausen_q_tot = q_tot - munchausen_tau * (q_tot - q_tot.max(dim=1, keepdim=True)[0]) + munchausen_logsum
-            # munchausen_td_target = td_target + munchausen_tau * (q_tot - q_tot.max(dim=1, keepdim=True)[0]) - munchausen_logsum.detach()
-
-            loss = F.huber_loss(weight * q_tot, weight * td_target)
+        dones = torch.tensor(dones, device=device, dtype=torch.float)
+        rewards = torch.tensor(rewards, device=device, dtype=torch.float)
+        cos, taus = self.Q.calc_cos(self.batch_size)
 
 
-        self.scaler.scale(loss).backward()
+        self.eval_check(eval=True)
+        #start = time.time()
+        obs_next = self.get_node_representation(
+            node_features_missile_next,
+            ship_features_next,
+            heterogenous_edges_next,
+            n_node_features_missile,
+            n_node_features_enemy,
+            mini_batch=True)
+        #print("2 node representation 시간", time.time() - start)
+        #start = time.time()
+        q_tar = self.cal_Q(obs=obs_next,
+                        action_feature=None,
+                        action_features=action_features_next,
+                        avail_actions=avail_actions_next,
+                        agent_id=0,
+                        target=True,
+                        cos=cos, vdn = vdn)
+
+        #print("3 q 함수 시간", time.time() - start)
+        self.eval_check(eval = False)
+        obs = self.get_node_representation(
+            node_features_missile,
+            ship_features,
+            heterogenous_edges,
+            n_node_features_missile,
+            n_node_features_enemy,
+            mini_batch=True)
+        q = self.cal_Q(obs=obs,
+                       action_feature=action_feature,
+                       action_features=action_features,
+                       avail_actions=avail_actions,
+                       agent_id=0,
+                       target=False,
+                       cos=cos, vdn=vdn)
+
+        #start = time.time()
+        q_tot = q
+        q_tot_tar = q_tar
+        rewards_1_step = rewards[:, 0].unsqueeze(1)
+        rewards_k_step = rewards[:, 1:]
+        masked_n_step_bootstrapping = (1-dones)*torch.cat([rewards_k_step, q_tot_tar], dim = 1)
+
+        discounted_n_step_bootstrapping = self.gamma_n_step*torch.cat([rewards_1_step, masked_n_step_bootstrapping], dim = 1)
+        td_target = discounted_n_step_bootstrapping.sum(dim=1, keepdims = True)
+
+        delta = (td_target - q_tot).detach().tolist()
+        self.buffer.update_transition_priority(batch_index = batch_index, delta = delta)
+
+        # munchausen_tau = 0.03  # Munchausen temperature parameter
+        # munchausen_logsum = torch.logsumexp(
+        #     (q_tot - q_tot.max(dim=1, keepdim=True)[0]) / munchausen_tau,
+        #     dim=1, keepdim=True)
+        # munchausen_q_tot = q_tot - munchausen_tau * (q_tot - q_tot.max(dim=1, keepdim=True)[0]) + munchausen_logsum
+        # munchausen_td_target = td_target + munchausen_tau * (q_tot - q_tot.max(dim=1, keepdim=True)[0]) - munchausen_logsum.detach()
+
+        loss = F.huber_loss(weight * q_tot, weight * td_target)
+
+
+        loss.backward()
         #print("5 backprop 계산", time.time() - start)
         #start = time.time()
         torch.nn.utils.clip_grad_norm_(self.eval_params, cfg.grad_clip)
-        self.scaler.step(self.optimizer)
-        self.scaler.update()
-
+        self.optimizer.step()
         self.scheduler.step()
 
         if cfg.epsilon_greedy == False:
             self.Q.reset_noise_net()
             self.Q_tar.reset_noise_net()
-        tau = 5e-4
+        tau = 1e-2
         for target_param, local_param in zip(self.Q_tar.parameters(), self.Q.parameters()):
             target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
         for target_param, local_param in zip(self.DuelingQtar.parameters(), self.DuelingQ.parameters()):
