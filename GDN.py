@@ -99,8 +99,9 @@ class IQN(nn.Module):
         if mini_batch == False:
             batch_size = 1
         else:
-            batch_size = self.batch_size
+            batch_size = input.shape[0]
         x = torch.relu(self.head_a(input.to(device)))  # x의 shape는 batch_size, layer_size
+
         cos = cos.view(batch_size * N, self.n_cos)
         cos_x = torch.relu(self.cos_embedding(cos)).view(batch_size, N, self.layer_size)  # (batch, n_tau, layer)
 
@@ -115,7 +116,7 @@ class IQN(nn.Module):
         if mini_batch == False:
             batch_size = 1
         else:
-            batch_size = self.batch_size
+            batch_size = input.shape[0]
         y = torch.relu(self.head_v(input.to(device)))  # x의 shape는 batch_size, layer_size
         cos_y = cos.view(batch_size * N, self.n_cos)
         cos_y = torch.relu(self.cos_embedding(cos_y)).view(batch_size, N, self.layer_size)  # (batch, n_tau, layer)
@@ -144,7 +145,8 @@ class DuelingDQN(nn.Module):
             Q = V+A-mean_A
 
         if (past_action != None) and (training == True):
-            A = A.squeeze(2)
+            #print(A.shape, mask.shape)
+
             mask = mask.squeeze(1)
             A = A.masked_fill(mask == 0, float('-inf'))
             zeros = torch.zeros_like(A)
@@ -154,7 +156,6 @@ class DuelingDQN(nn.Module):
             mean_A = mean_A / nA
             Q = V + past_action - mean_A.unsqueeze(1)
         if (past_action == None) and (training == True):
-            A = A.squeeze(2)
             mask = mask.squeeze(1)
             A = A.masked_fill(mask == 0, float('-inf'))
 
@@ -581,7 +582,8 @@ class Agent:
         self.n_node_feature_enemy = n_node_feature_enemy
 
         self.action_space = [i for i in range(self.action_size)]
-
+        self.iqn_N = iqn_N
+        self.n_cos=n_cos
         self.GNN = GNN
 
         self.gamma_n_step = torch.tensor([[self.gamma**i for i in range(self.n_step+1)] for _ in range(self.batch_size)], dtype = torch.float, device = device)
@@ -896,20 +898,35 @@ class Agent:
         - action sampling 시 : num_nodes X feature_size
         """
         if target == False:
+            import time
+
             mask = torch.tensor(avail_actions, device=device).bool()
             action_feature = torch.tensor(action_feature, device = device, dtype = torch.float)
+
             action_feature = self.node_representation_action_feature(action_feature)
             obs_n_action = torch.cat([obs, action_feature], dim = 1)
             A_a = self.Q.advantage_forward(obs_n_action, cos, mini_batch=True)
             action_features = torch.tensor(action_features, device=device, dtype=torch.float)
             node_representation_action = torch.stack([self.node_representation_action_feature(action_features[:, i, :]) for i in range(self.action_size)])
             node_representation_action = torch.einsum('ijk->jik', node_representation_action)
+
             obs_expand = obs.unsqueeze(1)
             obs_expand = obs_expand.expand([self.batch_size, self.action_size, obs_expand.shape[2]])  # batch-size, action_size, obs_size
+
             obs_n_action = torch.cat([obs_expand, node_representation_action], dim=2)
-            A = torch.stack([self.Q.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
-            A = torch.einsum('ijk->jik', A)
+
+
+            obs_n_action_flat = obs_n_action.reshape(self.action_size*self.batch_size, obs_n_action.size(-1))
+            cos1 = cos.expand([self.action_size, self.batch_size, self.iqn_N, self.n_cos])
+            cos1 = cos1.reshape(self.action_size*self.batch_size, self.iqn_N, self.n_cos)
+            q_values_flat = self.Q.advantage_forward(obs_n_action_flat, cos1, mini_batch=True)
+            q_values = q_values_flat.view(obs_n_action.size(0), self.action_size)
+            A = torch.stack([q_values[:, i] for i in range(self.action_size)], dim=1)
+
+
             V = self.Q.value_forward(obs, cos, mini_batch = True)
+
+
             Q = self.DuelingQ(V, A, mask, past_action = A_a, training = True)
             return Q
         else:
@@ -924,13 +941,24 @@ class Agent:
                 obs_expand = obs_expand.expand(
                     [self.batch_size, self.action_size, obs_expand.shape[2]])  # batch-size, action_size, obs_size
                 obs_n_action = torch.cat([obs_expand, node_representation_action], dim=2)
-                A = torch.stack([self.Q.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
-                A = torch.einsum('ijk->jik', A)
+                obs_n_action_flat = obs_n_action.reshape(self.action_size * self.batch_size, obs_n_action.size(-1))
+
+                cos1 = cos.expand([self.action_size, self.batch_size, self.iqn_N, self.n_cos])
+                cos1 = cos1.reshape(self.action_size * self.batch_size, self.iqn_N, self.n_cos)
+                q_values_flat = self.Q.advantage_forward(obs_n_action_flat, cos1, mini_batch=True)
+                q_values = q_values_flat.view(obs_n_action.size(0), self.action_size)
+                A = torch.stack([q_values[:, i] for i in range(self.action_size)], dim=1)
+
                 V = self.Q.value_forward(obs, cos, mini_batch=True)
                 Q = self.DuelingQ(V, A, mask, past_action=None, training=True)
 
-                A_tar = torch.stack([self.Q_tar.advantage_forward(obs_n_action[:, i, :], cos, mini_batch=True) for i in range(self.action_size)])
-                A_tar = torch.einsum('ijk->jik', A_tar)
+                #cos1 = cos.expand([self.action_size, self.batch_size, self.iqn_N, self.n_cos])
+                #cos1 = cos1.reshape(self.action_size * self.batch_size, self.iqn_N, self.n_cos)
+                q_values_flat = self.Q_tar.advantage_forward(obs_n_action_flat, cos1, mini_batch=True)
+                q_values = q_values_flat.view(obs_n_action.size(0), self.action_size)
+                A_tar = torch.stack([q_values[:, i] for i in range(self.action_size)], dim=1)
+
+
                 V_tar = self.Q_tar.value_forward(obs,
                                                  cos,
                                                  mini_batch = True)
@@ -1020,7 +1048,6 @@ class Agent:
 
             weight /= weight.max()
 
-            #print("1 sampling 시간", time.time()- start)
 
             """간        node_features : batch_size x num_nodes x feature_size
             actions : batch_size x num_agents
