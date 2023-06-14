@@ -951,7 +951,7 @@ class Agent:
 
                 V = self.Q.value_forward(obs, cos, mini_batch=True)
                 Q = self.DuelingQ(V, A, mask, past_action=None, training=True)
-
+#
                 #cos1 = cos.expand([self.action_size, self.batch_size, self.iqn_N, self.n_cos])
                 #cos1 = cos1.reshape(self.action_size * self.batch_size, self.iqn_N, self.n_cos)
                 q_values_flat = self.Q_tar.advantage_forward(obs_n_action_flat, cos1, mini_batch=True)
