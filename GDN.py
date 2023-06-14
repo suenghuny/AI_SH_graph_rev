@@ -1156,7 +1156,7 @@ class Agent:
         if cfg.epsilon_greedy == False:
             self.Q.reset_noise_net()
             self.Q_tar.reset_noise_net()
-        tau = 1e-2
+        tau = 5e-4
         for target_param, local_param in zip(self.Q_tar.parameters(), self.Q.parameters()):
             target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
         for target_param, local_param in zip(self.DuelingQtar.parameters(), self.DuelingQ.parameters()):
