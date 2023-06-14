@@ -275,8 +275,7 @@ class Replay_Buffer:
                done,
                avail_action,
 
-               node_feature_enemy,
-               edge_index_enemy,
+
 
                status,
                action_feature,
@@ -304,8 +303,7 @@ class Replay_Buffer:
         else:
             self.buffer[10].append(max(self.buffer[10]))
 
-        self.buffer[11].append(node_feature_enemy)
-        self.buffer[12].append(edge_index_enemy)
+
         self.buffer[13].append(action_feature)
         self.buffer[14].append(action_features)
         self.buffer[15].append(heterogeneous_edges)
@@ -358,18 +356,7 @@ class Replay_Buffer:
             if cat == 'priority':
                 yield datas[10][s]
 
-            if cat == 'node_feature_enemy':
-                yield datas[11][s]
-            if cat == 'edge_index_enemy':
-                yield torch.sparse_coo_tensor(datas[12][s],
-                                              torch.ones(torch.tensor(datas[12][s]).shape[1]),
-                                              (self.n_node_feature_enemy, self.n_node_feature_enemy)).to_dense()
-            if cat == 'node_feature_enemy_next':
-                yield datas[11][s+ self.n_step]
-            if cat == 'edge_index_enemy_next':
-                yield torch.sparse_coo_tensor(datas[12][s + self.n_step],
-                                              torch.ones(torch.tensor(datas[12][s + self.n_step]).shape[1]),
-                                              (self.n_node_feature_enemy, self.n_node_feature_enemy)).to_dense()
+
             if cat == 'action_feature':
                 yield datas[13][s]
 
@@ -467,17 +454,7 @@ class Replay_Buffer:
         priority = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='priority')
         priority = list(priority)
 
-        node_feature_enemy = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='node_feature_enemy')
-        node_feature_enemy = list(node_feature_enemy)
 
-        edge_index_enemy = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='edge_index_enemy')
-        edge_index_enemy = list(edge_index_enemy)
-
-        node_feature_enemy_next = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='node_feature_enemy_next')
-        node_feature_enemy_next = list(node_feature_enemy_next)
-
-        edge_index_enemy_next = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='edge_index_enemy_next')
-        edge_index_enemy_next = list(edge_index_enemy_next)
 
         action_feature = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='action_feature')
         action_feature = list(action_feature)
@@ -510,10 +487,6 @@ class Replay_Buffer:
                status_next,\
                priority, \
                sampled_batch_idx, \
-               node_feature_enemy, \
-               edge_index_enemy, \
-               node_feature_enemy_next,\
-               edge_index_enemy_next,\
                p_sampled,\
                action_feature, \
                action_features, \
@@ -786,8 +759,6 @@ class Agent:
 
     def get_node_representation(self, missile_node_feature, ship_features, edge_index_missile,
                                 n_node_features_missile,
-                                enemy_node_feature,
-                                enemy_edge_index,
                                 n_node_features_enemy,
                                 mini_batch=False):
         if cfg.GNN == 'FastGTN':
@@ -1043,10 +1014,6 @@ class Agent:
             status_next,\
             priority,\
             batch_index, \
-            node_feature_enemy, \
-            edge_index_enemy, \
-            node_feature_enemy_next, \
-            edge_index_enemy_next,\
                 p_sampled, action_feature, action_features, action_features_next, heterogenous_edges,heterogenous_edges_next = self.buffer.sample(vdn = vdn)
 
             weight = ((len(self.buffer.buffer[10])-self.n_step)*torch.tensor(priority, dtype=torch.float, device = device))**(-self.beta)
@@ -1075,8 +1042,6 @@ class Agent:
                 ship_features_next,
                 heterogenous_edges_next,
                 n_node_features_missile,
-                node_feature_enemy_next,
-                edge_index_enemy_next,
                 n_node_features_enemy,
                 mini_batch=True)
             #print("2 node representation 시간", time.time() - start)
@@ -1096,8 +1061,6 @@ class Agent:
                 ship_features,
                 heterogenous_edges,
                 n_node_features_missile,
-                node_feature_enemy,
-                edge_index_enemy,
                 n_node_features_enemy,
                 mini_batch=True)
             q = self.cal_Q(obs=obs,
