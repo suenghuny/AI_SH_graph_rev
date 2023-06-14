@@ -1026,7 +1026,7 @@ class Agent:
                 action.append(u)
         else:
             if step != None:
-                temperature = (step + 1) / 100*cfg.temp_constant
+                temperature = (step + 1+cfg.init_constant) / 100*cfg.temp_constant
                 if temperature <=2000:
                     Q = Q*temperature
 
