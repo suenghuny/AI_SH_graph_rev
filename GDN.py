@@ -907,14 +907,23 @@ class Agent:
             obs_n_action = torch.cat([obs, action_feature], dim = 1)
             A_a = self.Q.advantage_forward(obs_n_action, cos, mini_batch=True)
             action_features = torch.tensor(action_features, device=device, dtype=torch.float)
-            node_representation_action = torch.stack([self.node_representation_action_feature(action_features[:, i, :]) for i in range(self.action_size)])
-            node_representation_action = torch.einsum('ijk->jik', node_representation_action)
+
+            import time
+
+            start = time.time()
+
+
+
+            batch_size = action_features.shape[0]
+            action_features_reshaped = action_features.view(-1, action_features.size(-1))
+            node_representation_action = self.node_representation_action_feature(action_features_reshaped)
+            node_representation_action = node_representation_action.view(batch_size, self.action_size, -1)
+
 
             obs_expand = obs.unsqueeze(1)
             obs_expand = obs_expand.expand([self.batch_size, self.action_size, obs_expand.shape[2]])  # batch-size, action_size, obs_size
 
             obs_n_action = torch.cat([obs_expand, node_representation_action], dim=2)
-
 
             obs_n_action_flat = obs_n_action.reshape(self.action_size*self.batch_size, obs_n_action.size(-1))
             cos1 = cos.expand([self.action_size, self.batch_size, self.iqn_N, self.n_cos])
@@ -933,10 +942,10 @@ class Agent:
             with torch.no_grad():
                 mask = torch.tensor(avail_actions, device=device).bool()
                 action_features = torch.tensor(action_features, device=device, dtype=torch.float)
-                node_representation_action = torch.stack(
-                    [self.node_representation_action_feature(action_features[:, i, :]) for i in
-                     range(self.action_size)])
-                node_representation_action = torch.einsum('ijk->jik', node_representation_action)
+                batch_size = action_features.shape[0]
+                action_features_reshaped = action_features.view(-1, action_features.size(-1))
+                node_representation_action = self.node_representation_action_feature(action_features_reshaped)
+                node_representation_action = node_representation_action.view(batch_size, self.action_size, -1)
                 obs_expand = obs.unsqueeze(1)
                 obs_expand = obs_expand.expand(
                     [self.batch_size, self.action_size, obs_expand.shape[2]])  # batch-size, action_size, obs_size
