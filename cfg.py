@@ -67,4 +67,5 @@ def get_cfg():
     parser.add_argument("--n_eval", type=int, default=20, help="number of evaluation")
     parser.add_argument("--with_noise", type=bool, default=False, help="")
     parser.add_argument("--temp_constant", type=int, default=1, help="")
+    parser.add_argument("--init_constant", type=int, default=10000, help="")
     return parser.parse_args()
