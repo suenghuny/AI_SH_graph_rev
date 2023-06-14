@@ -1028,6 +1028,15 @@ class Agent:
             action.append(u)
 
         action_blue = action_feature_dummy[u]
+
+        if cfg.epsilon_greedy == False:
+            if training == True:
+                self.Q.reset_noise_net()
+            else:
+                if with_noise == True:
+                    self.Q.reset_noise_net()
+                else:
+                    self.Q.remove_noise_net()
         return action_blue
 
     def learn(self, regularizer, episode, vdn = False, ):
