@@ -103,15 +103,11 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
 
             if cfg.GNN == 'GAT':
                 node_representation = agent.get_node_representation(missile_node_feature, ship_feature,edge_index,n_node_feature_missile,
-                                                                    enemy_node_feature = enemy_node_feature,
-                                                                    enemy_edge_index = enemy_edge_index,
                                                                     n_node_features_enemy = n_node_feature_enemy,
                                                                     mini_batch=False)  # 차원 : n_agents X n_representation_comm
             else:
                 node_representation = agent.get_node_representation(missile_node_feature, ship_feature, heterogeneous_edges,
                                                                     n_node_feature_missile,
-                                                                    enemy_node_feature=enemy_node_feature,
-                                                                    enemy_edge_index=enemy_edge_index,
                                                                     n_node_features_enemy=n_node_feature_enemy,
                                                                     mini_batch=False)  # 차원 : n_agents X n_representation_comm
             action_blue = agent.sample_action(node_representation, avail_action_blue, epsilon, action_feature)
