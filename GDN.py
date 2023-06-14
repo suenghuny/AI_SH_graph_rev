@@ -1135,11 +1135,11 @@ class Agent:
         loss = F.huber_loss(weight * q_tot, weight * td_target)
 
 
-        loss.backward()
+        loss.backward(create_graph = True)
         #print("5 backprop 계산", time.time() - start)
         #start = time.time()
         torch.nn.utils.clip_grad_norm_(self.eval_params, cfg.grad_clip)
-        self.optimizer.step(create_graph = True)
+        self.optimizer.step()
         self.scheduler.step()
 
         if cfg.epsilon_greedy == False:
