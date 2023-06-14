@@ -983,13 +983,12 @@ class Agent:
 
 
     @torch.no_grad()
-    def sample_action(self, node_representation, avail_action, epsilon, action_feature, training = True, with_noise = False):
+    def sample_action(self, node_representation, avail_action, epsilon, action_feature, training = True, with_noise = False, boltzman = True, step = None):
         """
 
         node_representation 차원 : n_agents X n_representation_comm
         action_feature 차원      : action_size X n_action_feature
         avail_action 차원        : n_agents X action_size
-
         """
         if cfg.epsilon_greedy == False:
             if training == True:
@@ -1014,18 +1013,30 @@ class Agent:
         V = self.Q.value_forward(node_representation, cos, mini_batch=False)
         A = torch.stack([self.Q.advantage_forward(obs_n_action[i].unsqueeze(0), cos, mini_batch=False) for i in range(self.action_size)]).squeeze(1).squeeze(1).unsqueeze(0)
         Q = self.DuelingQ(V, A, mask)
-        greedy_u = torch.argmax(Q)
-        if cfg.epsilon_greedy == True:
-            if np.random.uniform(0, 1) >= epsilon:
-                u = greedy_u.detach().item()
+        if boltzman == False:
+            greedy_u = torch.argmax(Q)
+            if cfg.epsilon_greedy == True:
+                if np.random.uniform(0, 1) >= epsilon:
+                    u = greedy_u.detach().item()
+                else:
+                    mask_n = np.array(avail_action[0], dtype=np.float64)
+                    u = np.random.choice(self.action_space, p=mask_n / np.sum(mask_n))
             else:
-                mask_n = np.array(avail_action[0], dtype=np.float64)
-                u = np.random.choice(self.action_space, p=mask_n / np.sum(mask_n))
-
+                u = greedy_u
+                action.append(u)
         else:
+            if step != None:
+                temperature = (step + 1) / 100
+                if temperature <=2000:
+                    Q = Q*temperature
 
-            u = greedy_u
-            action.append(u)
+                dist = F.softmax(Q, dim = 1)
+                #print(dist)
+                u = torch.multinomial(dist, 1, replacement=True)
+                u = u.item()
+            else:
+                u = torch.argmax(Q).item()
+
 
         action_blue = action_feature_dummy[u]
 

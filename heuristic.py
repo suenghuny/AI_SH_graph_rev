@@ -51,7 +51,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
         interval_min = True
     else:
         interval_min = False
-    interval_constant = random.uniform(3,4)
+    interval_constant = random.uniform(2,4)
     while not done:
         if env.now % (decision_timestep) <= 0.00001:
             avail_action_blue, target_distance_blue, air_alert_blue = env.get_avail_actions_temp(interval_min_blue,
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     """
     환경 시스템 관련 변수들
     """
-    visualize = False # 가시화 기능 사용 여부 / True : 가시화 적용, False : 가시화 미적용
+    visualize = False# 가시화 기능 사용 여부 / True : 가시화 적용, False : 가시화 미적용
     size = [600, 600]  # 화면 size / 600, 600 pixel
     tick = 500  # 가시화 기능 사용 시 빠르기
     n_step = cfg.n_step
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     mode = 'txt'                     # 전처리 모듈 / 'excel' : input_data.xlsx 파일 적용, 'txt' "Data\ship.txt", "Data\patrol_aircraft.txt", "Data\SAM.txt", "Data\SSM.txt"를 적용
     rule = 'rule2'                   # rule1 : 랜덤 정책 / rule2 : 거리를 기반 합리성에 기반한 정책(softmax policy)
     temperature = [10, 20]           # rule = 'rule2'인 경우만 적용 / 의사결정의 flexibility / 첫번째 index : 공중 위험이 낮은 상태, 두번째 index : 공중 위험이 높은 상태
-    ciws_threshold = 1
+    ciws_threshold = 0.5
     polar_chart_visualize = False
     scenarios = ['scenario1', 'scenario2', 'scenario3']
     lose_ratio = list()

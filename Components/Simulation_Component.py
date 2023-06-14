@@ -635,7 +635,7 @@ class Missile:
     def get_lock_on_target(self):
 
         in_arc_list, probabilities = self.get_in_arc_list()
-        probabilities = softmax(probabilities, 50, reverse = False)
+        probabilities = softmax(probabilities, 1/50, reverse = False)
         if len(in_arc_list) >= 1:
             p_d = list()
             p_dc = 1
@@ -1133,7 +1133,7 @@ class Ship:
         self.last_v_y = 0
         self.a_x = 0
         self.a_y = 0
-        num = 3
+        num = 10
         self.action_history = deque(maxlen = num)
         for _ in range(num):
             self.action_history.append(None)

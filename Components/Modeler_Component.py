@@ -227,7 +227,7 @@ class Environment:
     def get_env_info(self):
         ship=self.friendlies[0]
         env_info = {"n_agents" : 1,
-                    "ship_feature_shape": 7 + self.discr_n+3*8+8,  # + self.n_agents,
+                    "ship_feature_shape": 7 + self.discr_n+10*8+8,  # + self.n_agents,
                     "missile_feature_shape" : 6,  #9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
                     "enemy_feature_shape": 12,
                     "action_feature_shape": 8,
