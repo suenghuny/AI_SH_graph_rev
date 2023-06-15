@@ -719,7 +719,7 @@ class Environment:
             for enemy in self.enemies_fixed_list:
                 if enemy.status != 'destroyed':
                     f1, f2, f3, f4, f5, f6 = self.get_feature(ship, enemy)
-                    ssm_speed = enemy.ssm_launcher[0].speed
+                    ssm_speed = enemy.speed_m
                     node_features.append([f1, f2, f3, f4, f5, f6, 0, ssm_speed/1.4])
                     enemy.last_action_feature = [f1, f2, f3, f4, f5, f6, 0, ssm_speed/1.4]
         if ship.surface_tracking_limit+1-len(node_features)>0:
@@ -981,6 +981,7 @@ class Environment:
             #          0.833 * (missile_destroyed_cal - self.last_destroyed_missile)
             if ship.status != 'destroyed':
                 reward = 1 * (missile_destroyed_cal - self.last_destroyed_missile)
+
             else:
                 reward = 0
 
@@ -1024,6 +1025,11 @@ class Environment:
                     win_tag = 'draw'
                     reward += 0
                 else: pass
+                leaker = len(self.enemies_fixed_list) - len(self.enemies)
+            if (len(self.friendlies) == 0):
+                done = True
+                reward += 0
+                win_tag = "lose"
                 leaker = len(self.enemies_fixed_list) - len(self.enemies)
 
             if self.now > 2000:
