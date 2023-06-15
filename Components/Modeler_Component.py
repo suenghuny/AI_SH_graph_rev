@@ -1026,11 +1026,7 @@ class Environment:
                     reward += 0
                 else: pass
                 leaker = len(self.enemies_fixed_list) - len(self.enemies)
-            if (len(self.friendlies) == 0):
-                done = True
-                reward += 0
-                win_tag = "lose"
-                leaker = len(self.enemies_fixed_list) - len(self.enemies)
+
 
             if self.now > 2000:
                 done_checker_A = [True if (len(enemy.ssm_launcher) == 0) else False for enemy in self.enemies]
