@@ -983,7 +983,7 @@ class Agent:
 
 
     @torch.no_grad()
-    def sample_action(self, node_representation, avail_action, epsilon, action_feature, training = True, with_noise = False, boltzman = True, step = None):
+    def sample_action(self, node_representation, avail_action, epsilon, action_feature, training = True, with_noise = False, boltzman = False, step = None):
         """
 
         node_representation 차원 : n_agents X n_representation_comm
