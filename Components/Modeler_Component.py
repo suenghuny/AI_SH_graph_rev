@@ -1000,62 +1000,68 @@ class Environment:
             susceptibility= 0
 
             leaker = 0
-
-            if (len(self.flying_ssms_enemy) == 0) and (len(self.flying_ssms_friendly) == 0):
-                done_checker_A = [True if (len(enemy.ssm_launcher) == 0) else False for enemy in self.enemies]
-                done_checker_B = [True if (len(ship.ssm_launcher) == 0) else False for ship in self.friendlies]
-                if (len(self.friendlies) == 0) and (len(self.enemies) != 0):  # lose
-                    done = True
-                    reward += 0
-                    win_tag = "lose"
-                    self.last_check_lose = True
-                elif (len(self.enemies) == 0) and (len(self.friendlies) == 0):  # lose
-                    done = True
-                    reward += 0
-                    win_tag = "lose"
-                    self.last_check_lose = True
-                elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):  # win
-                    done = True
-                    reward += 0
-                    win_tag = 'win'
-                    self.last_check_win = True
-                    #print(reward, len(self.friendlies), len(self.enemies))
-                elif (False not in done_checker_A) and (False not in done_checker_B): # draw
-                    done = True
-                    win_tag = 'draw'
-                    reward += 0
-                else: pass
+            if (len(self.friendlies) == 0):
+                done = True
+                reward += 0
+                win_tag = "lose"
                 leaker = len(self.enemies_fixed_list) - len(self.enemies)
+            else:
+                if (len(self.flying_ssms_enemy) == 0) and (len(self.flying_ssms_friendly) == 0):
+                    done_checker_A = [True if (len(enemy.ssm_launcher) == 0) else False for enemy in self.enemies]
+                    done_checker_B = [True if (len(ship.ssm_launcher) == 0) else False for ship in self.friendlies]
+                    if (len(self.friendlies) == 0) and (len(self.enemies) != 0):  # lose
+                        done = True
+                        reward += 0
+                        win_tag = "lose"
+                        self.last_check_lose = True
+                    elif (len(self.enemies) == 0) and (len(self.friendlies) == 0):  # lose
+                        done = True
+                        reward += 0
+                        win_tag = "lose"
+                        self.last_check_lose = True
+                    elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):  # win
+                        done = True
+                        reward += 0
+                        win_tag = 'win'
+                        self.last_check_win = True
+                        #print(reward, len(self.friendlies), len(self.enemies))
+                    elif (False not in done_checker_A) and (False not in done_checker_B): # draw
+                        done = True
+                        win_tag = 'draw'
+                        reward += 0
+                    else: pass
+                    leaker = len(self.enemies_fixed_list) - len(self.enemies)
 
 
-            if self.now > 2000:
-                done_checker_A = [True if (len(enemy.ssm_launcher) == 0) else False for enemy in self.enemies]
-                done_checker_B = [True if (len(ship.ssm_launcher) == 0) else False for ship in self.friendlies]
-                if (len(self.friendlies) == 0) and (len(self.enemies) != 0):  # lose
-                    done = True
-                    reward += 0
-                    win_tag = "lose"
-                    self.last_check_lose = True
-                elif (len(self.enemies) == 0) and (len(self.friendlies) == 0):  # lose
-                    done = True
-                    reward += 0
-                    win_tag = "lose"
-                    self.last_check_lose = True
-                elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):  # win
-                    done = True
-                    reward += 0
-                    win_tag = 'win'
-                    self.last_check_win = True
-                    #print(reward, len(self.friendlies), len(self.enemies))
-                elif (False not in done_checker_A) and (False not in done_checker_B): # draw
-                    done = True
-                    win_tag = 'draw'
-                    reward += 0
-                else:
-                    done = True
-                    win_tag = 'draw'
-                    reward += 0
-                leaker = len(self.enemies_fixed_list) - len(self.enemies)
+
+                if self.now > 2000:
+                    done_checker_A = [True if (len(enemy.ssm_launcher) == 0) else False for enemy in self.enemies]
+                    done_checker_B = [True if (len(ship.ssm_launcher) == 0) else False for ship in self.friendlies]
+                    if (len(self.friendlies) == 0) and (len(self.enemies) != 0):  # lose
+                        done = True
+                        reward += 0
+                        win_tag = "lose"
+                        self.last_check_lose = True
+                    elif (len(self.enemies) == 0) and (len(self.friendlies) == 0):  # lose
+                        done = True
+                        reward += 0
+                        win_tag = "lose"
+                        self.last_check_lose = True
+                    elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):  # win
+                        done = True
+                        reward += 0
+                        win_tag = 'win'
+                        self.last_check_win = True
+                        #print(reward, len(self.friendlies), len(self.enemies))
+                    elif (False not in done_checker_A) and (False not in done_checker_B): # draw
+                        done = True
+                        win_tag = 'draw'
+                        reward += 0
+                    else:
+                        done = True
+                        win_tag = 'draw'
+                        reward += 0
+                    leaker = len(self.enemies_fixed_list) - len(self.enemies)
 
 
 
