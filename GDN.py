@@ -1072,7 +1072,6 @@ class Agent:
         weight = ((len(self.buffer.buffer[10])-self.n_step)*torch.tensor(priority, dtype=torch.float, device = device))**(-self.beta)
 
         weight /= weight.max()
-        print(weight)
 
 
         """간        node_features : batch_size x num_nodes x feature_size
