@@ -502,12 +502,14 @@ class Environment:
                 if sam.cla == 'MSAM':
                     if sam.fly_mode == None:
                         f7 += 1
+
             for sam in self.flying_sams_friendly:
                 if sam.cla == 'MSAM':
                     if sam.fly_mode == 'brm':
                         f5 += 1/ship.air_engagement_limit
                     elif sam.fly_mode == 'ccm':
                         f6 += 1/ship.air_engagement_limit
+
             empty0 = [f1,f2,f3,f4,f5,f6,f7]
             n = self.discr_n
             empty1 = [0] * n

@@ -21,7 +21,7 @@ decoy_decaying_rate			0.9		0.9		0.9     0.9
 length						100		100		100     100
 breadth					    25		25		25      25
 height						20		20		20      20
-detection_range				40		40		40      40
+detection_range				60		60		60      60
 radar_peak_power			6000000	6000000	6000000 6000000
 antenna_gain_factor			9300	9300	9300    9300
 wavelength_of_signal		7.5		7.5		7.5     7.5
