@@ -719,8 +719,9 @@ class Environment:
             for enemy in self.enemies_fixed_list:
                 if enemy.status != 'destroyed':
                     f1, f2, f3, f4, f5, f6 = self.get_feature(ship, enemy)
-                    node_features.append([f1, f2, f3, f4, f5, f6, 0, 1])
-                    enemy.last_action_feature = [f1, f2, f3, f4, f5, f6, 0, 1]
+                    ssm_speed = enemy.ssm_launcher[0].speed
+                    node_features.append([f1, f2, f3, f4, f5, f6, 0, ssm_speed/1.4])
+                    enemy.last_action_feature = [f1, f2, f3, f4, f5, f6, 0, ssm_speed/1.4]
         if ship.surface_tracking_limit+1-len(node_features)>0:
             for _ in range(ship.surface_tracking_limit+1-len(node_features)):
                 node_features.append(dummy)
@@ -734,8 +735,6 @@ class Environment:
         if ship.surface_tracking_limit+ship.air_tracking_limit+1-len(node_features) >0:
             for _ in range(ship.surface_tracking_limit+ship.air_tracking_limit+1-len(node_features)):
                 node_features.append(dummy)
-        #print("후", len(node_features))
-
         return node_features
 
     def get_missile_node_feature(self, rad_coordinate = True):

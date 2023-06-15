@@ -9,9 +9,9 @@ evading_course				20		20		20      20
 type_m_sam					3		3		3       3
 num_m_sam					16		12		20      12
 type_l_sam					1		1		1       1
-num_l_sam					20		4		20      4
-type_ssm					1		1		1       1
-num_ssm					    16		8		8       8
+num_l_sam					32		20		20      20
+type_ssm					1		1		2       3
+num_ssm					    16		12		4       6
 decoy_launching_bearing		15		8		8       8
 decoy_launching_distance	2		2		2       2
 decoy_launching_interval	20		20		20      20
