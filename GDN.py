@@ -740,23 +740,16 @@ class Agent:
         self.Q_tar.load_state_dict(checkpoint["Q_tar"])
         self.node_representation_action_feature.load_state_dict(checkpoint['node_representation_action_feature'])
         self.node_representation_ship_feature.load_state_dict(checkpoint["node_representation_ship_feature"])
-        self.node_representation_enemy.load_state_dict(checkpoint["node_representation_enemy"])
         self.node_representation.load_state_dict(checkpoint["node_representation"])
-        self.func_missile_obs.load_state_dict(checkpoint["func_missile_obs"])
-        self.func_enemy_obs.load_state_dict(checkpoint["func_enemy_obs"])
-        self.VDN.load_state_dict(checkpoint["VDN"])
-        self.VDN_target.load_state_dict(checkpoint["VDN_target"])
+        self.func_meta_path.load_state_dict(checkpoint["func_meta_path"])
+        self.DuelingQ.load_state_dict(checkpoint["dueling_Q"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
-
-        #
-        self.Q.remove_noise_net()
-
         self.eval_params = list(self.DuelingQ.parameters()) + \
                            list(self.Q.parameters()) + \
                            list(self.node_representation_action_feature.parameters()) + \
                            list(self.node_representation_ship_feature.parameters()) + \
                            list(self.node_representation.parameters()) + \
-                           list(self.func_missile_obs.parameters())
+                           list(self.func_meta_path.parameters())
         return e, t, epsilon
 
     def get_node_representation(self, missile_node_feature, ship_features, edge_index_missile,

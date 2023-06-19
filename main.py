@@ -59,13 +59,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
     n_step_heterogeneous_edges = deque(maxlen=n_step)
 
 
-    if random.uniform(0, 1) > 0.5:
-        interval_min = True
 
-    else:
-        interval_min = False
-
-    interval_constant = random.uniform(2,4)
 
 
 
@@ -73,12 +67,8 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
     while not done:
         #print(env.now % (decision_timestep))
         if env.now % (decision_timestep) <= 0.00001:
-            avail_action_blue, target_distance_blue, air_alert_blue = env.get_avail_actions_temp(interval_min=True,
-                                                                                                 interval_constant=0.5,
-                                                                                                 side='blue')
-            avail_action_yellow, target_distance_yellow, air_alert_yellow = env.get_avail_actions_temp(interval_min,
-                                                                                                       interval_constant,
-                                                                                                       side='yellow')
+            avail_action_blue, target_distance_blue, air_alert_blue = env.get_avail_actions_temp(side='blue')
+            avail_action_yellow, target_distance_yellow, air_alert_yellow = env.get_avail_actions_temp(side='yellow')
             if cfg.GNN == 'FastGTN':
                 edge_index_ssm_to_ship = env.get_ssm_to_ship_edge_index()
                 edge_index_ssm_to_ssm = env.get_ssm_to_ssm_edge_index()
@@ -238,20 +228,12 @@ def evaluation(agent, env, with_noise = False):
     enemy_action_for_transition =    [0] * len(env.enemies_fixed_list)
     friendly_action_for_transition = [0] * len(env.friendlies_fixed_list)
 
-    if random.uniform(0, 1) > 0.5:
-        interval_min = True
-    else:
-        interval_min = False
-    interval_constant = random.uniform(2,4)
+
     while not done:
         #print(env.now % (decision_timestep))
         if env.now % (decision_timestep) <= 0.00001:
-            avail_action_blue, target_distance_blue, air_alert_blue = env.get_avail_actions_temp(interval_min=True,
-                                                                                                 interval_constant=0.5,
-                                                                                                 side='blue')
-            avail_action_yellow, target_distance_yellow, air_alert_yellow = env.get_avail_actions_temp(interval_min,
-                                                                                                       interval_constant,
-                                                                                                       side='yellow')
+            avail_action_blue, target_distance_blue, air_alert_blue = env.get_avail_actions_temp(side='blue')
+            avail_action_yellow, target_distance_yellow, air_alert_yellow = env.get_avail_actions_temp(side='yellow')
             if cfg.GNN == 'FastGTN':
                 edge_index_ssm_to_ship = env.get_ssm_to_ship_edge_index()
                 edge_index_ssm_to_ssm = env.get_ssm_to_ssm_edge_index()

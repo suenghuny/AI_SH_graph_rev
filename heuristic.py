@@ -32,11 +32,12 @@ def preprocessing(scenarios):
     return data
 
 
-def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, initializer, output_dir, vdn, n_step):
-    interval_min_blue = cfg.interval_min_blue
-    interval_constant_blue = cfg.interval_constant_blue
+def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, initializer, output_dir, vdn, n_step,
+          interval_min_blue, interval_constant_blue, temperature):
+    interval_min_blue = interval_min_blue
+    interval_constant_blue = interval_constant_blue
     temp = random.uniform(0, 50)
-    agent_blue = Policy(env, rule='rule2', temperatures=[cfg.temperature, cfg.temperature])
+    agent_blue = Policy(env, rule='rule2', temperatures=[temperature, temperature])
     agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
     done = False
     episode_reward = 0
@@ -81,7 +82,6 @@ if __name__ == "__main__":
     vessl_on = cfg.vessl
     if vessl_on == True:
         import vessl
-
         vessl.init()
         output_dir = "/output/"
         import os
@@ -140,7 +140,13 @@ if __name__ == "__main__":
     reward_list = list()
     agent = None
     non_lose = 0
+    interval_min_blue_list = list()
+    interval_constant_blue_list = list()
+    temperature = list()
     for e in range(num_iteration):
+        interval_min_blue = interval_min_blue,
+        interval_constant_blue = interval_constant_blue,
+        temperature = temperature
         seed = 2 * e
         np.random.seed(seed)
         torch.manual_seed(seed)
@@ -156,7 +162,11 @@ if __name__ == "__main__":
                       action_history_step=cfg.action_history_step)
         episode_reward, epsilon, t, eval, win_tag = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon,
                                                  min_epsilon=min_epsilon, anneal_step=anneal_step, initializer=False,
-                                                 output_dir=None, vdn=True, n_step=n_step)
+                                                 output_dir=None, vdn=True, n_step=n_step,
+                                                          interval_min_blue=interval_min_blue,
+                                                          interval_constant_blue=interval_constant_blue,
+                                                          temperature=temperature
+                                                          )
         if vessl_on == False:
             writer.add_scalar("episode", episode_reward, e)
         reward_list.append(episode_reward)

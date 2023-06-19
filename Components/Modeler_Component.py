@@ -6,7 +6,12 @@ from collections import deque
 import random
 
 
-def modeler(data, visualize, size, detection_by_height, tick, simtime_per_framerate, ciws_threshold, action_history_step, epsilon = 20, discr_n = 10):
+def modeler(data, visualize, size, detection_by_height, tick, simtime_per_framerate, ciws_threshold, action_history_step, epsilon = 20, discr_n = 10, air_alert_distance = 20,
+            interval_constant_blue = [10,10]
+            ):
+
+    interval_constant_yellow = random.uniform(2, 4)
+    interval_constant_yellow = [interval_constant_yellow, interval_constant_yellow]
     env = Environment(data,
                       visualize,
                       size = size,
@@ -16,7 +21,11 @@ def modeler(data, visualize, size, detection_by_height, tick, simtime_per_framer
                       epsilon = epsilon,
                       ciws_threshold = ciws_threshold,
                       action_history_step = action_history_step,
-                      discr_n = discr_n)
+                      discr_n = discr_n,
+                      air_alert_distance =air_alert_distance,
+                      interval_constant_blue=interval_constant_blue,
+                      interval_constant_yellow = interval_constant_yellow
+                      )
     return env
 
 class Environment:
@@ -25,6 +34,9 @@ class Environment:
                  visualize,
                  action_history_step,
                  discr_n,
+
+                 interval_constant_blue,
+                 interval_constant_yellow,
                  epsilon=15,
                  simtime_per_framerate = 2.5,
                  size = [2200, 2200],
@@ -32,6 +44,7 @@ class Environment:
                  tick = 24,
                  ciws_threshold = 2.5,
                  mode = False,
+                 air_alert_distance = 20
                  ):
         self.simtime_per_framerate = simtime_per_framerate # 시뮬레이션 시간 / 프레임 주기
         self.discr_n = discr_n
@@ -51,6 +64,9 @@ class Environment:
         self.temp_termination = False
         self.tick = tick
         self.action_history_step = action_history_step
+        self.air_alert_distance = air_alert_distance
+        self.interval_constant_blue = interval_constant_blue
+        self.interval_constant_yellow = interval_constant_yellow
         if visualize == True:
             self.pygame = pygame
             self.game_initializer = self.pygame.init()
@@ -96,6 +112,7 @@ class Environment:
         inception_data = self.data.inception_data
         noise = random.uniform(-10, 10)
         self.missile_speed_list = list()
+        a = [0, 1, 2, 3]
         for key, value in data.ship_data.items():
             if key == 1:
                 speed = 25
@@ -108,15 +125,19 @@ class Environment:
                     course = 90
                     initial_position_x = 50 + 10*inception_data['inception_distance'] * np.cos(inception_data['inception_angle'] * np.pi / 180) + 10*random.normalvariate(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
                     initial_position_y = 50 + 10*inception_data['inception_distance'] * np.sin(inception_data['inception_angle'] * np.pi / 180) + 10*random.normalvariate(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+
                 else:
+
                     speed = 25
                     course = 90
                     initial_position_x = 50 + 10 * inception_data['inception_distance'] * np.cos(
-                        inception_data['inception_angle'] * np.pi / 180) + 10 * random.normalvariate(
-                        inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                        inception_data['inception_angle'] * np.pi / 180) + 10 * a[key-1]
+                                         # + 10 * random.normalvariate(
+                        # inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
                     initial_position_y = 50 + 10 * inception_data['inception_distance'] * np.sin(
-                        inception_data['inception_angle'] * np.pi / 180) + 10 * random.normalvariate(
-                        inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                        inception_data['inception_angle'] * np.pi / 180) + 10 * a[key-1]
+                                         # + 10 * random.normalvariate(
+                        # inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
 
 
 
@@ -237,7 +258,7 @@ class Environment:
 
 
 
-    def get_target_availability(self, friendlies_fixed_list, avail_action_friendly_model, enemies_fixed_list, flying_ssms_enemies, interval_min, interval_constant):
+    def get_target_availability(self, friendlies_fixed_list, avail_action_friendly_model, enemies_fixed_list, flying_ssms_enemies, side):
         avail_actions = list()
         target_distance_list = list()
         air_alert = False
@@ -285,7 +306,7 @@ class Environment:
                                if cal_distance(ship, ssm) <= ship.ciws_max_range]
 
                     for ssm in ship.ssm_detections:
-                        if (cal_distance(ship, ssm) <= 200):
+                        if (cal_distance(ship, ssm) <= self.air_alert_distance):
                             air_alert = True
                             break
                         else:
@@ -452,19 +473,28 @@ class Environment:
             if distance_list==list():
                 distance_list.append(1)
             else:
-                distance_list.insert(0, np.mean(distance_list)/interval_constant)
+                if side == 'blue':
+                    if air_alert == True:
+                        distance_list.insert(0, np.mean(distance_list)/self.interval_constant_blue[0])
+                    else:
+                        distance_list.insert(0, np.mean(distance_list)/self.interval_constant_blue[1])
+                else:
+                    if air_alert == True:
+                        distance_list.insert(0, np.mean(distance_list)/self.interval_constant_yellow[0])
+                    else:
+                        distance_list.insert(0, np.mean(distance_list)/self.interval_constant_yellow[1])
             target_distance_list.append(distance_list)
         return avail_actions, target_distance_list, air_alert
 
-    def get_avail_actions_temp(self, interval_min, interval_constant, side='blue'):
+    def get_avail_actions_temp(self, side='blue'):
         if side != 'blue':
             avail_actions, \
             target_distance_list, \
-            air_alert = self.get_target_availability(self.enemies_fixed_list, self.avail_action_enemy, self.friendlies_fixed_list, self.flying_ssms_friendly, interval_min, interval_constant)
+            air_alert = self.get_target_availability(self.enemies_fixed_list, self.avail_action_enemy, self.friendlies_fixed_list, self.flying_ssms_friendly, side)
         else:
             avail_actions, \
             target_distance_list, \
-            air_alert = self.get_target_availability(self.friendlies_fixed_list, self.avail_action_friendly, self.enemies_fixed_list, self.flying_ssms_enemy, interval_min, interval_constant)
+            air_alert = self.get_target_availability(self.friendlies_fixed_list, self.avail_action_friendly, self.enemies_fixed_list, self.flying_ssms_enemy, side)
         return avail_actions, target_distance_list, air_alert
 
     def get_ship_feature(self):
@@ -905,8 +935,6 @@ class Environment:
                 font1 = pygame.font.Font(None, 15)
                 img1 = font1.render('{} ,{}'.format(ssm.id, np.round(cal_distance(ssm, ssm.target))), True, (150, 120, 15))
                 self.screen.blit(img1, (ssm.position_x, ssm.position_y))
-
-                #
                 img1 = font1.render('est, {}, {}'.format(ssm.id, ssm.fly_mode), True, (0,250,0))
                 self.screen.blit(img1, (ssm.estimated_hitting_point_x, ssm.estimated_hitting_point_y))
 
