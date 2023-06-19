@@ -49,7 +49,7 @@ def fitness_func(ga_instance, solution, solution_idx):
     non_lose = 0
     action_availability_distribution = [[0] * env.get_env_info()["n_actions"] for _ in range(500)]
     score = 0
-    n = 100
+    n = 20
     for e in range(n):
         seed = 2 * e
         np.random.seed(seed)
@@ -228,17 +228,17 @@ if __name__ == "__main__":
     episode_polar_chart = polar_chart[0]
     records = list()
 
-    population_size = 50
-    num_generations = 100
+    population_size = 200
+    num_generations = 500
     T = 500  # Define the length of the solution encoding
 
 
 
     #print([[i for i in range(env.get_env_info()["n_actions"]) if df.iloc[j, i] > 0] for j in range(T)])
     ga_instance = pygad.GA(num_generations=num_generations,
-                           mutation_percent_genes=20,
+                           mutation_percent_genes=30,
                            mutation_num_genes=2,
-                           num_parents_mating=1,
+                           num_parents_mating=2,
                            fitness_func=fitness_func,
                            sol_per_pop=population_size,
                            num_genes=5,
