@@ -737,7 +737,8 @@ class Environment:
             theta_a = 0
         # else:
         #     print(a)
-        return r, v, a, theta_v, (theta_r - theta_v)*5, theta_v - theta_a
+        #print((theta_r - theta_v), theta_v, theta_v - theta_a)
+        return r, v, a, theta_v/np.pi, (theta_r - theta_v)*np.pi, (theta_v - theta_a)/np.pi
 
     def get_action_feature(self):
         dummy = [0,0,0,0,0,0,0,0]
