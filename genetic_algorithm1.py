@@ -233,7 +233,6 @@ if __name__ == "__main__":
     T = 500  # Define the length of the solution encoding
 
 
-    df = pd.read_csv("distribution.csv")
 
     #print([[i for i in range(env.get_env_info()["n_actions"]) if df.iloc[j, i] > 0] for j in range(T)])
     ga_instance = pygad.GA(num_generations=num_generations,
