@@ -103,6 +103,8 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
             action_blue = agent.sample_action(node_representation, avail_action_blue, epsilon, action_feature, step = t)
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
             reward, win_tag, done, leakers = env.step(action_blue, action_yellow)
+
+
             #print(reward)
             episode_reward += reward
             n_step_missile_node_features.append(missile_node_feature)
@@ -423,7 +425,7 @@ if __name__ == "__main__":
                               action_history_step = cfg.action_history_step
                               )
                 episode_reward, win_tag, leakers = evaluation(agent, env, with_noise =cfg.with_noise)
-                print('전', win_tag, episode_reward)
+                print('전', win_tag, episode_reward, env.now)
                 leakers_rate += leakers/n
                 if win_tag != 'lose':
                     non_lose_rate += 1/n
@@ -479,8 +481,8 @@ if __name__ == "__main__":
         if e % 200 == 0:
             agent.save_model(e, t, epsilon, output_dir + "{}.pt".format(e))
         print(
-            "Total reward in episode {} = {}, epsilon : {}, time_step : {}, episode_duration : {}, win_tag : {}".format(
+            "Total reward in episode {} = {}, epsilon : {}, time_step : {}, episode_duration : {}, win_tag : {}, terminal_time : {}".format(
                 e,
                 np.round(episode_reward, 3),
                 np.round(epsilon, 3),
-                t, np.round(time.time() - start, 3), win_tag))
+                t, np.round(time.time() - start, 3), win_tag, env.now))

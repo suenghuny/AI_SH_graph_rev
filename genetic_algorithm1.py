@@ -13,14 +13,13 @@ import scipy
 import pygad
 
 def fitness_func(ga_instance, solution, solution_idx):
-
+    print(solution)
 
     temperature1 = solution[0]
     interval_constant_blue1 = solution[1]
     temperature2 = solution[2]
     interval_constant_blue2 = solution[3]
-    air_alert_distance = [4]
-
+    air_alert_distance = solution[4]
 
 
     data = preprocessing(scenarios)
@@ -34,7 +33,8 @@ def fitness_func(ga_instance, solution, solution_idx):
                   simtime_per_framerate=simtime_per_frame,
                   ciws_threshold=ciws_threshold,
                   action_history_step=cfg.action_history_step,
-                  interval_constant_blue=[interval_constant_blue1, interval_constant_blue2]
+                  interval_constant_blue=[interval_constant_blue1, interval_constant_blue2],
+                  air_alert_distance = air_alert_distance
                   )
 
 
@@ -236,7 +236,7 @@ if __name__ == "__main__":
 
     #print([[i for i in range(env.get_env_info()["n_actions"]) if df.iloc[j, i] > 0] for j in range(T)])
     ga_instance = pygad.GA(num_generations=num_generations,
-                           mutation_percent_genes=30,
+                           mutation_percent_genes=20,
                            mutation_num_genes=2,
                            num_parents_mating=2,
                            fitness_func=fitness_func,
