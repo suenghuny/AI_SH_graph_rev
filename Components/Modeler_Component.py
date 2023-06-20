@@ -130,11 +130,13 @@ class Environment:
                     speed = 25
                     course = 90
                     initial_position_x = 50 + 10 * inception_data['inception_distance'] * np.cos(
-                        inception_range * np.pi / 180) #+ 10 * random.normalvariate(
-                        #inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                        inception_range * np.pi / 180)\
+                        #                  + 10 * random.normalvariate(
+                        # inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
                     initial_position_y = 50 + 10 * inception_data['inception_distance'] * np.sin(
-                        inception_range* np.pi / 180)# + 10 * random.normalvariate(
-                        #inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                        inception_range* np.pi / 180) \
+                        #                  + 10 * random.normalvariate(
+                        # inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
 
 
 

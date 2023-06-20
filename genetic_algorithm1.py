@@ -12,16 +12,21 @@ import scipy
 
 import pygad
 
-def fitness_func(ga_instance, solution, solution_idx):
-    print(solution)
+def callback_generation(ga_instance):
+    global last_fitness
+    print("Generation = {generation}".format(generation=ga_instance.generations_completed))
+    print("Fitness    = {fitness}".format(fitness=ga_instance.best_solution()[1]))
+    print("Change     = {change}".format(change=ga_instance.best_solution()[1] - last_fitness))
+    last_fitness = ga_instance.best_solution()[1]
 
+
+
+def simulation(solution):
     temperature1 = solution[0]
     interval_constant_blue1 = solution[1]
     temperature2 = solution[2]
     interval_constant_blue2 = solution[3]
     air_alert_distance = solution[4]
-
-
     data = preprocessing(scenarios)
     t = 0
     env = modeler(data,
@@ -36,10 +41,6 @@ def fitness_func(ga_instance, solution, solution_idx):
                   interval_constant_blue=[interval_constant_blue1, interval_constant_blue2],
                   air_alert_distance = air_alert_distance
                   )
-
-
-
-
     anneal_episode = cfg.anneal_episode
     anneal_step = (cfg.per_beta - 1) / anneal_episode
     epsilon = 1
@@ -50,11 +51,12 @@ def fitness_func(ga_instance, solution, solution_idx):
     action_availability_distribution = [[0] * env.get_env_info()["n_actions"] for _ in range(500)]
     score = 0
     n = 20
+    seed = 4
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    random.seed(seed)
     for e in range(n):
-        seed = 2 * e
-        np.random.seed(seed)
-        torch.manual_seed(seed)
-        random.seed(seed)
+
         start = time.time()
         env = modeler(data,
                       visualize=visualize,
@@ -74,16 +76,15 @@ def fitness_func(ga_instance, solution, solution_idx):
                                                                                              temperature2 = temperature2,
                                                                                              )
 
-
-        # import pandas as pd
-        #
-        # df = pd.DataFrame(arr)
-        # df.to_csv("distribution.csv")
-        # print(score)
         if win_tag != 'lose':
             score += 1/n
         else:
             score += 0
+    return score
+
+def fitness_func(ga_instance, solution, solution_idx):
+
+    score = simulation(solution)
     print(score)
     return score
 
@@ -95,6 +96,7 @@ def constraints_func(solution, solution_idx, action_size):
     return True
 
 def create_population():
+
     initial_population = np.random.randint(low=0, high=env.get_env_info()["n_actions"], size=(population_size, T))
     return initial_population
 
@@ -137,6 +139,27 @@ def preprocessing(scenarios):
                    polar_chart_visualize=polar_chart_visualize)
     return data
 
+
+def on_start(ga_instance):
+    print("on_start()")
+
+def on_fitness(ga_instance, population_fitness):
+    print("on_fitness()")
+
+def on_parents(ga_instance, selected_parents):
+    print("on_parents()")
+
+def on_crossover(ga_instance, offspring_crossover):
+    print("on_crossover()")
+
+def on_mutation(ga_instance, offspring_mutation):
+    print("on_mutation()")
+
+def on_generation(ga_instance):
+    print("on_generation()")
+
+def on_stop(ga_instance, last_population_fitness):
+    print("on_stop()")
 
 def evaluation(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, initializer, output_dir, vdn, n_step, action_availability_distribution,
                temperature1,
@@ -228,24 +251,35 @@ if __name__ == "__main__":
     episode_polar_chart = polar_chart[0]
     records = list()
 
-    population_size = 200
-    num_generations = 500
-    T = 500  # Define the length of the solution encoding
+    population_size = 10
+    num_generations = 5
 
 
 
     #print([[i for i in range(env.get_env_info()["n_actions"]) if df.iloc[j, i] > 0] for j in range(T)])
     ga_instance = pygad.GA(num_generations=num_generations,
                            mutation_percent_genes=20,
-                           mutation_num_genes=2,
+                           mutation_num_genes=1,
                            num_parents_mating=2,
                            fitness_func=fitness_func,
+                           on_start = on_start,
+                           on_fitness = on_fitness,
+                           on_parents = on_parents,
+                           on_crossover = on_crossover,
+                           on_mutation = on_mutation,
+                           on_generation =callback_generation,
+                           on_stop = on_stop,
+                           parent_selection_type="sss",
+                           crossover_type="single_point",
+                           mutation_type="random",
                            sol_per_pop=population_size,
                            num_genes=5,
                            gene_type=float,
-                           gene_space=[[i/10 for i in range(0, 500)],[i/10 for i in range(0, 500)],
-                                       [i / 10 for i in range(0, 500)], [i / 10 for i in range(0, 500)], [i / 10 for i in range(0, 600)]
+                           init_range_low=0,
+                            init_range_high = 50,
 
+    gene_space=[[i for i in range(0, 5)],[i for i in range(1, 5)],
+                                       [i for i in range(0, 5)], [i  for i in range(1, 5)], [i for i in range(0, 6)]
                                        ])
 
     ga_instance.run()
