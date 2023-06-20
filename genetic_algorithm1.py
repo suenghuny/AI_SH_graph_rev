@@ -1,22 +1,17 @@
 from Components.Modeler_Component import *
 from Components.Adapter_Component import *
 from Components.Policy import *
-from collections import deque
 from cfg import get_cfg
-from GDN import Agent
 import numpy as np
-import torch, random
-import scipy
-
+import gc
 
 
 import pygad
 
 def callback_generation(ga_instance):
-    global last_fitness
     print("Generation = {generation}".format(generation=ga_instance.generations_completed))
     print("Fitness    = {fitness}".format(fitness=ga_instance.best_solution()[1]))
-    print("Change     = {change}".format(change=ga_instance.best_solution()[1] - last_fitness))
+    print("Change")
     last_fitness = ga_instance.best_solution()[1]
 
 
@@ -48,42 +43,40 @@ def simulation(solution):
     reward_list = list()
     agent = None
     non_lose = 0
-    action_availability_distribution = [[0] * env.get_env_info()["n_actions"] for _ in range(500)]
     score = 0
-    n = 20
+    n = 50
     seed = 4
     np.random.seed(seed)
-    torch.manual_seed(seed)
     random.seed(seed)
     for e in range(n):
-
         start = time.time()
         env = modeler(data,
                       visualize=visualize,
                       size=size,
                       detection_by_height=detection_by_height,
-
                       tick=tick,
                       simtime_per_framerate=simtime_per_frame,
                       ciws_threshold=ciws_threshold,
                       action_history_step=cfg.action_history_step,
                       interval_constant_blue = [interval_constant_blue1, interval_constant_blue2]
                       )
-        epi_reward, epsilon, t, eval, win_tag, action_availability_distribution = evaluation(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon,
+        epi_reward, epsilon, t, eval, win_tag= evaluation(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon,
                                                  min_epsilon=min_epsilon, anneal_step=anneal_step, initializer=False,
-                                                 output_dir=None, vdn=True, n_step=n_step, action_availability_distribution=action_availability_distribution,
+                                                 output_dir=None, vdn=True, n_step=n_step, action_availability_distribution=None,
                                                                                              temperature1=temperature1,
                                                                                              temperature2 = temperature2,
                                                                                              )
+
 
         if win_tag != 'lose':
             score += 1/n
         else:
             score += 0
+        del env
+        gc.collect()
     return score
 
 def fitness_func(ga_instance, solution, solution_idx):
-
     score = simulation(solution)
     print(score)
     return score
@@ -199,7 +192,7 @@ def evaluation(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step,
 
         if done == True:
             break
-    return episode_reward, epsilon, t, eval, win_tag, action_availability_distribution
+    return episode_reward, epsilon, t, eval, win_tag
 
 
 if __name__ == "__main__":
@@ -251,15 +244,15 @@ if __name__ == "__main__":
     episode_polar_chart = polar_chart[0]
     records = list()
 
-    population_size = 10
-    num_generations = 5
+    population_size = 4
+    num_generations = 10
 
 
 
     #print([[i for i in range(env.get_env_info()["n_actions"]) if df.iloc[j, i] > 0] for j in range(T)])
     ga_instance = pygad.GA(num_generations=num_generations,
-                           mutation_percent_genes=20,
-                           mutation_num_genes=1,
+                           mutation_percent_genes=10,
+                           mutation_num_genes=2,
                            num_parents_mating=2,
                            fitness_func=fitness_func,
                            on_start = on_start,
@@ -276,12 +269,13 @@ if __name__ == "__main__":
                            num_genes=5,
                            gene_type=float,
                            init_range_low=0,
-                            init_range_high = 50,
+                           init_range_high = 10,
 
-    gene_space=[[i for i in range(0, 5)],[i for i in range(1, 5)],
-                                       [i for i in range(0, 5)], [i  for i in range(1, 5)], [i for i in range(0, 6)]
+    gene_space=[[i/10 for i in range(0, 500)],[i/10 for i in range(0, 500)],
+                                       [i/10 for i in range(0, 500)], [i/10 for i in range(0, 500)], [i/10 for i in range(0, 600)]
                                        ])
 
     ga_instance.run()
     best_solution = ga_instance.best_solution()
     best_fitness = ga_instance.best_solution()[1]
+    print(best_solution)
