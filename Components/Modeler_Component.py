@@ -760,9 +760,6 @@ class Environment:
             if a <= 0.01:
                 a = 0
                 theta_a = 0
-            record_theta_ra.append(theta_r)
-            record_theta_rva.append(theta_r - theta_v)
-            record_theta_vaa.append(theta_v - theta_a)
             # print("action min", np.min(record_theta_ra), np.min(record_theta_rva), np.min(record_theta_vaa))
             # print("action max", np.max(record_theta_ra), np.max(record_theta_rva), np.max(record_theta_vaa))
             return r, v, a, (theta_v + 3.14) / (6.28), ((theta_r - theta_v)+(6.28))/(12.56), ((theta_v - theta_a)+(5))/(8.5)
