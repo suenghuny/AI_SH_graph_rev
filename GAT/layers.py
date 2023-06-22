@@ -3,9 +3,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
-
-device =torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+import sys
+sys.path.append("..")  # 상위 폴더를 import할 수 있도록 경로 추가
+from cfg import get_cfg
+cfg = get_cfg()
+print(torch.cuda.device_count())
+device =torch.device(cfg.cuda if torch.cuda.is_available() else "cpu")
 print(device)
 class GraphAttentionLayer(nn.Module):
     """

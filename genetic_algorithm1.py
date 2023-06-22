@@ -44,7 +44,7 @@ def simulation(solution):
     agent = None
     non_lose = 0
     score = 0
-    n = 50
+    n = 15
     seed = 4
     np.random.seed(seed)
     random.seed(seed)
@@ -244,7 +244,7 @@ if __name__ == "__main__":
     episode_polar_chart = polar_chart[0]
     records = list()
 
-    population_size = 4
+    population_size = 10
     num_generations = 10
 
 

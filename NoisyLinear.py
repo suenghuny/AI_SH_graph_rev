@@ -9,8 +9,7 @@ import torch.autograd as autograd
 import torch.nn.functional as F
 from cfg import get_cfg
 cfg = get_cfg()
-USE_CUDA = torch.cuda.is_available()
-Variable = lambda *args, **kwargs: autograd.Variable(*args, **kwargs).cuda() if USE_CUDA else autograd.Variable(*args, **kwargs)
+Variable = lambda *args, **kwargs: autograd.Variable(*args, **kwargs)
 class NoisyLinear(nn.Module):
     def __init__(self, in_features, out_features, std_init=cfg.sigma_init):
         super(NoisyLinear, self).__init__()
