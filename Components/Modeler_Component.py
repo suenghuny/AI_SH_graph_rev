@@ -5,6 +5,13 @@ from Components.Simulation_Component import *
 from collections import deque
 import random
 
+record_theta_r = list()
+record_theta_rv = list()
+record_theta_va = list()
+record_theta_ra = list()
+record_theta_rva = list()
+record_theta_vaa = list()
+
 
 def modeler(data, visualize, size, detection_by_height, tick, simtime_per_framerate, ciws_threshold, action_history_step, epsilon = 20, discr_n = 10, air_alert_distance = 20,
             interval_constant_blue = [10,10]
@@ -112,7 +119,7 @@ class Environment:
         inception_data = self.data.inception_data
         noise = random.uniform(-10, 10)
         self.missile_speed_list = list()
-        inception_range = 90
+        inception_range = random.uniform(0, 360)
         for key, value in data.ship_data.items():
             if key == 1:
                 speed = 25
@@ -123,20 +130,16 @@ class Environment:
                 if mode == True:
                     speed = 25
                     course = 90
-                    initial_position_x = 50 + 10*inception_data['inception_distance'] * np.cos(inception_range * np.pi / 180) #+ 10*random.normalvariate(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
-                    initial_position_y = 50 + 10*inception_data['inception_distance'] * np.sin(inception_range * np.pi / 180) #+ 10*random.normalvariate(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                    initial_position_x = 50 + 10*inception_data['inception_distance'] * np.cos(inception_range * np.pi / 180) + 10*random.normalvariate(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                    initial_position_y = 50 + 10*inception_data['inception_distance'] * np.sin(inception_range * np.pi / 180) + 10*random.normalvariate(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
 
                 else:
                     speed = 25
                     course = 90
                     initial_position_x = 50 + 10 * inception_data['inception_distance'] * np.cos(
-                        inception_range * np.pi / 180)\
-                        #                  + 10 * random.normalvariate(
-                        # inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                        inception_range * np.pi / 180)+ 10 * random.normalvariate(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
                     initial_position_y = 50 + 10 * inception_data['inception_distance'] * np.sin(
-                        inception_range* np.pi / 180) \
-                        #                  + 10 * random.normalvariate(
-                        # inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
+                        inception_range* np.pi / 180) + 10 * random.normalvariate(inception_data['enemy_spacing_mean'], inception_data['enemy_spacing_std'])
 
 
 
@@ -243,6 +246,8 @@ class Environment:
         self.f11_deque = deque(maxlen = self.action_history_step)
         for _ in range(self.action_history_step):
             self.f11_deque.append(self.f11)
+
+
 
     def get_env_info(self):
         ship=self.friendlies[0]
@@ -726,21 +731,42 @@ class Environment:
                 node_features.append([0, 0, 0, 0, 0])
         return node_features
 
-    def get_feature(self, ship, target):
-        r = ((target.position_x - ship.position_x) ** 2 + (target.position_y - ship.position_y) ** 2) ** 0.5 / ((target.speed+ship.speed)*2000)
-        v = ((target.v_x - ship.v_x) ** 2 + (target.v_y - ship.v_y) ** 2) ** 0.5 / (target.speed+ship.speed)
-        theta_r = math.atan2(target.position_y - ship.position_y, target.position_x - ship.position_x)
-        theta_v = math.atan2(ship.v_y - target.v_y, ship.v_x - target.v_x)
-        a = ((target.a_x - ship.a_x) ** 2 + (target.a_y - ship.a_y) ** 2) ** 0.5 / (target.speed+ship.speed)
-        #print(a)
-        theta_a = math.atan2(ship.a_y - target.a_y, ship.a_x - target.a_x) #
-        if a <= 0.01:
-            a = 0
-            theta_a = 0
-        # else:
-        #     print(a)
-        #print((theta_r - theta_v), theta_v, theta_v - theta_a)
-        return r, v, a, theta_v/np.pi, (theta_r - theta_v)*np.pi, (theta_v - theta_a)/np.pi
+    def get_feature(self, ship, target, action_feature = False):
+        if action_feature == False:
+            r = ((target.position_x - ship.position_x) ** 2 + (target.position_y - ship.position_y) ** 2) ** 0.5 / ((target.speed+ship.speed)*2000)
+            v = ((target.v_x - ship.v_x) ** 2 + (target.v_y - ship.v_y) ** 2) ** 0.5 / (target.speed+ship.speed)
+            theta_r = math.atan2(target.position_y - ship.position_y, target.position_x - ship.position_x)
+            theta_v = math.atan2(ship.v_y - target.v_y, ship.v_x - target.v_x)
+            a = ((target.a_x - ship.a_x) ** 2 + (target.a_y - ship.a_y) ** 2) ** 0.5 / (target.speed+ship.speed)
+            #print(a)
+            theta_a = math.atan2(ship.a_y - target.a_y, ship.a_x - target.a_x) #
+            if a <= 0.01:
+                a = 0
+                theta_a = 0
+            #print(theta_r - theta_v, theta_r, theta_v, r)
+            #print("non_action min", np.min(record_theta_r), np.min(record_theta_rv), np.min(record_theta_va))
+            #print("non_action max", np.max(record_theta_r), np.max(record_theta_rv), np.max(record_theta_va))
+            #print((theta_v+0.4)/(3.6), ((theta_r - theta_v)-(-1.7))/(3.1), ((theta_v - theta_a)-(1.6))/(4.6))
+            return r, v, a, (theta_v+3.14)/(6.28), ((theta_r - theta_v)+(6.28))/(9.42), ((theta_v - theta_a)+(5))/(11.2)
+        else:
+            r = ((target.position_x - ship.position_x) ** 2 + (target.position_y - ship.position_y) ** 2) ** 0.5 / (
+                        (target.speed + ship.speed) * 2000)
+            v = ((target.v_x - ship.v_x) ** 2 + (target.v_y - ship.v_y) ** 2) ** 0.5 / (target.speed + ship.speed)
+            theta_r = math.atan2(target.position_y - ship.position_y, target.position_x - ship.position_x)
+            theta_v = math.atan2(ship.v_y - target.v_y, ship.v_x - target.v_x)
+            a = ((target.a_x - ship.a_x) ** 2 + (target.a_y - ship.a_y) ** 2) ** 0.5 / (target.speed + ship.speed)
+            # print(a)
+            theta_a = math.atan2(ship.a_y - target.a_y, ship.a_x - target.a_x)  #
+            if a <= 0.01:
+                a = 0
+                theta_a = 0
+            record_theta_ra.append(theta_r)
+            record_theta_rva.append(theta_r - theta_v)
+            record_theta_vaa.append(theta_v - theta_a)
+            # print("action min", np.min(record_theta_ra), np.min(record_theta_rva), np.min(record_theta_vaa))
+            # print("action max", np.max(record_theta_ra), np.max(record_theta_rva), np.max(record_theta_vaa))
+            return r, v, a, (theta_v + 3.14) / (6.28), ((theta_r - theta_v)+(6.28))/(12.56), ((theta_v - theta_a)+(5))/(8.5)
+
 
     def get_action_feature(self):
         dummy = [0,0,0,0,0,0,0,0]
@@ -748,7 +774,7 @@ class Environment:
         for ship in self.friendlies_fixed_list:
             for enemy in self.enemies_fixed_list:
                 if enemy.status != 'destroyed':
-                    f1, f2, f3, f4, f5, f6 = self.get_feature(ship, enemy)
+                    f1, f2, f3, f4, f5, f6 = self.get_feature(ship, enemy, action_feature= True)
                     ssm_speed = enemy.speed_m
                     node_features.append([f1, f2, f3, f4, f5, f6, 0, ssm_speed/1.4])
                     enemy.last_action_feature = [f1, f2, f3, f4, f5, f6, 0, ssm_speed/1.4]
@@ -758,7 +784,7 @@ class Environment:
 
         for ship in self.friendlies_fixed_list:
             for missile in ship.ssm_detections:
-                f1, f2, f3, f4, f5, f6 = self.get_feature(ship, missile)
+                f1, f2, f3, f4, f5, f6 = self.get_feature(ship, missile, action_feature= True)
                 node_features.append([f1, f2, f3, f4, f5, f6, 1, 0])
                 missile.last_action_feature = [f1, f2, f3, f4, f5, f6, 1, 0]
         #print("전",len(node_features))

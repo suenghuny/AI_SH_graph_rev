@@ -663,6 +663,9 @@ class Agent:
                                list(self.node_representation_ship_feature.parameters()) + \
                                list(self.node_representation.parameters()) + \
                                list(self.func_meta_path.parameters())
+
+
+
         self.optimizer =AdaHessian(self.eval_params, lr=learning_rate)
         self.scaler = amp.GradScaler()
         if cfg.scheduler == 'step':

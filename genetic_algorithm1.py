@@ -44,7 +44,7 @@ def simulation(solution):
     agent = None
     non_lose = 0
     score = 0
-    n = 15
+    n = 50
     seed = 4
     np.random.seed(seed)
     random.seed(seed)
@@ -76,9 +76,8 @@ def simulation(solution):
         gc.collect()
     return score
 
-def fitness_func(ga_instance, solution, solution_idx):
+def fitness_func(solution):
     score = simulation(solution)
-    print(score)
     return score
 
 def constraints_func(solution, solution_idx, action_size):
@@ -244,38 +243,47 @@ if __name__ == "__main__":
     episode_polar_chart = polar_chart[0]
     records = list()
 
-    population_size = 10
+    population_size = 5
     num_generations = 10
+    mutation_range = 100
+
+    solution_space = [[i / 10 for i in range(0, 500)], [i / 10 for i in range(0, 500)],
+    [i / 10 for i in range(0, 500)], [i / 10 for i in range(0, 500)], [i / 10 for i in range(0, 600)]]
+    n_pool = population_size
+    current_solution_pool=list()
+    for n in range(n_pool):
+        solutions = list()
+        for k in range(len(solution_space)):
+            s = np.random.choice(solution_space[k])
+            solutions.append(s)
+        current_solution_pool.append(solutions)
+
+    #current_solution_pool = [[45.0, 3.5, 3.0, 3.1, 49.9], [45.0, 3.5, 3.0, 3.1, 49.9], [44.6, 3.9, 3.0, 3.1, 50.2], [45.0, 3.5, 3.0, 3.1, 49.9], [45.0, 3.5, 3.0, 3.1, 49.9], [45.0, 3.5, 3.0, 3.1, 49.9], [44.6, 3.9, 3.0, 3.1, 50.2], [45.0, 3.6, 3.4, 3.3, 50.3], [45.1, 3.5, 2.6, 3.1, 50.1]]
+    cross_over_position = 3
+    num_mutation = 3
+
+    for i in range(0, 10):
+        new_parents = sorted(current_solution_pool, key=fitness_func, reverse=True)[:4]
+        print(f"optimal fitness in {i:0>2d} generation: {fitness_func(new_parents[0])}")
+        # print("전", new_parents)
+        crossovers = [
+            new_parents[0][:cross_over_position] + new_parents[1][cross_over_position:],
+            new_parents[1][:cross_over_position] + new_parents[0][cross_over_position:],
+        ]
+        current_solution_pool = new_parents + crossovers
+        for t in range(0, num_mutation):
+            mutation = deepcopy(new_parents[0])
+            for l in range(len(mutation)):
+                idx = solution_space[l].index(mutation[l])
+                nex_idx = idx + np.random.randint(-mutation_range,mutation_range)
+                try:
+                    mutation[l] = solution_space[l][nex_idx]
+                except IndexError:pass
+
+            current_solution_pool.append(mutation)
+        print(current_solution_pool)
 
 
 
-    #print([[i for i in range(env.get_env_info()["n_actions"]) if df.iloc[j, i] > 0] for j in range(T)])
-    ga_instance = pygad.GA(num_generations=num_generations,
-                           mutation_percent_genes=10,
-                           mutation_num_genes=2,
-                           num_parents_mating=2,
-                           fitness_func=fitness_func,
-                           on_start = on_start,
-                           on_fitness = on_fitness,
-                           on_parents = on_parents,
-                           on_crossover = on_crossover,
-                           on_mutation = on_mutation,
-                           on_generation =callback_generation,
-                           on_stop = on_stop,
-                           parent_selection_type="sss",
-                           crossover_type="single_point",
-                           mutation_type="random",
-                           sol_per_pop=population_size,
-                           num_genes=5,
-                           gene_type=float,
-                           init_range_low=0,
-                           init_range_high = 10,
 
-    gene_space=[[i/10 for i in range(0, 500)],[i/10 for i in range(0, 500)],
-                                       [i/10 for i in range(0, 500)], [i/10 for i in range(0, 500)], [i/10 for i in range(0, 600)]
-                                       ])
 
-    ga_instance.run()
-    best_solution = ga_instance.best_solution()
-    best_fitness = ga_instance.best_solution()[1]
-    print(best_solution)
