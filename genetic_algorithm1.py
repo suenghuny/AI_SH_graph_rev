@@ -243,7 +243,7 @@ if __name__ == "__main__":
     episode_polar_chart = polar_chart[0]
     records = list()
 
-    population_size = 5
+    population_size = 10
     num_generations = 10
     mutation_range = 100
 
@@ -258,9 +258,21 @@ if __name__ == "__main__":
             solutions.append(s)
         current_solution_pool.append(solutions)
 
-    #current_solution_pool = [[45.0, 3.5, 3.0, 3.1, 49.9], [45.0, 3.5, 3.0, 3.1, 49.9], [44.6, 3.9, 3.0, 3.1, 50.2], [45.0, 3.5, 3.0, 3.1, 49.9], [45.0, 3.5, 3.0, 3.1, 49.9], [45.0, 3.5, 3.0, 3.1, 49.9], [44.6, 3.9, 3.0, 3.1, 50.2], [45.0, 3.6, 3.4, 3.3, 50.3], [45.1, 3.5, 2.6, 3.1, 50.1]]
+    current_solution_pool =[[32.0, 28.5, 42.6, 0.9, 58.5]]
+
     cross_over_position = 3
-    num_mutation = 3
+    num_mutation = 10
+    new_parents = sorted(current_solution_pool, key=fitness_func, reverse=True)[:1]
+    for t in range(0, num_mutation):
+        mutation = deepcopy(new_parents[0])
+        for l in range(len(mutation)):
+            idx = solution_space[l].index(mutation[l])
+            nex_idx = idx + np.random.randint(-mutation_range, mutation_range)
+            try:
+                mutation[l] = solution_space[l][nex_idx]
+            except IndexError:
+                pass
+        current_solution_pool.append(mutation)
 
     for i in range(0, 10):
         new_parents = sorted(current_solution_pool, key=fitness_func, reverse=True)[:4]
