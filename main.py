@@ -58,7 +58,10 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
 
     n_step_heterogeneous_edges = deque(maxlen=n_step)
 
-
+    if t < cfg.grad_clip_step:
+        grad_clip = cfg.grad_clip
+    else:
+        grad_clip = cfg.grad_clip_reduce
 
 
 
@@ -152,7 +155,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                     agent.beta -= anneal_step
                 agent.eval_check(eval=False)
                 if e <= cfg.embedding_train_stop:
-                    agent.learn(regularizer=0, vdn=vdn, episode = e)
+                    agent.learn(regularizer=0, vdn=vdn, episode = e, grad_clip = grad_clip)
                 else:
                     epsilon = 0
         else:

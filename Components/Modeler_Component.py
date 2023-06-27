@@ -307,6 +307,8 @@ class Environment:
                                   m_sam.status == 'idle']                 # sam의 경우 동시 공격이 가능하므로, idle 상태인 유도탄 전체에 대한 정보가 필요함(해당 정보를 생성하는 부분)
 
                     if speed_normalizing == True:
+
+
                         distance_range_1 = [cal_distance(ship, ssm)/ssm.speed for ssm in ship.ssm_detections if
                                    cal_distance(ship, ssm) > ship.l_sam_max_range]                                                # 1구간 : > l_sam range
                         distance_range_2 = [cal_distance(ship, ssm)/ssm.speed for ssm in ship.ssm_detections

@@ -1046,7 +1046,7 @@ class Agent:
                     self.Q.remove_noise_net()
         return action_blue
 
-    def learn(self, regularizer, episode, vdn = False, ):
+    def learn(self, regularizer, episode, vdn = False, grad_clip = None):
         self.optimizer.zero_grad()
         node_features_missile, \
         ship_features, \
@@ -1145,7 +1145,7 @@ class Agent:
         loss.backward(create_graph = True)
         #print("5 backprop 계산", time.time() - start)
         #start = time.time()
-        torch.nn.utils.clip_grad_norm_(self.eval_params, cfg.grad_clip)
+        torch.nn.utils.clip_grad_norm_(self.eval_params, grad_clip)
         self.optimizer.step()
         self.scheduler.step()
 
