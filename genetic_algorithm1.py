@@ -44,7 +44,7 @@ def simulation(solution):
     agent = None
     non_lose = 0
     score = 0
-    n = 50
+    n = 100
     seed = 4
     np.random.seed(seed)
     random.seed(seed)
@@ -72,8 +72,10 @@ def simulation(solution):
             score += 1/n
         else:
             score += 0
+
         del env
         gc.collect()
+    print(score, solution)
     return score
 
 def fitness_func(solution):
@@ -245,10 +247,10 @@ if __name__ == "__main__":
 
     population_size = 10
     num_generations = 10
-    mutation_range = 100
+    mutation_range = 5
 
-    solution_space = [[i / 10 for i in range(0, 500)], [i / 10 for i in range(0, 500)],
-    [i / 10 for i in range(0, 500)], [i / 10 for i in range(0, 500)], [i / 10 for i in range(0, 600)]]
+    solution_space = [[i for i in range(0, 50)], [i  for i in range(0, 50)],
+    [i  for i in range(0, 50)], [i  for i in range(0, 50)], [i for i in range(0, 60)]]
     n_pool = population_size
     current_solution_pool=list()
     for n in range(n_pool):
@@ -258,21 +260,24 @@ if __name__ == "__main__":
             solutions.append(s)
         current_solution_pool.append(solutions)
 
-    current_solution_pool =[[32.0, 28.5, 42.6, 0.9, 58.5]]
+#    current_solution_pool =[[40.8, 32.1, 14.0, 19.9, 14.9], [34.1, 12.6, 11.4, 21.3, 45.0], [14.4, 30.6, 5.0, 23.2, 48.0], [0.8, 23.2, 1.7, 9.2, 15.3], [40.8, 32.1, 14.0, 21.3, 45.0], [34.1, 12.6, 11.4, 19.9, 14.9], [44.8, 34.8, 19.7, 22.3, 15.9]]
 
     cross_over_position = 3
     num_mutation = 10
-    new_parents = sorted(current_solution_pool, key=fitness_func, reverse=True)[:1]
-    for t in range(0, num_mutation):
-        mutation = deepcopy(new_parents[0])
-        for l in range(len(mutation)):
-            idx = solution_space[l].index(mutation[l])
-            nex_idx = idx + np.random.randint(-mutation_range, mutation_range)
-            try:
-                mutation[l] = solution_space[l][nex_idx]
-            except IndexError:
-                pass
-        current_solution_pool.append(mutation)
+    current_solution_pool = [[2, 47, 10, 22, 4], [2, 47, 10, 22, 1], [49, 46, 11, 21, 4], [5, 43, 11, 26, 1], [2, 47, 10, 22, 1], [2, 47, 10, 22, 4], [4, 47, 5, 23, 4], [47, 43, 5, 20, 7], [1, 48, 11, 19, 0], [5, 43, 11, 26, 1], [3, 43, 5, 25, 1], [49, 46, 11, 21, 4], [47, 49, 6, 20, 4], [1, 45, 14, 20, 3], [2, 48, 7, 23, 0], [48, 42, 14, 22, 59]]
+
+    # current_solution_pool = [[40.8, 32.1, 14.0, 19.9, 14.9], [40.8, 33.2, 14.3, 21.3, 15.0], [34.1, 12.6, 11.4, 21.3, 45.0], [14.4, 30.6, 5.0, 23.2, 48.0]]
+    # new_parents = sorted(current_solution_pool, key=fitness_func, reverse=True)[:1]
+    # for t in range(0, num_mutation):
+    #     mutation = deepcopy(new_parents[0])
+    #     for l in range(len(mutation)):
+    #         idx = solution_space[l].index(mutation[l])
+    #         nex_idx = idx + np.random.randint(-mutation_range, mutation_range)
+    #         try:
+    #             mutation[l] = solution_space[l][nex_idx]
+    #         except IndexError:
+    #             pass
+    #     current_solution_pool.append(mutation)
 
     for i in range(0, 10):
         new_parents = sorted(current_solution_pool, key=fitness_func, reverse=True)[:4]

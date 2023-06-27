@@ -262,7 +262,7 @@ class Environment:
 
 
 
-    def get_target_availability(self, friendlies_fixed_list, avail_action_friendly_model, enemies_fixed_list, flying_ssms_enemies, side):
+    def get_target_availability(self, friendlies_fixed_list, avail_action_friendly_model, enemies_fixed_list, flying_ssms_enemies, side, speed_normalizing = False):
         avail_actions = list()
         target_distance_list = list()
         air_alert = False
@@ -283,10 +283,17 @@ class Environment:
                         for i in range(len(enemies_fixed_list)):              # 함정 표적은 feature index가 정해져 있음
                             enemy_ship = enemies_fixed_list[i]
                             d = cal_distance(ship, enemy_ship)
+
                             if enemy_ship.status != 'destroyed':              # 해당 적함의 상태가 destroy가 아니어야 공격가능
                                 if d <= ship.ssm_max_range:                   # 해당 적함의 거리가 ssm의 사거리 내에 있어야함
                                     avail_action_friendly[i + 1] = True       # null-action의 index가 0이므로 그 이후부터 채워 나감감
-                                    distance_list.append(d)
+
+                                    if speed_normalizing == True:
+                                        distance_list.append(d/enemy_ship.speed)
+                                    else:
+                                        distance_list.append(d)
+
+
 
                 " 대공표적 공격에 대한 부분 "
                 " sam의 경우는 거리에 따라서 index를 지정함(숫자가 많고 변동성이 다소 심하므로 고정된 index를 가지기 어려움)"
@@ -298,16 +305,29 @@ class Environment:
                                   l_sam.status == 'idle']                 # sam의 경우 동시 공격이 가능하므로, idle 상태인 유도탄 전체에 대한 정보가 필요함(해당 정보를 생성하는 부분)
                     idle_m_sam = [m_sam for m_sam in ship.m_sam_launcher if
                                   m_sam.status == 'idle']                 # sam의 경우 동시 공격이 가능하므로, idle 상태인 유도탄 전체에 대한 정보가 필요함(해당 정보를 생성하는 부분)
-                    distance_range_1 = [cal_distance(ship, ssm) for ssm in ship.ssm_detections if
-                               cal_distance(ship, ssm) > ship.l_sam_max_range]                                                # 1구간 : > l_sam range
-                    distance_range_2 = [cal_distance(ship, ssm) for ssm in ship.ssm_detections
-                               if (cal_distance(ship, ssm) <= ship.l_sam_max_range) and (cal_distance(ship, ssm) > ship.m_sam_max_range)]  # 2구간 : <= l_sam_range, > m_sam_range
 
-                    distance_range_3 = [cal_distance(ship, ssm) for ssm in ship.ssm_detections
-                               if (cal_distance(ship, ssm) <= ship.m_sam_max_range) and (cal_distance(ship, ssm) > ship.ciws_max_range)]  # 3구간 : <= m_sam_range, > ciws_range
+                    if speed_normalizing == True:
+                        distance_range_1 = [cal_distance(ship, ssm)/ssm.speed for ssm in ship.ssm_detections if
+                                   cal_distance(ship, ssm) > ship.l_sam_max_range]                                                # 1구간 : > l_sam range
+                        distance_range_2 = [cal_distance(ship, ssm)/ssm.speed for ssm in ship.ssm_detections
+                                   if (cal_distance(ship, ssm) <= ship.l_sam_max_range) and (cal_distance(ship, ssm) > ship.m_sam_max_range)]  # 2구간 : <= l_sam_range, > m_sam_range
 
-                    distance_range_4 = [cal_distance(ship, ssm) for ssm in ship.ssm_detections
-                               if cal_distance(ship, ssm) <= ship.ciws_max_range]
+                        distance_range_3 = [cal_distance(ship, ssm)/ssm.speed for ssm in ship.ssm_detections
+                                   if (cal_distance(ship, ssm) <= ship.m_sam_max_range) and (cal_distance(ship, ssm) > ship.ciws_max_range)]  # 3구간 : <= m_sam_range, > ciws_range
+
+                        distance_range_4 = [cal_distance(ship, ssm)/ssm.speed for ssm in ship.ssm_detections
+                                   if cal_distance(ship, ssm) <= ship.ciws_max_range]
+                    else:
+                        distance_range_1 = [cal_distance(ship, ssm) for ssm in ship.ssm_detections if
+                                   cal_distance(ship, ssm) > ship.l_sam_max_range]                                                # 1구간 : > l_sam range
+                        distance_range_2 = [cal_distance(ship, ssm) for ssm in ship.ssm_detections
+                                   if (cal_distance(ship, ssm) <= ship.l_sam_max_range) and (cal_distance(ship, ssm) > ship.m_sam_max_range)]  # 2구간 : <= l_sam_range, > m_sam_range
+
+                        distance_range_3 = [cal_distance(ship, ssm) for ssm in ship.ssm_detections
+                                   if (cal_distance(ship, ssm) <= ship.m_sam_max_range) and (cal_distance(ship, ssm) > ship.ciws_max_range)]  # 3구간 : <= m_sam_range, > ciws_range
+
+                        distance_range_4 = [cal_distance(ship, ssm) for ssm in ship.ssm_detections
+                                   if cal_distance(ship, ssm) <= ship.ciws_max_range]
 
                     for ssm in ship.ssm_detections:
                         if (cal_distance(ship, ssm) <= self.air_alert_distance):
@@ -498,7 +518,7 @@ class Environment:
         else:
             avail_actions, \
             target_distance_list, \
-            air_alert = self.get_target_availability(self.friendlies_fixed_list, self.avail_action_friendly, self.enemies_fixed_list, self.flying_ssms_enemy, side)
+            air_alert = self.get_target_availability(self.friendlies_fixed_list, self.avail_action_friendly, self.enemies_fixed_list, self.flying_ssms_enemy, side,  speed_normalizing = True)
         return avail_actions, target_distance_list, air_alert
 
     def get_ship_feature(self):
@@ -1086,7 +1106,7 @@ class Environment:
 
 
 
-                if self.now > 3000:
+                if self.now > 4500:
                     done_checker_A = [True if (len(enemy.ssm_launcher) == 0) else False for enemy in self.enemies]
                     done_checker_B = [True if (len(ship.ssm_launcher) == 0) else False for ship in self.friendlies]
                     if (len(self.friendlies) == 0) and (len(self.enemies) != 0):  # lose

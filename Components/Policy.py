@@ -9,6 +9,7 @@ class Policy:
         self.temperature1 = temperatures[0]
         self.temperature2 = temperatures[1]
 
+
     def get_action(self, avail_action_list, target_distance_list, air_alert):
         if self.rule == 'rule1':
             actions = list()

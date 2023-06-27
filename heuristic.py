@@ -37,7 +37,8 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
     interval_min_blue = interval_min_blue
     interval_constant_blue = interval_constant_blue
     temp = random.uniform(0, 50)
-    agent_blue = Policy(env, rule='rule2', temperatures=[temperature, temperature])
+    agent_blue = Policy(env, rule='rule2', temperatures=[cfg.temperature, cfg.temperature])
+
     agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
     done = False
     episode_reward = 0
@@ -55,10 +56,8 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
     interval_constant = random.uniform(2,4)
     while not done:
         if env.now % (decision_timestep) <= 0.00001:
-            avail_action_blue, target_distance_blue, air_alert_blue = env.get_avail_actions_temp(interval_min_blue,
-                                                                                                 interval_constant_blue,
-                                                                                                 side='blue')
-            avail_action_yellow, target_distance_yellow, air_alert_yellow = env.get_avail_actions_temp(interval_min, interval_constant, side='yellow')
+            avail_action_blue, target_distance_blue, air_alert_blue = env.get_avail_actions_temp(side='blue')
+            avail_action_yellow, target_distance_yellow, air_alert_yellow = env.get_avail_actions_temp(side='yellow')
             action_blue = agent_blue.get_action(avail_action_blue, target_distance_blue, air_alert_blue)
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
             reward, win_tag, done, leaker = env.step(action_blue, action_yellow, rl = False)
@@ -144,8 +143,8 @@ if __name__ == "__main__":
     interval_constant_blue_list = list()
     temperature = list()
     for e in range(num_iteration):
-        interval_min_blue = interval_min_blue,
-        interval_constant_blue = interval_constant_blue,
+        interval_min_blue = cfg.interval_min_blue,
+        interval_constant_blue = cfg.interval_constant_blue,
         temperature = temperature
         seed = 2 * e
         np.random.seed(seed)
@@ -159,7 +158,8 @@ if __name__ == "__main__":
                       tick=tick,
                       simtime_per_framerate=simtime_per_frame,
                       ciws_threshold=ciws_threshold,
-                      action_history_step=cfg.action_history_step)
+                      action_history_step=cfg.action_history_step,
+                      interval_constant_blue = [cfg.interval_constant_blue,cfg.interval_constant_blue])
         episode_reward, epsilon, t, eval, win_tag = train(agent, env, e, t, train_start=cfg.train_start, epsilon=epsilon,
                                                  min_epsilon=min_epsilon, anneal_step=anneal_step, initializer=False,
                                                  output_dir=None, vdn=True, n_step=n_step,
