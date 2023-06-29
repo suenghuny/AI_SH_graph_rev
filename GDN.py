@@ -661,7 +661,7 @@ class Agent:
 
 
 
-        self.optimizer =optim.Adam(self.eval_params, lr=learning_rate)
+        self.optimizer =AdaHessian(self.eval_params, lr=learning_rate)
         #self.scaler = amp.GradScaler()
         if cfg.scheduler == 'step':
             self.scheduler = StepLR(optimizer=self.optimizer, step_size=cfg.scheduler_step, gamma=cfg.scheduler_ratio)
@@ -1164,7 +1164,7 @@ class Agent:
         loss = F.huber_loss(weight * q_tot, weight * td_target)
 
         #start = time.time()
-        loss.backward()
+        loss.backward(create_graph = True)
         #print("5 backprop 계산", time.time() - start)
         #start = time.time()
         torch.nn.utils.clip_grad_norm_(self.eval_params, grad_clip)
