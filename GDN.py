@@ -5,6 +5,7 @@ import torch.cuda.amp as amp
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import gc
 import torch.optim as optim
 import random
 from collections import deque
@@ -1180,6 +1181,9 @@ class Agent:
             target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
         for target_param, local_param in zip(self.DuelingQtar.parameters(), self.DuelingQ.parameters()):
             target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
+
+        gc.collect()
+        torch.cuda.empty_cache()
 
 
         return loss
