@@ -138,30 +138,38 @@ class FastGTN(nn.Module):
 
 
         else:
+            # import time
+            # start = time.time()
+
             H = [torch.einsum('bij, jk->bik', X, W) for W in self.Ws]  # GCNConv와 input의 matrix multiplication
+
             H = torch.stack(H, dim=0)
             H = torch.einsum('cbik -> bcik', H)
             X_ = H.clone().detach().requires_grad_(True)
-
+            #print("2-3-1", time.time()-start)
 
             """
             layer 단위 연산(논문상 K)
             """
+            #start = time.time()
             for i in range(self.num_layers):
                 # H가 모든 channel에 대한 X@W를 답고 있음
                 # self.layers[i]는 GTLayer를 담고 있음
                 H = self.layers[i](H, A, num_nodes, layer=i + 1,mini_batch = mini_batch)  # self.layers 내부에서 channel별로 연산이 수행됨(출력된 H의 길이는 channel 길이와 동일함)
+            #print("2-3-2", time.time() - start)
 
 
             """
             이제 여기서부터 node feature를 이용한 graph convolution 연산이 수행된다.
             """
+            #start = time.time()
             shape0, shape1, shape2, shape3 = H.shape
             # batch_size, num_channels, num_nodes, feature_size
             H_ = self.teleport_probability * F.relu(self.gtn_beta * (X_) + (1 - self.gtn_beta) * H)+(1-self.teleport_probability)*X_
             H_ = torch.einsum("bijk -> bjik", H_)
             H_ = H_.reshape(shape0, shape2, -1)
             H_ = F.relu(self.linear1(H_))
+            #print("2-3-3", time.time() - start)
         # Equation (15) : aggregation
 
         return H_
@@ -183,6 +191,8 @@ class FastGTLayer(nn.Module):
                                 num_nodes = num_nodes)
         self.monitors_before = list()
         self.monitors_after = list()
+
+
 
 
     def forward(self, H_, A, num_nodes, layer=None, mini_batch = False):
@@ -219,25 +229,20 @@ class FastGTLayer(nn.Module):
             Hs = torch.stack(Hs, dim=0)
         else:
             batch_size = len(A)
-            weight = self.weight
+            weight = self.weight # weight shape : (1, self.num_edge_type)
+
+
             filter = F.softmax(weight, dim=1)
+            mat_a = [torch.zeros(self.num_edge_type, num_nodes, num_nodes).to(device) for _ in range(batch_size)]
 
-            import time
-
-
-            start = time.time()
-            mat_a = list()
             for b in range(batch_size):
-                temp = list()
                 for i in range(self.num_edge_type):
-                    temp.append(torch.sparse_coo_tensor(A[b][i][0], A[b][i][1], (num_nodes, num_nodes)).to(device).to_dense())
-                mat_a.append(torch.stack(temp, dim=0))
+                    mat_a[b][i].copy_(torch.sparse_coo_tensor(A[b][i][0], A[b][i][1], (num_nodes, num_nodes)).to(device).to_dense())
             mat_a = torch.stack(mat_a, dim=0)
-            self.monitors_after.append(time.time() - start)
-
-
-
             Hs = torch.einsum('bcij, bcjk-> bcik', torch.einsum('bijk, ci  -> bcjk', mat_a, filter), H_)
+
+
+
 
 
         return Hs
@@ -276,6 +281,7 @@ class FastGTConv(nn.Module):
             adj = torch.einsum('bijk,ci->bcjk', mat_a, filter)
 
         return adj
+
 
 
 

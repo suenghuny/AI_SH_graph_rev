@@ -347,8 +347,6 @@ class Replay_Buffer:
                 yield datas[7][s]
             if cat == 'avail_action_next':
                 yield datas[7][s+self.n_step]
-
-
             if cat == 'status':
                 yield datas[8][s]
             if cat == 'status_next':
@@ -356,8 +354,6 @@ class Replay_Buffer:
 
             if cat == 'priority':
                 yield datas[10][s]
-
-
             if cat == 'action_feature':
                 yield datas[13][s]
 
@@ -413,14 +409,14 @@ class Replay_Buffer:
         node_feature_missile = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='node_feature_missile')
         node_features_missile = list(node_feature_missile)
 
-        edge_index_missile = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='edge_index_missile')
-        edge_indices_missile = list(edge_index_missile)
+        edge_index_missile = None#self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='edge_index_missile')
+        edge_indices_missile = None#list(edge_index_missile)
 
         node_feature_missile_next = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='node_feature_missile_next')
         node_features_missile_next = list(node_feature_missile_next)
 
-        edge_index_missile_next = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='edge_index_missile_next')
-        edge_indices_missile_next = list(edge_index_missile_next)
+        edge_index_missile_next = None#self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='edge_index_missile_next')
+        edge_indices_missile_next = None
 
         action = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='action')
         actions = list(action)
@@ -665,8 +661,8 @@ class Agent:
 
 
 
-        self.optimizer =AdaHessian(self.eval_params, lr=learning_rate)
-        self.scaler = amp.GradScaler()
+        self.optimizer =optim.Adam(self.eval_params, lr=learning_rate)
+        #self.scaler = amp.GradScaler()
         if cfg.scheduler == 'step':
             self.scheduler = StepLR(optimizer=self.optimizer, step_size=cfg.scheduler_step, gamma=cfg.scheduler_ratio)
         elif cfg.scheduler == 'cosine':
@@ -778,25 +774,53 @@ class Agent:
                     #node_representation =ship_features
             else:
                 #node_feature = torch.tensor(missile_node_feature, dtype=torch.float, device=device)
+                import time
 
 
                 ship_features = torch.tensor(ship_features,dtype=torch.float).to(device).squeeze(1)
                 node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
 
+                # missile_node_feature = missile_node_feature.reshape(self.batch_size*n_node_features_missile, -1)
+                # # node_embedding_missile_node = self.node_representation(missile_node_feature, missile=True)
+                # # node_embedding_missile_node = node_embedding_missile_node.reshape(self.batch_size, n_node_features_missile)
+
                 missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float).to(device)
+
+                # Reshape missile_node_feature for batch processing
+                # batch_size, num_node, node_feature = missile_node_feature.shape
+                # missile_node_feature = missile_node_feature.view(batch_size * num_node, node_feature)
+                #
+                # # Pass the reshaped tensor through the node_representation layer
+                # node_embedding_missile_node = self.node_representation(missile_node_feature, missile=True)
+                #
+                # # Reshape node_embedding_missile_node back to the original shape
+                # node_embedding_missile_node = node_embedding_missile_node.view(batch_size, num_node, -1)
+                #
+                # # Transpose dimensions to match the desired output shape
+                # node_embedding_missile_node = node_embedding_missile_node#.transpose(0, 1)
+                #
+                # print("전", node_embedding_missile_node.shape) #
+                #start = time.time()
+                missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float).to(device)  # batch_size, num_node, node_feature
                 empty = list()
                 for i in range(n_node_features_missile):
                     node_embedding_missile_node = self.node_representation(missile_node_feature[:, i, :], missile=True)
                     empty.append(node_embedding_missile_node)
                 node_embedding_missile_node = torch.stack(empty)
                 node_embedding_missile_node = torch.einsum('ijk->jik', node_embedding_missile_node)
+                #print("2-1 node_embedding missile 계산", time.time()-start)
+
+                #start = time.time()
                 A = [self.get_heterogeneous_adjacency_matrix(edge_index_missile[m][0], edge_index_missile[m][1],
                                                              edge_index_missile[m][2], n_node_features_missile) for m in
                      range(self.batch_size)]
+                #print("2-2 adj 계산", time.time() - start)
+                start = time.time()
                 node_representation = self.func_meta_path(A, node_embedding_missile_node, num_nodes=n_node_features_missile,
                                                           mini_batch=mini_batch)
+
+                #print("2-3 gnn 계산", time.time() - start)
                 node_representation = torch.cat([node_embedding_ship_features, node_representation[:, 0, :],  ], dim=1)
-                #node_representation =ship_features
         if cfg.GNN == 'GAT':
             if mini_batch == False:
                 with torch.no_grad():
@@ -901,9 +925,9 @@ class Agent:
             A_a = self.Q.advantage_forward(obs_n_action, cos, mini_batch=True)
             action_features = torch.tensor(action_features, device=device, dtype=torch.float)
 
-            import time
-
-            start = time.time()
+            # import time
+            #
+            # start = time.time()
 
 
 
@@ -1065,7 +1089,7 @@ class Agent:
         weight = ((len(self.buffer.buffer[10])-self.n_step)*torch.tensor(priority, dtype=torch.float, device = device))**(-self.beta)
 
         weight /= weight.max()
-
+        import time
 
         """간        node_features : batch_size x num_nodes x feature_size
         actions : batch_size x num_agents
@@ -1089,8 +1113,8 @@ class Agent:
             n_node_features_missile,
             n_node_features_enemy,
             mini_batch=True)
-        #print("2 node representation 시간", time.time() - start)
-        #start = time.time()
+        # print("2 node representation 시간", time.time() - start)
+        # start = time.time()
         q_tar = self.cal_Q(obs=obs_next,
                         action_feature=None,
                         action_features=action_features_next,
@@ -1128,6 +1152,7 @@ class Agent:
 
         delta = (td_target - q_tot).detach().tolist()
         self.buffer.update_transition_priority(batch_index = batch_index, delta = delta)
+        #print("4 td error 계산", time.time() - start)
 
         # munchausen_tau = 0.03  # Munchausen temperature parameter
         # munchausen_logsum = torch.logsumexp(
@@ -1138,13 +1163,14 @@ class Agent:
 
         loss = F.huber_loss(weight * q_tot, weight * td_target)
 
-
+        #start = time.time()
         loss.backward(create_graph = True)
         #print("5 backprop 계산", time.time() - start)
         #start = time.time()
         torch.nn.utils.clip_grad_norm_(self.eval_params, grad_clip)
         self.optimizer.step()
         self.scheduler.step()
+        #print("6 update 계산", time.time() - start)
 
         if cfg.epsilon_greedy == False:
             self.Q.reset_noise_net()
