@@ -551,7 +551,6 @@ class Agent:
         self.n_step = n_step
         self.num_agent = num_agent
         self.num_nodes = num_nodes
-
         self.feature_size_ship = feature_size_ship
         self.feature_size_missile = feature_size_missile
 
@@ -631,15 +630,15 @@ class Agent:
         self.DuelingQ = DuelingDQN().to(device)
         self.DuelingQtar = DuelingDQN().to(device)
 
-        self.Q = IQN(state_size_advantage = feature_size_ship+n_representation_action,
-                     state_size_value = feature_size_ship ,
+        self.Q = IQN(state_size_advantage = n_representation_ship+n_representation_action+n_representation_missile+2,
+                     state_size_value = n_representation_ship+n_representation_missile+2 ,
                      action_size = self.action_size,
                      batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos = n_cos, layers = iqn_layers).to(device)
 
 
         self.Q_tar = IQN(
-            state_size_advantage=feature_size_ship + n_representation_action,
-            state_size_value=feature_size_ship,
+            state_size_advantage=n_representation_ship+ n_representation_action+n_representation_missile+2,
+            state_size_value=n_representation_ship+n_representation_missile+2,
             action_size=self.action_size,
             batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos=n_cos, layers=iqn_layers).to(
             device)
@@ -763,43 +762,41 @@ class Agent:
             if mini_batch == False:
                 with torch.no_grad():
                     ship_features = torch.tensor(ship_features, dtype=torch.float, device=device)
-                    # node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
-                    # missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float,
-                    #                                     device=device).clone().detach()
+                    node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
+                    missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float,device=device).clone().detach()
 
-                    #node_embedding_missile_node = self.node_representation(missile_node_feature, missile=True)
+                    node_embedding_missile_node = self.node_representation(missile_node_feature, missile=True)
 
 
-                    # edge_index_1, edge_index_2, edge_index_3 = edge_index_missile
-                    # #node_feature = torch.tensor(missile_node_feature, dtype=torch.float, device=device)
-                    # A = self.get_heterogeneous_adjacency_matrix(edge_index_1, edge_index_2, edge_index_3, n_node_features = n_node_features_missile)
-                    # node_representation = self.func_meta_path(A, node_embedding_missile_node, num_nodes=n_node_features_missile,
-                    #                                           mini_batch=mini_batch)
+                    edge_index_1, edge_index_2, edge_index_3 = edge_index_missile
+                    A = self.get_heterogeneous_adjacency_matrix(edge_index_1, edge_index_2, edge_index_3, n_node_features = n_node_features_missile)
+                    node_representation = self.func_meta_path(A, node_embedding_missile_node, num_nodes=n_node_features_missile,
+                                                              mini_batch=mini_batch)
 
-                    # node_representation = torch.cat([node_embedding_ship_features, node_representation[0].unsqueeze(0)],
-                    #                                 dim=1)
-                    node_representation =ship_features
+                    node_representation = torch.cat([node_embedding_ship_features, node_representation[0].unsqueeze(0)],
+                                                    dim=1)
+                    #node_representation =ship_features
             else:
                 #node_feature = torch.tensor(missile_node_feature, dtype=torch.float, device=device)
 
 
                 ship_features = torch.tensor(ship_features,dtype=torch.float).to(device).squeeze(1)
-                #node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
+                node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
 
-                # missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float).to(device)
-                # empty = list()
-                # for i in range(n_node_features_missile):
-                #     node_embedding_missile_node = self.node_representation(missile_node_feature[:, i, :], missile=True)
-                #     empty.append(node_embedding_missile_node)
-                # node_embedding_missile_node = torch.stack(empty)
-                # node_embedding_missile_node = torch.einsum('ijk->jik', node_embedding_missile_node)
-                # A = [self.get_heterogeneous_adjacency_matrix(edge_index_missile[m][0], edge_index_missile[m][1],
-                #                                              edge_index_missile[m][2], n_node_features_missile) for m in
-                #      range(self.batch_size)]
-                # node_representation = self.func_meta_path(A, node_embedding_missile_node, num_nodes=n_node_features_missile,
-                #                                           mini_batch=mini_batch)
-                #node_representation = torch.cat([node_embedding_ship_features, node_representation[:, 0, :],  ], dim=1)
-                node_representation =ship_features
+                missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float).to(device)
+                empty = list()
+                for i in range(n_node_features_missile):
+                    node_embedding_missile_node = self.node_representation(missile_node_feature[:, i, :], missile=True)
+                    empty.append(node_embedding_missile_node)
+                node_embedding_missile_node = torch.stack(empty)
+                node_embedding_missile_node = torch.einsum('ijk->jik', node_embedding_missile_node)
+                A = [self.get_heterogeneous_adjacency_matrix(edge_index_missile[m][0], edge_index_missile[m][1],
+                                                             edge_index_missile[m][2], n_node_features_missile) for m in
+                     range(self.batch_size)]
+                node_representation = self.func_meta_path(A, node_embedding_missile_node, num_nodes=n_node_features_missile,
+                                                          mini_batch=mini_batch)
+                node_representation = torch.cat([node_embedding_ship_features, node_representation[:, 0, :],  ], dim=1)
+                #node_representation =ship_features
         if cfg.GNN == 'GAT':
             if mini_batch == False:
                 with torch.no_grad():
