@@ -1164,7 +1164,7 @@ class Agent:
         loss = F.huber_loss(weight * q_tot, weight * td_target)
 
         #start = time.time()
-        loss.backward(create_graph = True)
+        loss.backward()
         #print("5 backprop 계산", time.time() - start)
         #start = time.time()
         torch.nn.utils.clip_grad_norm_(self.eval_params, grad_clip)
