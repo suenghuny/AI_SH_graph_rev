@@ -258,7 +258,7 @@ class Environment:
     def get_env_info(self):
         ship=self.friendlies[0]
         env_info = {"n_agents" : 1,
-                    "ship_feature_shape": 7 + self.discr_n+cfg.num_action_history*8+8,  # + self.n_agents,
+                    "ship_feature_shape": 7 + cfg.discr_n*3+cfg.num_action_history*8+8,  # + self.n_agents,
                     "missile_feature_shape" : 6,  #9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
                     "enemy_feature_shape": 12,
                     "action_feature_shape": 8,
@@ -573,12 +573,17 @@ class Environment:
                         f6 += 1/ship.air_engagement_limit
 
             empty0 = [f1,f2,f3,f4,f5,f6,f7]
-            n = self.discr_n
-            empty1 = [0] * n
+            n = cfg.discr_n
+            empty1 = [0] * n*3
             for enemy_ssm in ship.ssm_detections:
                 for k in range(n):
                     if (k) / n * ship.detection_range < cal_distance(ship, enemy_ssm) <= (k+1)/n * ship.detection_range:
-                        empty1[k] += 1/ship.air_tracking_limit
+                        if np.abs(enemy_ssm.speed-5.140388765555555) <= 0.1:
+                            empty1[3*k] += 1/ship.air_tracking_limit
+                        if np.abs(enemy_ssm.speed-4.038876887222222) <= 0.1:
+                            empty1[3 * k+1] += 1 / ship.air_tracking_limit
+                        if np.abs(enemy_ssm.speed-2.937365008888889) <= 0.1:
+                            empty1[3 * k+2] += 1 / ship.air_tracking_limit
 
             empty2 = [len(ship.surface_prelaunching_managing_list)/ship.surface_engagement_limit,
                       len(ship.m_sam_launcher) / ship.num_m_sam,
