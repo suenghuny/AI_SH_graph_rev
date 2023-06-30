@@ -252,7 +252,7 @@ class Environment:
     def get_env_info(self):
         ship=self.friendlies[0]
         env_info = {"n_agents" : 1,
-                    "ship_feature_shape": 7 + self.discr_n+10*8+8,  # + self.n_agents,
+                    "ship_feature_shape": 3*8+8,  # + self.n_agents,
                     "missile_feature_shape" : 6,  #9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
                     "enemy_feature_shape": 12,
                     "action_feature_shape": 8,
@@ -536,43 +536,43 @@ class Environment:
             'LSAM : CCM 상태'
             'LSAM : 발사 준비 중'
             'MSAM : 발사 준비 중'
-            f1 = 0 # LSAM : LOCK-ON 상태
-            f2 = 0 # LSAM : BRM
-            f3 = 0 # LSAM : CCM
-            f4 = 0 # LSAM : 발사 준비 중
-            f5 = 0 # MSAM : BRM
-            f6 = 0 # MSAM : CCM
-            f7 = 0 # MSAM : 발사 준비 중
-            for message in ship.air_engagement_managing_list:
-                sam = message[0]
-                if sam.cla == 'LSAM':
-                    if sam.fly_mode == 'brm':
-                        if sam.seeker.on == 'lock_on':
-                            f1 += 1/ship.air_engagement_limit
-                        else:
-                            f2 += 1/ship.air_engagement_limit
-                    elif sam.fly_mode == 'ccm':
-                        f3 += 1/ship.air_engagement_limit
-                    elif sam.fly_mode == None:
-                        f4 += 1/2
-                if sam.cla == 'MSAM':
-                    if sam.fly_mode == None:
-                        f7 += 1
-
-            for sam in self.flying_sams_friendly:
-                if sam.cla == 'MSAM':
-                    if sam.fly_mode == 'brm':
-                        f5 += 1/ship.air_engagement_limit
-                    elif sam.fly_mode == 'ccm':
-                        f6 += 1/ship.air_engagement_limit
-
-            empty0 = [f1,f2,f3,f4,f5,f6,f7]
-            n = self.discr_n
-            empty1 = [0] * n
-            for enemy_ssm in ship.ssm_detections:
-                for k in range(n):
-                    if (k) / n * ship.detection_range < cal_distance(ship, enemy_ssm) <= (k+1)/n * ship.detection_range:
-                        empty1[k] += 1/ship.air_tracking_limit
+            # f1 = 0 # LSAM : LOCK-ON 상태
+            # f2 = 0 # LSAM : BRM
+            # f3 = 0 # LSAM : CCM
+            # f4 = 0 # LSAM : 발사 준비 중
+            # f5 = 0 # MSAM : BRM
+            # f6 = 0 # MSAM : CCM
+            # f7 = 0 # MSAM : 발사 준비 중
+            # for message in ship.air_engagement_managing_list:
+            #     sam = message[0]
+            #     if sam.cla == 'LSAM':
+            #         if sam.fly_mode == 'brm':
+            #             if sam.seeker.on == 'lock_on':
+            #                 f1 += 1/ship.air_engagement_limit
+            #             else:
+            #                 f2 += 1/ship.air_engagement_limit
+            #         elif sam.fly_mode == 'ccm':
+            #             f3 += 1/ship.air_engagement_limit
+            #         elif sam.fly_mode == None:
+            #             f4 += 1/2
+            #     if sam.cla == 'MSAM':
+            #         if sam.fly_mode == None:
+            #             f7 += 1
+            #
+            # for sam in self.flying_sams_friendly:
+            #     if sam.cla == 'MSAM':
+            #         if sam.fly_mode == 'brm':
+            #             f5 += 1/ship.air_engagement_limit
+            #         elif sam.fly_mode == 'ccm':
+            #             f6 += 1/ship.air_engagement_limit
+            #
+            # empty0 = [f1,f2,f3,f4,f5,f6,f7]
+            # n = self.discr_n
+            # empty1 = [0] * n
+            # for enemy_ssm in ship.ssm_detections:
+            #     for k in range(n):
+            #         if (k) / n * ship.detection_range < cal_distance(ship, enemy_ssm) <= (k+1)/n * ship.detection_range:
+            #             empty1[k] += 1/ship.air_tracking_limit
 
             empty2 = [len(ship.surface_prelaunching_managing_list)/ship.surface_engagement_limit,
                       len(ship.m_sam_launcher) / ship.num_m_sam,
@@ -584,7 +584,7 @@ class Environment:
                       self.f10 / self.simtime_per_framerate,
                       ]
 
-            z = np.concatenate([empty0, empty1, empty2]).reshape(-1, 1).tolist()
+            z = np.concatenate([empty2]).reshape(-1, 1).tolist()
 
             for i in range(len(ship.action_history)):
                 if ship.action_history[i] != None:

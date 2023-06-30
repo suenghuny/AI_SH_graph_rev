@@ -664,7 +664,7 @@ class Agent:
 
 
 
-        self.optimizer =optim.Adam(self.eval_params, lr=learning_rate)
+        self.optimizer =AdaHessian(self.eval_params, lr=learning_rate)
         #self.scaler = amp.GradScaler()
         if cfg.scheduler == 'step':
             self.scheduler = StepLR(optimizer=self.optimizer, step_size=cfg.scheduler_step, gamma=cfg.scheduler_ratio)
