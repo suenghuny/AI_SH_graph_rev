@@ -7,6 +7,11 @@ import math
 import pygame
 from collections import deque
 
+import sys
+sys.path.append("..")  # 상위 폴더를 import할 수 있도록 경로 추가
+from cfg import get_cfg
+cfg = get_cfg()
+
 class Decoy:
     def __init__(self, env, launcher, launched_time, position_x, position_y, rcs, decoy_duration, decoy_decaying_rate):
         self.env = env
@@ -1132,7 +1137,7 @@ class Ship:
         self.last_v_y = 0
         self.a_x = 0
         self.a_y = 0
-        num = 3
+        num = cfg.num_action_history
         self.action_history = deque(maxlen = num)
         for _ in range(num):
             self.action_history.append(None)

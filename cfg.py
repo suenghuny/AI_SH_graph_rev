@@ -74,4 +74,5 @@ def get_cfg():
     parser.add_argument("--temp_constant", type=float, default=1, help="")
     parser.add_argument("--init_constant", type=int, default=10000, help="")
     parser.add_argument("--cuda", type=str, default='cuda:0', help="")
+    parser.add_argument("--num_action_history", type=int, default=3, help="")
     return parser.parse_args()
