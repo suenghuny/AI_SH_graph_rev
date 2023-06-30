@@ -1168,7 +1168,7 @@ class Agent:
 
         #start = time.time()
 
-        loss.backward(create_graph)
+        loss.backward(create_graph = True)
         #print("5 backprop 계산", time.time() - start)
         #start = time.time()
         torch.nn.utils.clip_grad_norm_(self.eval_params, grad_clip)
