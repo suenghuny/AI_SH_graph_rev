@@ -1168,7 +1168,7 @@ class Agent:
 
         #start = time.time()
 
-        loss.backward()
+        loss.backward(create_graph)
         #print("5 backprop 계산", time.time() - start)
         #start = time.time()
         torch.nn.utils.clip_grad_norm_(self.eval_params, grad_clip)
@@ -1187,7 +1187,7 @@ class Agent:
             gc.collect()
             torch.cuda.empty_cache()
 
-        except torch.cuda.OutOfMemoryError:#
+        except torch.cuda.outofmemoryerror:#
             print("outofmemoryerror")
             print("outofmemoryerror")
             print("outofmemoryerror")
