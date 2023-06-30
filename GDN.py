@@ -1169,8 +1169,11 @@ class Agent:
         #print("5 backprop 계산", time.time() - start)
         #start = time.time()
         torch.nn.utils.clip_grad_norm_(self.eval_params, grad_clip)
-        self.optimizer.step()
-        self.scheduler.step()
+        try:
+            self.optimizer.step()
+            self.scheduler.step()
+        except torch.cuda.outofmemoryerror:
+            print("outofmemoryerror")
         #print("6 update 계산", time.time() - start)
 
         if cfg.epsilon_greedy == False:

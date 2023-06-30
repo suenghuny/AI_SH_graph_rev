@@ -528,7 +528,7 @@ class Environment:
         n_enemy_ssm = 0
         n_enemy_ship = 0
         for enemy in self.enemies_fixed_list:
-            n_enemy_ship +=1
+            n_enemy_ship += 1
             n_enemy_ssm += enemy.num_ssm
         for ship in self.friendlies_fixed_list:
             'LSAM : LOCK-ON 상태'
