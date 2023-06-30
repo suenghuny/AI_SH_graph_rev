@@ -1165,6 +1165,7 @@ class Agent:
         loss = F.huber_loss(weight * q_tot, weight * td_target)
 
         #start = time.time()
+
         loss.backward(create_graph = True)
         #print("5 backprop 계산", time.time() - start)
         #start = time.time()
@@ -1172,6 +1173,18 @@ class Agent:
         try:
             self.optimizer.step()
             self.scheduler.step()
+            if cfg.epsilon_greedy == False:
+                self.Q.reset_noise_net()
+                self.Q_tar.reset_noise_net()
+            tau = 5e-4
+            for target_param, local_param in zip(self.Q_tar.parameters(), self.Q.parameters()):
+                target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
+            for target_param, local_param in zip(self.DuelingQtar.parameters(), self.DuelingQ.parameters()):
+                target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
+
+            gc.collect()
+            torch.cuda.empty_cache()
+
         except torch.cuda.outofmemoryerror:
             print("outofmemoryerror")
             print("outofmemoryerror")
@@ -1179,19 +1192,14 @@ class Agent:
             print("outofmemoryerror")
             print("outofmemoryerror")
             print("outofmemoryerror")
+            gc.collect()
+            torch.cuda.empty_cache()
+            self.optimizer.zero_grad()
         #print("6 update 계산", time.time() - start)
 
-        if cfg.epsilon_greedy == False:
-            self.Q.reset_noise_net()
-            self.Q_tar.reset_noise_net()
-        tau = 5e-4
-        for target_param, local_param in zip(self.Q_tar.parameters(), self.Q.parameters()):
-            target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
-        for target_param, local_param in zip(self.DuelingQtar.parameters(), self.DuelingQ.parameters()):
-            target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
 
-        gc.collect()
-        torch.cuda.empty_cache()
+
+
 
 
         return loss
