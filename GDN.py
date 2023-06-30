@@ -1174,6 +1174,11 @@ class Agent:
             self.scheduler.step()
         except torch.cuda.outofmemoryerror:
             print("outofmemoryerror")
+            print("outofmemoryerror")
+            print("outofmemoryerror")
+            print("outofmemoryerror")
+            print("outofmemoryerror")
+            print("outofmemoryerror")
         #print("6 update 계산", time.time() - start)
 
         if cfg.epsilon_greedy == False:
