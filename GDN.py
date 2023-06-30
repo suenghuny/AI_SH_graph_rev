@@ -25,6 +25,8 @@ from cfg import get_cfg
 
 cfg = get_cfg()
 
+#import torch.cuda.OutOfMemoryError
+
 def weight_init_xavier_uniform(submodule):
     if isinstance(submodule, torch.nn.Conv2d):
         torch.nn.init.xavier_uniform_(submodule.weight)
@@ -662,7 +664,7 @@ class Agent:
 
 
 
-        self.optimizer =AdaHessian(self.eval_params, lr=learning_rate)
+        self.optimizer =optim.Adam(self.eval_params, lr=learning_rate)
         #self.scaler = amp.GradScaler()
         if cfg.scheduler == 'step':
             self.scheduler = StepLR(optimizer=self.optimizer, step_size=cfg.scheduler_step, gamma=cfg.scheduler_ratio)
@@ -1166,7 +1168,7 @@ class Agent:
 
         #start = time.time()
 
-        loss.backward(create_graph = True)
+        loss.backward()
         #print("5 backprop 계산", time.time() - start)
         #start = time.time()
         torch.nn.utils.clip_grad_norm_(self.eval_params, grad_clip)
@@ -1185,7 +1187,7 @@ class Agent:
             gc.collect()
             torch.cuda.empty_cache()
 
-        except torch.cuda.outofmemoryerror:
+        except torch.cuda.OutOfMemoryError:
             print("outofmemoryerror")
             print("outofmemoryerror")
             print("outofmemoryerror")

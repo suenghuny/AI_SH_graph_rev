@@ -274,11 +274,33 @@ class FastGTConv(nn.Module):
             mat_a = torch.stack(mat_a, dim=0)
             adj = torch.einsum('ci,ijk->cjk', filter, mat_a)
         else:
+            import time
+
+            start = time.time()
+            atch_size = len(A)
+            num_nodes = A[0][0][0].size(0)
+            weight = self.weight
+            filter = F.softmax(weight, dim=1)
+
+            # Convert A to a sparse tensor
+            A_sparse = []
+            for a in A:
+                A_sparse.append([torch.sparse_coo_tensor(a[i][0], a[i][1], (num_nodes, num_nodes)).to(device) for i in
+                                 range(len(a))])
+            mat_a = torch.stack(A_sparse, dim=0)
+
+            # Apply element-wise multiplication between mat_a and filter
+            adj = torch.einsum('bijk,bi->bijk', mat_a, filter)
+            print("전", time.time() - start)
+
+
+            start = time.time()
             batch_size = len(A)
             weight = self.weight
             filter = F.softmax(weight, dim=1)
             mat_a = torch.stack([torch.stack([torch.sparse_coo_tensor(A[b][i][0], A[b][i][1], (num_nodes, num_nodes)).to(device).to_dense() for i in range(len(A[0]))], dim = 0) for b in range(batch_size)], dim = 0)
             adj = torch.einsum('bijk,ci->bcjk', mat_a, filter)
+            print("후", time.time()-start)
 
         return adj
 
