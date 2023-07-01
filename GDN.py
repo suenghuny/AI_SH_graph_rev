@@ -1194,9 +1194,10 @@ class Agent:
             print("outofmemoryerror")
             print("outofmemoryerror")
             print("outofmemoryerror")
+
+            self.optimizer.zero_grad()
             gc.collect()
             torch.cuda.empty_cache()
-            self.optimizer.zero_grad()
         #print("6 update 계산", time.time() - start)
 
 
