@@ -5,12 +5,6 @@ from Components.Simulation_Component import *
 from collections import deque
 import random
 
-import sys
-sys.path.append("..")  # 상위 폴더를 import할 수 있도록 경로 추가
-from cfg import get_cfg
-cfg = get_cfg()
-
-
 record_theta_r = list()
 record_theta_rv = list()
 record_theta_va = list()
@@ -258,7 +252,7 @@ class Environment:
     def get_env_info(self):
         ship=self.friendlies[0]
         env_info = {"n_agents" : 1,
-                    "ship_feature_shape": 7 + cfg.discr_n*3+cfg.num_action_history*8+8,  # + self.n_agents,
+                    "ship_feature_shape": 7 + self.discr_n+10*8+8,  # + self.n_agents,
                     "missile_feature_shape" : 6,  #9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
                     "enemy_feature_shape": 12,
                     "action_feature_shape": 8,
@@ -573,17 +567,12 @@ class Environment:
                         f6 += 1/ship.air_engagement_limit
 
             empty0 = [f1,f2,f3,f4,f5,f6,f7]
-            n = cfg.discr_n
-            empty1 = [0] * n*3
+            n = self.discr_n
+            empty1 = [0] * n
             for enemy_ssm in ship.ssm_detections:
                 for k in range(n):
                     if (k) / n * ship.detection_range < cal_distance(ship, enemy_ssm) <= (k+1)/n * ship.detection_range:
-                        if np.abs(enemy_ssm.speed-5.140388765555555) <= 0.1:
-                            empty1[3*k] += 1/ship.air_tracking_limit
-                        if np.abs(enemy_ssm.speed-4.038876887222222) <= 0.1:
-                            empty1[3 * k+1] += 1 / ship.air_tracking_limit
-                        if np.abs(enemy_ssm.speed-2.937365008888889) <= 0.1:
-                            empty1[3 * k+2] += 1 / ship.air_tracking_limit
+                        empty1[k] += 1/ship.air_tracking_limit
 
             empty2 = [len(ship.surface_prelaunching_managing_list)/ship.surface_engagement_limit,
                       len(ship.m_sam_launcher) / ship.num_m_sam,
@@ -698,7 +687,8 @@ class Environment:
             for k in range(j-1, -1, -1):
                 missile_j = ship.ssm_detections[j]
                 missile_k = ship.ssm_detections[k]
-                if cal_distance(missile_j, missile_k) <= 20:
+                #print(cal_distance(missile_j, missile_k))
+                if cal_distance(missile_j, missile_k) <= 15:
                     edge_index[0].append(j+1)
                     edge_index[1].append(k+1)
                     edge_index[0].append(k+1)
@@ -1172,7 +1162,6 @@ class Environment:
                 return reward, win_tag, done, leaker
             else:
                 pass
-
 
 
 
