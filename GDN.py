@@ -1188,14 +1188,13 @@ class Agent:
             gc.collect()
             torch.cuda.empty_cache()
 
-        except torch.cuda.outofmemoryerror:#
+        except:#
             print("outofmemoryerror")
             print("outofmemoryerror")
             print("outofmemoryerror")
             print("outofmemoryerror")
             print("outofmemoryerror")
             print("outofmemoryerror")
-
             self.optimizer.zero_grad()
             gc.collect()
             torch.cuda.empty_cache()
