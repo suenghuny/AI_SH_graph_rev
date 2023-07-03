@@ -641,14 +641,12 @@ class Agent:
         if cfg.GNN == 'GAT':
             self.eval_params = list(self.DuelingQ.parameters()) + \
                                list(self.Q.parameters()) + \
-                               list(self.node_representation_action_feature.parameters()) + \
                                list(self.node_representation_ship_feature.parameters()) + \
                                list(self.node_representation.parameters()) + \
                                list(self.func_missile_obs.parameters())
         else:
             self.eval_params = list(self.DuelingQ.parameters()) + \
                                list(self.Q.parameters()) + \
-                               list(self.node_representation_action_feature.parameters()) + \
                                list(self.node_representation_ship_feature.parameters()) + \
                                list(self.node_representation.parameters()) + \
                                list(self.func_meta_path.parameters())
