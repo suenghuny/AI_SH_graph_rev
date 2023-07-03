@@ -596,9 +596,6 @@ class Agent:
 
         self.gamma_n_step = torch.tensor([[self.gamma**i for i in range(self.n_step+1)] for _ in range(self.batch_size)], dtype = torch.float, device = device)
 
-        self.node_representation_action_feature = NodeEmbedding(feature_size=feature_size_action,
-                                                         n_representation_obs=n_representation_action,
-                                                         layers = node_embedding_layers_action).to(device)  # 수정사항
 
         self.node_representation_ship_feature = NodeEmbedding(feature_size=feature_size_ship,
                                                          n_representation_obs=n_representation_ship,
@@ -653,7 +650,7 @@ class Agent:
 
 
 
-        self.optimizer =AdaHessian(self.eval_params, lr=learning_rate)
+        self.optimizer =optim.Adam(self.eval_params, lr=learning_rate)
         #self.scaler = amp.GradScaler()
         if cfg.scheduler == 'step':
             self.scheduler = StepLR(optimizer=self.optimizer, step_size=cfg.scheduler_step, gamma=cfg.scheduler_ratio)
@@ -867,16 +864,19 @@ class Agent:
                 batch_size = action_features.shape[0]
 
                 obs_expand = obs.unsqueeze(1)
-                obs_expand = obs_expand.expand([self.batch_size, self.action_size, obs_expand.shape[2]])  # batch-size, action_size, obs_size
+                obs_expand = obs_expand.expand([self.batch_size, self.action_size, obs_expand.shape[2]])
                 obs_n_action = torch.cat([obs_expand, action_features], dim=2)
+                # obs_n_action : Q(s,a) -> Q(s||a)
 
                 obs_n_action_flat = obs_n_action.reshape(self.action_size * self.batch_size, obs_n_action.size(-1))
 
                 cos1 = cos.expand([self.action_size, self.batch_size, self.iqn_N, self.n_cos])
                 cos1 = cos1.reshape(self.action_size * self.batch_size, self.iqn_N, self.n_cos)
-
                 q_values_flat = self.Q.advantage_forward(obs_n_action_flat, cos1, mini_batch=True)
                 q_values = q_values_flat.view(obs_n_action.size(0), self.action_size)
+
+
+
                 A = torch.stack([q_values[:, i] for i in range(self.action_size)], dim=1)
                 V = self.Q.value_forward(obs, cos, mini_batch=True)
                 Q = self.DuelingQ(V, A, mask, past_action=None, training=True)
@@ -1049,7 +1049,7 @@ class Agent:
 
         #start = time.time()
 
-        loss.backward(create_graph= True)
+        loss.backward()
         #print("5 backprop 계산", time.time() - start)
         #start = time.time()
         torch.nn.utils.clip_grad_norm_(self.eval_params, grad_clip)

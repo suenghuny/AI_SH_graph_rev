@@ -825,6 +825,7 @@ class Environment:
                 0,
                 0,
                 0]
+
         node_features = [dummy]
         for ship in self.friendlies_fixed_list:
             for missile in ship.ssm_detections:
@@ -853,7 +854,6 @@ class Environment:
         if ship.air_tracking_limit +ship.air_engagement_limit+ship.num_m_sam+1-len(node_features) > 0:
             for _ in range(ship.air_tracking_limit +ship.air_engagement_limit+ship.num_m_sam+1-len(node_features)):
                 node_features.append(dummy)
-
         return node_features
 
 
