@@ -255,7 +255,7 @@ class Replay_Buffer:
         self.buffer = deque()
         self.alpha = per_alpha
         self.step_count_list = list()
-        for _ in range(16):
+        for _ in range(17):
             self.buffer.append(deque(maxlen=buffer_size))
         self.buffer_size = buffer_size
         self.n_node_feature_missile = n_node_feature_missile
@@ -285,7 +285,8 @@ class Replay_Buffer:
                status,
                action_feature,
                action_features,
-               heterogeneous_edges
+               heterogeneous_edges,
+               action_index
                ):
 
         self.buffer[1].append(node_feature_missile)
@@ -312,6 +313,7 @@ class Replay_Buffer:
         self.buffer[13].append(action_feature)
         self.buffer[14].append(action_features)
         self.buffer[15].append(heterogeneous_edges)
+        self.buffer[16].append(action_index)
 
         if self.step_count < self.buffer_size:
             self.step_count_list.append(self.step_count)
@@ -372,6 +374,8 @@ class Replay_Buffer:
                 yield datas[15][s]
             if cat == 'heterogeneous_edges_next':
                 yield datas[15][s + self.n_step]
+            if cat == 'action_index':
+                yield datas[16][s]
 
     def update_transition_priority(self, batch_index, delta):
 
@@ -473,6 +477,10 @@ class Replay_Buffer:
         heterogenous_edges_next = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='heterogeneous_edges_next')
         heterogenous_edges_next = list(heterogenous_edges_next)
 
+        action_index = self.generating_mini_batch(self.buffer, sampled_batch_idx,
+                                                             cat='action_index')
+        action_index = list(action_index)
+
         return node_features_missile, \
                ship_features, \
                edge_indices_missile, \
@@ -491,7 +499,7 @@ class Replay_Buffer:
                p_sampled,\
                action_feature, \
                action_features, \
-               action_features_next,heterogenous_edges,heterogenous_edges_next
+               action_features_next,heterogenous_edges,heterogenous_edges_next, action_index
 
 
 
@@ -564,6 +572,7 @@ class Agent:
 
         self.action_size = action_size
 
+        self.dummy_action = torch.tensor([[i for i in range(action_size)] for _ in range(batch_size)]).to(device)
         self.dropout = dropout
         self.gamma = gamma
         self.agent_id = np.eye(self.num_agent).tolist()
@@ -587,58 +596,39 @@ class Agent:
 
         self.gamma_n_step = torch.tensor([[self.gamma**i for i in range(self.n_step+1)] for _ in range(self.batch_size)], dtype = torch.float, device = device)
 
-
         self.node_representation_action_feature = NodeEmbedding(feature_size=feature_size_action,
                                                          n_representation_obs=n_representation_action,
                                                          layers = node_embedding_layers_action).to(device)  # 수정사항
 
-
         self.node_representation_ship_feature = NodeEmbedding(feature_size=feature_size_ship,
                                                          n_representation_obs=n_representation_ship,
                                                          layers = node_embedding_layers_ship).to(device)  # 수정사항
-
         self.node_representation = NodeEmbedding(feature_size=feature_size_missile,
                                                  n_representation_obs=n_representation_missile,
                                                  layers = node_embedding_layers_missile).to(device)  # 수정사항
-
-
-
-        if cfg.GNN == 'GAT':
-            self.func_missile_obs = GAT(nfeat=n_representation_missile,
-                                         nhid=hidden_size_comm,
-                                         nheads=n_multi_head,
-                                         nclass=n_representation_missile+2,
-                                         dropout=dropout,
-                                         alpha=0.2,
-                                         mode='communication',
-                                         batch_size=self.batch_size,
-                                         teleport_probability=self.teleport_probability).to(device)  # 수정사항
-        if cfg.GNN == 'FastGTN':
-            self.func_meta_path = FastGTNs(num_edge_type=4,
+        self.func_meta_path = FastGTNs(num_edge_type=4,
                                            feature_size=n_representation_missile,
                                            num_nodes=self.num_nodes,
                                            num_FastGTN_layers=cfg.num_GT_layers,
-                                           hidden_size=n_representation_missile+2,
+                                           hidden_size=cfg.hidden_size_meta_path,
                                            num_channels=cfg.channels,
                                            num_layers=cfg.num_layers,
                                            teleport_probability=self.teleport_probability,
                                            gtn_beta=cfg.gtn_beta
                                            ).to(device)
 
-
-
         self.DuelingQ = DuelingDQN().to(device)
         self.DuelingQtar = DuelingDQN().to(device)
 
-        self.Q = IQN(state_size_advantage = n_representation_ship+n_representation_action+n_representation_missile+2,
-                     state_size_value = n_representation_ship+n_representation_missile+2 ,
+        self.Q = IQN(state_size_advantage = n_representation_ship+cfg.hidden_size_meta_path*2,
+                     state_size_value = n_representation_ship + cfg.hidden_size_meta_path,
                      action_size = self.action_size,
                      batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos = n_cos, layers = iqn_layers).to(device)
 
 
         self.Q_tar = IQN(
-            state_size_advantage=n_representation_ship+ n_representation_action+n_representation_missile+2,
-            state_size_value=n_representation_ship+n_representation_missile+2,
+            state_size_advantage=n_representation_ship+cfg.hidden_size_meta_path*2,
+            state_size_value=n_representation_ship + cfg.hidden_size_meta_path,
             action_size=self.action_size,
             batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos=n_cos, layers=iqn_layers).to(
             device)
@@ -710,10 +700,7 @@ class Agent:
             self.node_representation_ship_feature.eval()
             self.node_representation_action_feature.eval()
             self.node_representation.eval()
-            if cfg.GNN == 'GAT':
-                self.func_missile_obs.eval()
-            else:
-                self.func_meta_path.eval()
+            self.func_meta_path.eval()
             self.Q.eval()
             self.Q_tar.eval()
         else:
@@ -721,10 +708,7 @@ class Agent:
             self.node_representation_ship_feature.train()
             self.node_representation_action_feature.train()
             self.node_representation.train()
-            if cfg.GNN == 'GAT':
-                self.func_missile_obs.train()
-            else:
-                self.func_meta_path.train()
+            self.func_meta_path.train()
             self.Q.train()
             self.Q_tar.train()
 
@@ -754,9 +738,10 @@ class Agent:
                            list(self.func_meta_path.parameters())
         return e, t, epsilon
 
-    def get_node_representation(self, missile_node_feature, ship_features, edge_index_missile,
+    def get_node_representation(self, missile_node_feature,
+                                ship_features,
+                                edge_index_missile,
                                 n_node_features_missile,
-                                n_node_features_enemy,
                                 mini_batch=False):
         if cfg.GNN == 'FastGTN':
             if mini_batch == False:
@@ -764,47 +749,16 @@ class Agent:
                     ship_features = torch.tensor(ship_features, dtype=torch.float, device=device)
                     node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
                     missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float,device=device).clone().detach()
-
                     node_embedding_missile_node = self.node_representation(missile_node_feature, missile=True)
-
-
                     edge_index_1, edge_index_2, edge_index_3 = edge_index_missile
                     A = self.get_heterogeneous_adjacency_matrix(edge_index_1, edge_index_2, edge_index_3, n_node_features = n_node_features_missile)
-                    node_representation = self.func_meta_path(A, node_embedding_missile_node, num_nodes=n_node_features_missile,
-                                                              mini_batch=mini_batch)
-
-                    node_representation = torch.cat([node_embedding_ship_features, node_representation[0].unsqueeze(0)],
-                                                    dim=1)
-                    #node_representation =ship_features
+                    node_representation_graph = self.func_meta_path(A, node_embedding_missile_node, num_nodes=n_node_features_missile, mini_batch=mini_batch)
+                    node_representation = torch.cat([node_embedding_ship_features, node_representation_graph[0].unsqueeze(0)],dim=1)
             else:
-                #node_feature = torch.tensor(missile_node_feature, dtype=torch.float, device=device)
-                import time
-
-
                 ship_features = torch.tensor(ship_features,dtype=torch.float).to(device).squeeze(1)
                 node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
 
-                # missile_node_feature = missile_node_feature.reshape(self.batch_size*n_node_features_missile, -1)
-                # # node_embedding_missile_node = self.node_representation(missile_node_feature, missile=True)
-                # # node_embedding_missile_node = node_embedding_missile_node.reshape(self.batch_size, n_node_features_missile)
-
                 missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float).to(device)
-
-                # Reshape missile_node_feature for batch processing
-                # batch_size, num_node, node_feature = missile_node_feature.shape
-                # missile_node_feature = missile_node_feature.view(batch_size * num_node, node_feature)
-                #
-                # # Pass the reshaped tensor through the node_representation layer
-                # node_embedding_missile_node = self.node_representation(missile_node_feature, missile=True)
-                #
-                # # Reshape node_embedding_missile_node back to the original shape
-                # node_embedding_missile_node = node_embedding_missile_node.view(batch_size, num_node, -1)
-                #
-                # # Transpose dimensions to match the desired output shape
-                # node_embedding_missile_node = node_embedding_missile_node#.transpose(0, 1)
-                #
-                # print("전", node_embedding_missile_node.shape) #
-                #start = time.time()
                 missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float).to(device)  # batch_size, num_node, node_feature
                 empty = list()
                 for i in range(n_node_features_missile):
@@ -812,51 +766,15 @@ class Agent:
                     empty.append(node_embedding_missile_node)
                 node_embedding_missile_node = torch.stack(empty)
                 node_embedding_missile_node = torch.einsum('ijk->jik', node_embedding_missile_node)
-                #print("2-1 node_embedding missile 계산", time.time()-start)
-
-                #start = time.time()
                 A = [self.get_heterogeneous_adjacency_matrix(edge_index_missile[m][0], edge_index_missile[m][1],
                                                              edge_index_missile[m][2], n_node_features_missile) for m in
                      range(self.batch_size)]
-                #print("2-2 adj 계산", time.time() - start)
-                start = time.time()
-                node_representation = self.func_meta_path(A, node_embedding_missile_node, num_nodes=n_node_features_missile,
+                node_representation_graph = self.func_meta_path(A, node_embedding_missile_node, num_nodes=n_node_features_missile,
                                                           mini_batch=mini_batch)
-
-                #print("2-3 gnn 계산", time.time() - start)
-                node_representation = torch.cat([node_embedding_ship_features, node_representation[:, 0, :],  ], dim=1)
-        if cfg.GNN == 'GAT':
-            if mini_batch == False:
-                with torch.no_grad():
-                    ship_features = torch.tensor(ship_features, dtype=torch.float, device=device)
-                    node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
-                    missile_node_feature = torch.tensor(missile_node_feature,dtype=torch.float,device=device).clone().detach()
+                node_representation = torch.cat([node_embedding_ship_features, node_representation_graph[:, 0, :],  ], dim=1)
 
 
-                    node_embedding_missile_node = self.node_representation(missile_node_feature, missile=True)
-                    edge_index_missile = torch.tensor(edge_index_missile, dtype=torch.long, device=device)
-                    node_representation = self.func_missile_obs(node_embedding_missile_node, edge_index_missile,
-                                                                 n_node_features_missile, mini_batch=mini_batch)
-
-                    node_representation = torch.cat([node_embedding_ship_features, node_representation[0].unsqueeze(0)], dim=1)
-            else:
-                ship_features = torch.tensor(ship_features,dtype=torch.float).to(device).squeeze(1)
-                node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
-
-                missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float).to(device)
-                empty = list()
-                for i in range(n_node_features_missile):
-                    node_embedding_missile_node = self.node_representation(missile_node_feature[:, i, :], missile=True)
-                    empty.append(node_embedding_missile_node)
-                node_embedding_missile_node = torch.stack(empty)
-                node_embedding_missile_node = torch.einsum('ijk->jik', node_embedding_missile_node)
-                edge_index_missile = torch.stack(edge_index_missile)
-                node_representation = self.func_missile_obs(node_embedding_missile_node, edge_index_missile,
-                                                             n_node_features_missile, mini_batch=mini_batch)
-                # node_embedding_enemy[:, 0, :]
-                node_representation = torch.cat([node_embedding_ship_features, node_representation[:, 0, :],  ], dim=1)
-
-        return node_representation
+        return node_representation, node_representation_graph
 
     def get_node_representation_hetero(self,
                                        missile_node_feature,
@@ -912,99 +830,71 @@ class Agent:
         A.append((edge, value))
         return A
 
-    def cal_Q(self, obs, action_feature, action_features, avail_actions, agent_id, cos, vdn, target=False):
+    def cal_Q(self, obs, obs_graph, action_feature, action_features, avail_actions, agent_id, cos, vdn, target=False, action_index = None):
         """
         node_representation
         - training 시        : batch_size X num_nodes X feature_size
         - action sampling 시 : num_nodes X feature_size
         """
         if target == False:
-            import time
-
             mask = torch.tensor(avail_actions, device=device).bool()
-            action_feature = torch.tensor(action_feature, device = device, dtype = torch.float)
-
-            action_feature = self.node_representation_action_feature(action_feature)
+            action_features = obs_graph[:, 1:self.action_size+1, :]
+            action_index = action_index.unsqueeze(1).unsqueeze(2).expand(-1, -1, action_features.size(2))
+            action_feature = torch.gather(action_features, 1, action_index).squeeze(1)
             obs_n_action = torch.cat([obs, action_feature], dim = 1)
             A_a = self.Q.advantage_forward(obs_n_action, cos, mini_batch=True)
-            action_features = torch.tensor(action_features, device=device, dtype=torch.float)
-
-            # import time
-            #
-            # start = time.time()
-
-
-
-            batch_size = action_features.shape[0]
-            action_features_reshaped = action_features.view(-1, action_features.size(-1))
-            node_representation_action = self.node_representation_action_feature(action_features_reshaped)
-            node_representation_action = node_representation_action.view(batch_size, self.action_size, -1)
-
-
             obs_expand = obs.unsqueeze(1)
             obs_expand = obs_expand.expand([self.batch_size, self.action_size, obs_expand.shape[2]])  # batch-size, action_size, obs_size
-
-            obs_n_action = torch.cat([obs_expand, node_representation_action], dim=2)
-
+            obs_n_action = torch.cat([obs_expand, action_features], dim=2)
             obs_n_action_flat = obs_n_action.reshape(self.action_size*self.batch_size, obs_n_action.size(-1))
             cos1 = cos.expand([self.action_size, self.batch_size, self.iqn_N, self.n_cos])
             cos1 = cos1.reshape(self.action_size*self.batch_size, self.iqn_N, self.n_cos)
+
+
             q_values_flat = self.Q.advantage_forward(obs_n_action_flat, cos1, mini_batch=True)
             q_values = q_values_flat.view(obs_n_action.size(0), self.action_size)
             A = torch.stack([q_values[:, i] for i in range(self.action_size)], dim=1)
-
-
             V = self.Q.value_forward(obs, cos, mini_batch = True)
-
-
             Q = self.DuelingQ(V, A, mask, past_action = A_a, training = True)
             return Q
         else:
             with torch.no_grad():
                 mask = torch.tensor(avail_actions, device=device).bool()
-                action_features = torch.tensor(action_features, device=device, dtype=torch.float)
+                action_features = obs_graph[:, 1:self.action_size+1, :]
                 batch_size = action_features.shape[0]
-                action_features_reshaped = action_features.view(-1, action_features.size(-1))
-                node_representation_action = self.node_representation_action_feature(action_features_reshaped)
-                node_representation_action = node_representation_action.view(batch_size, self.action_size, -1)
+
                 obs_expand = obs.unsqueeze(1)
-                obs_expand = obs_expand.expand(
-                    [self.batch_size, self.action_size, obs_expand.shape[2]])  # batch-size, action_size, obs_size
-                obs_n_action = torch.cat([obs_expand, node_representation_action], dim=2)
+                obs_expand = obs_expand.expand([self.batch_size, self.action_size, obs_expand.shape[2]])  # batch-size, action_size, obs_size
+                obs_n_action = torch.cat([obs_expand, action_features], dim=2)
+
                 obs_n_action_flat = obs_n_action.reshape(self.action_size * self.batch_size, obs_n_action.size(-1))
 
                 cos1 = cos.expand([self.action_size, self.batch_size, self.iqn_N, self.n_cos])
                 cos1 = cos1.reshape(self.action_size * self.batch_size, self.iqn_N, self.n_cos)
+
                 q_values_flat = self.Q.advantage_forward(obs_n_action_flat, cos1, mini_batch=True)
                 q_values = q_values_flat.view(obs_n_action.size(0), self.action_size)
                 A = torch.stack([q_values[:, i] for i in range(self.action_size)], dim=1)
-
                 V = self.Q.value_forward(obs, cos, mini_batch=True)
                 Q = self.DuelingQ(V, A, mask, past_action=None, training=True)
-#
-                #cos1 = cos.expand([self.action_size, self.batch_size, self.iqn_N, self.n_cos])
-                #cos1 = cos1.reshape(self.action_size * self.batch_size, self.iqn_N, self.n_cos)
+
+
                 q_values_flat = self.Q_tar.advantage_forward(obs_n_action_flat, cos1, mini_batch=True)
                 q_values = q_values_flat.view(obs_n_action.size(0), self.action_size)
                 A_tar = torch.stack([q_values[:, i] for i in range(self.action_size)], dim=1)
-
-
                 V_tar = self.Q_tar.value_forward(obs,
                                                  cos,
                                                  mini_batch = True)
                 Q_tar = self.DuelingQtar(V_tar,
                                          A_tar,
                                          mask, past_action=None, training=True)
-
                 action_max = Q.max(dim = 1)[1].long().unsqueeze(1)
                 Q_tar_max = torch.gather(Q_tar, 1, action_max)
-
-
                 return Q_tar_max
 
 
     @torch.no_grad()
-    def sample_action(self, node_representation, avail_action, epsilon, action_feature, training = True, with_noise = False, boltzman = False, step = None):
+    def sample_action(self, node_representation, node_representation_graph, avail_action, epsilon, action_feature, training = True, with_noise = False, boltzman = False, step = None):
         """
 
         node_representation 차원 : n_agents X n_representation_comm
@@ -1021,44 +911,31 @@ class Agent:
                     self.Q.remove_noise_net()
 
         action_feature_dummy = action_feature
-        action_feature = torch.tensor(action_feature, dtype = torch.float).to(device)
-        node_embedding_action = self.node_representation_action_feature(action_feature)
-        obs_n_action = torch.cat([node_representation.expand(node_embedding_action.shape[0],node_representation.shape[1]),
-                                  node_embedding_action], dim = 1)
 
-        # print(obs_n_action[0].unsqueeze(0).shape, "dddd")
+        # action_feature = torch.tensor(action_feature, dtype = torch.float).to(device)
+        # node_embedding_action = self.node_representation_action_feature(action_feature)
+
+        #print(action_feature.shape, node_representation_graph[1:self.action_size+1, :].shape)
+
+        node_embedding_action = node_representation_graph[1:self.action_size + 1, :]
+
+
+
+
+        obs_n_action = torch.cat([node_representation.expand(node_embedding_action.shape[0],node_representation.shape[1]),node_embedding_action], dim = 1)
         mask = torch.tensor(avail_action, device=device).bool()
-
         action = []
         cos, taus = self.Q.calc_cos(1)
         V = self.Q.value_forward(node_representation, cos, mini_batch=False)
         A = torch.stack([self.Q.advantage_forward(obs_n_action[i].unsqueeze(0), cos, mini_batch=False) for i in range(self.action_size)]).squeeze(1).squeeze(1).unsqueeze(0)
         Q = self.DuelingQ(V, A, mask)
-        if boltzman == False:
-            greedy_u = torch.argmax(Q)
-            if cfg.epsilon_greedy == True:
-                if np.random.uniform(0, 1) >= epsilon:
-                    u = greedy_u.detach().item()
-                else:
-                    mask_n = np.array(avail_action[0], dtype=np.float64)
-                    u = np.random.choice(self.action_space, p=mask_n / np.sum(mask_n))
+        greedy_u = torch.argmax(Q)
+        if cfg.epsilon_greedy == True:
+            if np.random.uniform(0, 1) >= epsilon:
+                u = greedy_u.detach().item()
             else:
-                u = greedy_u
-                action.append(u)
-        else:
-            if step != None:
-                temperature = (step*cfg.temp_constant + 1+cfg.init_constant) / 100
-                if temperature <=2000:
-                    Q = Q*temperature
-
-                dist = F.softmax(Q, dim = 1)
-                #print(dist)
-                u = torch.multinomial(dist, 1, replacement=True)
-                u = u.item()
-            else:
-                u = torch.argmax(Q).item()
-
-
+                mask_n = np.array(avail_action[0], dtype=np.float64)
+                u = np.random.choice(self.action_space, p=mask_n / np.sum(mask_n))
         action_blue = action_feature_dummy[u]
 
         if cfg.epsilon_greedy == False:
@@ -1069,7 +946,7 @@ class Agent:
                     self.Q.reset_noise_net()
                 else:
                     self.Q.remove_noise_net()
-        return action_blue
+        return action_blue, u
 
     def learn(self, regularizer, episode, vdn = False, grad_clip = None):
         self.optimizer.zero_grad()
@@ -1088,12 +965,14 @@ class Agent:
         status_next,\
         priority,\
         batch_index, \
-            p_sampled, action_feature, action_features, action_features_next, heterogenous_edges,heterogenous_edges_next = self.buffer.sample(vdn = vdn)
+            p_sampled, action_feature, action_features, action_features_next, heterogenous_edges,heterogenous_edges_next,\
+            action_index= self.buffer.sample(vdn = vdn)
 
         weight = ((len(self.buffer.buffer[10])-self.n_step)*torch.tensor(priority, dtype=torch.float, device = device))**(-self.beta)
 
+        action_index = torch.tensor(action_index, device = device, dtype = torch.long)
         weight /= weight.max()
-        import time
+
 
         """간        node_features : batch_size x num_nodes x feature_size
         actions : batch_size x num_agents
@@ -1101,7 +980,6 @@ class Agent:
         avail_actions_next : batch_size x num_agents x action_size 
         """
         n_node_features_missile = self.n_node_feature_missile
-        n_node_features_enemy = self.n_node_feature_enemy
 
         dones = torch.tensor(dones, device=device, dtype=torch.float)
         rewards = torch.tensor(rewards, device=device, dtype=torch.float)
@@ -1109,17 +987,16 @@ class Agent:
 
 
         self.eval_check(eval=True)
-        #start = time.time()
-        obs_next = self.get_node_representation(
+        obs_next, obs_next_graph = self.get_node_representation(
             node_features_missile_next,
             ship_features_next,
             heterogenous_edges_next,
             n_node_features_missile,
-            n_node_features_enemy,
             mini_batch=True)
         # print("2 node representation 시간", time.time() - start)
         # start = time.time()
         q_tar = self.cal_Q(obs=obs_next,
+                           obs_graph = obs_next_graph,
                         action_feature=None,
                         action_features=action_features_next,
                         avail_actions=avail_actions_next,
@@ -1129,20 +1006,20 @@ class Agent:
 
         #print("3 q 함수 시간", time.time() - start)
         self.eval_check(eval = False)
-        obs = self.get_node_representation(
+        obs, obs_graph = self.get_node_representation(
             node_features_missile,
             ship_features,
             heterogenous_edges,
             n_node_features_missile,
-            n_node_features_enemy,
             mini_batch=True)
         q = self.cal_Q(obs=obs,
+                       obs_graph = obs_graph,
                        action_feature=action_feature,
                        action_features=action_features,
                        avail_actions=avail_actions,
                        agent_id=0,
                        target=False,
-                       cos=cos, vdn=vdn)
+                       cos=cos, vdn=vdn, action_index = action_index)
 
         #start = time.time()
         q_tot = q

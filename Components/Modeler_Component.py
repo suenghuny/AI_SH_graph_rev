@@ -672,6 +672,19 @@ class Environment:
                     edge_index[0].append(len_ssm_detections + j + 1)
         return edge_index
 
+    def get_ship_to_sam_edge_index(self):
+        edge_index = [[],[]]
+        ship = self.friendlies_fixed_list[0]
+        len_ssm_detections = len(ship.ssm_detections)
+        len_flying_sams_friendly = len(self.flying_sams_friendly)
+        for j in range(len_flying_sams_friendly):
+            edge_index[0].append(0)
+            edge_index[1].append(len_ssm_detections+j+1)
+            edge_index[1].append(0)
+            edge_index[0].append(len_ssm_detections+j+1)
+        return edge_index
+
+
     def get_edge_index(self):
         edge_index = [[],[]]
         ship = self.friendlies_fixed_list[0]
@@ -704,14 +717,7 @@ class Environment:
                     edge_index[1].append(len_ssm_detections+j+1)
                     edge_index[0].append(len_ssm_detections+j+1)
                     edge_index[1].append(i)
-        import networkx as nx
-        import matplotlib.pyplot as plt
-        # if len(edge_index[0])>1:
-        #     A = np.array(edge_index)
-        #     print(A)
-            # G = nx.from_numpy_array(A)
-            # nx.draw(G, with_labels = True)
-            # plt.savefig("filename.png")
+
         return edge_index
 
     def get_enemy_edge_index(self):

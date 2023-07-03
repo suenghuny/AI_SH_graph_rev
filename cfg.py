@@ -18,7 +18,7 @@ def get_cfg():
     parser.add_argument("--GNN", type=str, default='FastGTN', help="map name")
     parser.add_argument("--hidden_size_comm", type=int, default=56, help="GNN hidden layer")
     parser.add_argument("--hidden_size_enemy", type=int, default=64, help="GNN hidden layer")
-    parser.add_argument("--hidden_size_meta_path", type=int, default=56, help="GNN hidden layer")
+    parser.add_argument("--hidden_size_meta_path", type=int, default=14, help="GNN hidden layer")
     parser.add_argument("--iqn_layers", type=str, default= '[128,64,48,39,16]', help="layer 구조")
     parser.add_argument("--ppo_layers", type=str, default='[128,64,48,39,32]', help="layer 구조")
     parser.add_argument("--ship_layers", type=str, default='[72,56]', help="layer 구조")

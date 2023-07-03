@@ -49,14 +49,12 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
     n_step_dones = deque(maxlen = n_step)
     n_step_missile_node_features =deque(maxlen = n_step)
     n_step_ship_feature = deque(maxlen = n_step)
-    n_step_edge_index = deque(maxlen = n_step)
     n_step_action_blue =deque(maxlen = n_step)
     n_step_avail_action_blue = deque(maxlen = n_step)
-
     n_step_action_feature = deque(maxlen=n_step)
     n_step_action_features = deque(maxlen=n_step)
-
     n_step_heterogeneous_edges = deque(maxlen=n_step)
+    n_step_action_index = deque(maxlen=n_step)
 
     if t < cfg.grad_clip_step:
         grad_clip = cfg.grad_clip
@@ -81,12 +79,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                 pass
 
             ship_feature = env.get_ship_feature()
-            edge_index   = env.get_edge_index()
-
-
             missile_node_feature = env.get_missile_node_feature()
-            enemy_edge_index = [[],[]]#env.get_enemy_edge_index()
-            enemy_node_feature = None# env.get_enemy_node_feature()
             action_feature = env.get_action_feature()
 
 
@@ -94,32 +87,24 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
             agent.eval_check(eval=True)
 
 
-            if cfg.GNN == 'GAT':
-                node_representation = agent.get_node_representation(missile_node_feature, ship_feature,edge_index,n_node_feature_missile,
-                                                                    n_node_features_enemy = n_node_feature_enemy,
-                                                                    mini_batch=False)  # 차원 : n_agents X n_representation_comm
-            else:
-                node_representation = agent.get_node_representation(missile_node_feature, ship_feature, heterogeneous_edges,
+            node_representation, node_representation_graph = agent.get_node_representation(missile_node_feature, ship_feature, heterogeneous_edges,
                                                                     n_node_feature_missile,
-                                                                    n_node_features_enemy=n_node_feature_enemy,
                                                                     mini_batch=False)  # 차원 : n_agents X n_representation_comm
-            action_blue = agent.sample_action(node_representation, avail_action_blue, epsilon, action_feature, step = t)
+            action_blue, u = agent.sample_action(node_representation, node_representation_graph, avail_action_blue, epsilon, action_feature, step = t)
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
             reward, win_tag, done, leakers = env.step(action_blue, action_yellow)
 
 
-            #print(reward)
             episode_reward += reward
             n_step_missile_node_features.append(missile_node_feature)
             n_step_ship_feature.append(ship_feature)
-            n_step_edge_index.append(edge_index)
             n_step_action_blue.append(action_blue)
             n_step_rewards.append(reward)
             n_step_dones.append(done)
             n_step_avail_action_blue.append(avail_action_blue)
             n_step_action_feature.append(action_blue)
             n_step_action_features.append(action_feature)
-
+            n_step_action_index.append(u)
             n_step_heterogeneous_edges.append(heterogeneous_edges)
 
             status = None
@@ -136,7 +121,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                 idx = (n_step-1)-step
                 agent.buffer.memory(n_step_missile_node_features[idx],
                                     n_step_ship_feature[idx],
-                                    n_step_edge_index[idx],
+                                    None,
                                     n_step_action_blue[idx],
                                     n_step_rewards,
                                     n_step_dones,
@@ -144,7 +129,8 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                                     status,
                                     n_step_action_feature[idx],
                                     n_step_action_features[idx],
-                                    n_step_heterogeneous_edges[idx]
+                                    n_step_heterogeneous_edges[idx],
+                                    n_step_action_index[idx]
                                     )
 
 
@@ -171,16 +157,16 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                     n_step_avail_action_blue.append(dummy_avail_action)
                     n_step_missile_node_features.append(np.zeros_like(missile_node_feature).tolist())
                     n_step_ship_feature.append(np.zeros_like(ship_feature).tolist())
-                    n_step_edge_index.append([[], []])
                     n_step_action_feature.append(np.zeros_like(action_blue))
                     n_step_action_features.append(np.zeros_like(action_feature))
 
                     heterogeneous_edges = ([[], []], [[], []], [[], []])
                     n_step_heterogeneous_edges.append(heterogeneous_edges)
+                    n_step_action_index.append(0)
 
                 agent.buffer.memory(n_step_missile_node_features[0],
                                     n_step_ship_feature[0],
-                                    n_step_edge_index[0],
+                                    None,
                                     n_step_action_blue[0],
                                     n_step_rewards,
 
@@ -191,7 +177,8 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                                     status,
                                     n_step_action_feature[0],
                                     n_step_action_features[0],
-                                    n_step_heterogeneous_edges[0]
+                                    n_step_heterogeneous_edges[0],
+                                    n_step_action_index[0]
                                     )
             else:
                 for i in range(step):
@@ -201,15 +188,15 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                     n_step_avail_action_blue.append(dummy_avail_action)
                     n_step_missile_node_features.append(np.zeros_like(missile_node_feature).tolist())
                     n_step_ship_feature.append(np.zeros_like(ship_feature).tolist())
-                    n_step_edge_index.append([[], []])
                     n_step_action_feature.append(np.zeros_like(action_blue))
                     n_step_action_features.append(np.zeros_like(action_feature))
 
                     heterogeneous_edges = ([[], []], [[], []], [[], []])
                     n_step_heterogeneous_edges.append(heterogeneous_edges)
+                    n_step_action_index.append(0)
                     agent.buffer.memory(n_step_missile_node_features[0],
                                         n_step_ship_feature[0],
-                                        n_step_edge_index[0],
+                                        None,
                                         n_step_action_blue[0],
                                         n_step_rewards,
                                         n_step_dones,
@@ -217,7 +204,8 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                                         status,
                                         n_step_action_feature[0],
                                         n_step_action_features[0],
-                                        n_step_heterogeneous_edges[0]
+                                        n_step_heterogeneous_edges[0],
+                                        n_step_action_index[0]
                                         )
             break
     return episode_reward, epsilon, t, eval, win_tag, leakers
@@ -249,22 +237,11 @@ def evaluation(agent, env, with_noise = False):
 
 
             ship_feature = env.get_ship_feature()
-            edge_index   = env.get_edge_index()
             missile_node_feature = env.get_missile_node_feature()
-            enemy_edge_index = [[],[]]#env.get_enemy_edge_index()
-            enemy_node_feature = None# env.get_enemy_node_feature()
             action_feature = env.get_action_feature()
             agent.eval_check(eval=True)
-            if cfg.GNN == 'GAT':
-                node_representation = agent.get_node_representation(missile_node_feature, ship_feature,edge_index,n_node_feature_missile,
-                                                                    n_node_features_enemy = n_node_feature_enemy,
-                                                                    mini_batch=False)  # 차원 : n_agents X n_representation_comm
-            else:
-                node_representation = agent.get_node_representation(missile_node_feature, ship_feature, heterogeneous_edges,
-                                                                    n_node_feature_missile,
-                                                                    n_node_features_enemy=n_node_feature_enemy,
-                                                                    mini_batch=False)  # 차원 : n_agents X n_representation_comm
-            action_blue = agent.sample_action(node_representation, avail_action_blue, epsilon=0, action_feature=action_feature, training = False, with_noise = with_noise)
+            node_representation, node_representation_graph = agent.get_node_representation(missile_node_feature, ship_feature, heterogeneous_edges,n_node_feature_missile,mini_batch=False)  # 차원 : n_agents X n_representation_comm
+            action_blue, u = agent.sample_action(node_representation, node_representation_graph, avail_action_blue, epsilon=0, action_feature=action_feature, training = False, with_noise = with_noise)
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
             reward, win_tag, done, leakers = env.step(action_blue, action_yellow)
             episode_reward += reward
