@@ -661,39 +661,24 @@ class Agent:
 
     def save_model(self, e, t, epsilon, path):
 
-        if cfg.GNN == 'GAT':
-            torch.save({
-                'e': e,
-                't': t,
-                'epsilon': epsilon,
-                'Q': self.Q.state_dict(),
-                'Q_tar': self.Q_tar.state_dict(),
-                'node_representation_action_feature': self.node_representation_action_feature.state_dict(),
-                'node_representation_ship_feature': self.node_representation_ship_feature.state_dict(),
-                'node_representation': self.node_representation.state_dict(),
-                'func_missile_obs': self.func_missile_obs.state_dict(),
-                'dueling_Q': self.DuelingQ.state_dict(),
-                'optimizer': self.optimizer.state_dict()}, "{}".format(path))
-        else:
-            torch.save({
-                'e': e,
-                't': t,
-                'epsilon': epsilon,
-                'Q': self.Q.state_dict(),
-                'Q_tar': self.Q_tar.state_dict(),
-                'node_representation_action_feature': self.node_representation_action_feature.state_dict(),
-                'node_representation_ship_feature': self.node_representation_ship_feature.state_dict(),
-                'node_representation': self.node_representation.state_dict(),
-                'func_meta_path': self.func_meta_path.state_dict(),
-                'dueling_Q': self.DuelingQ.state_dict(),
-                'optimizer': self.optimizer.state_dict()}, "{}".format(path))
+
+        torch.save({
+            'e': e,
+            't': t,
+            'epsilon': epsilon,
+            'Q': self.Q.state_dict(),
+            'Q_tar': self.Q_tar.state_dict(),
+            'node_representation_ship_feature': self.node_representation_ship_feature.state_dict(),
+            'node_representation': self.node_representation.state_dict(),
+            'func_meta_path': self.func_meta_path.state_dict(),
+            'dueling_Q': self.DuelingQ.state_dict(),
+            'optimizer': self.optimizer.state_dict()}, "{}".format(path))
 
 
     def eval_check(self, eval):
         if eval == True:
             self.DuelingQ.eval()
             self.node_representation_ship_feature.eval()
-            self.node_representation_action_feature.eval()
             self.node_representation.eval()
             self.func_meta_path.eval()
             self.Q.eval()
@@ -701,7 +686,6 @@ class Agent:
         else:
             self.DuelingQ.train()
             self.node_representation_ship_feature.train()
-            self.node_representation_action_feature.train()
             self.node_representation.train()
             self.func_meta_path.train()
             self.Q.train()
