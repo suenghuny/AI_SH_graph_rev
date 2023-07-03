@@ -606,7 +606,7 @@ class Agent:
         self.node_representation = NodeEmbedding(feature_size=feature_size_missile,
                                                  n_representation_obs=n_representation_missile,
                                                  layers = node_embedding_layers_missile).to(device)  # 수정사항
-        self.func_meta_path = FastGTNs(num_edge_type=4,
+        self.func_meta_path = FastGTNs(num_edge_type=5,
                                            feature_size=n_representation_missile,
                                            num_nodes=self.num_nodes,
                                            num_FastGTN_layers=cfg.num_GT_layers,
@@ -748,8 +748,8 @@ class Agent:
                     node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
                     missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float,device=device).clone().detach()
                     node_embedding_missile_node = self.node_representation(missile_node_feature, missile=True)
-                    edge_index_1, edge_index_2, edge_index_3 = edge_index_missile
-                    A = self.get_heterogeneous_adjacency_matrix(edge_index_1, edge_index_2, edge_index_3, n_node_features = n_node_features_missile)
+                    edge_index_1, edge_index_2, edge_index_3, edge_index_4 = edge_index_missile
+                    A = self.get_heterogeneous_adjacency_matrix(edge_index_1, edge_index_2, edge_index_3,edge_index_4, n_node_features = n_node_features_missile)
                     node_representation_graph = self.func_meta_path(A, node_embedding_missile_node, num_nodes=n_node_features_missile, mini_batch=mini_batch)
                     node_representation = torch.cat([node_embedding_ship_features, node_representation_graph[0].unsqueeze(0)],dim=1)
             else:
@@ -765,7 +765,7 @@ class Agent:
                 node_embedding_missile_node = torch.stack(empty)
                 node_embedding_missile_node = torch.einsum('ijk->jik', node_embedding_missile_node)
                 A = [self.get_heterogeneous_adjacency_matrix(edge_index_missile[m][0], edge_index_missile[m][1],
-                                                             edge_index_missile[m][2], n_node_features_missile) for m in
+                                                             edge_index_missile[m][2], edge_index_missile[m][3], n_node_features_missile) for m in
                      range(self.batch_size)]
                 node_representation_graph = self.func_meta_path(A, node_embedding_missile_node, num_nodes=n_node_features_missile,
                                                           mini_batch=mini_batch)
@@ -795,7 +795,7 @@ class Agent:
         return node_representation
 
 
-    def get_heterogeneous_adjacency_matrix(self, edge_index_1, edge_index_2, edge_index_3, n_node_features):
+    def get_heterogeneous_adjacency_matrix(self, edge_index_1, edge_index_2, edge_index_3, edge_index_4, n_node_features):
         A = []
         edge_index_1_transpose = deepcopy(edge_index_1)
         edge_index_1_transpose[1] = edge_index_1[0]
@@ -809,9 +809,14 @@ class Agent:
         edge_index_3_transpose = deepcopy(edge_index_3)
         edge_index_3_transpose[1] = edge_index_3[0]
         edge_index_3_transpose[0] = edge_index_3[1]
+
+        edge_index_4_transpose = deepcopy(edge_index_4)
+        edge_index_4_transpose[1] = edge_index_4[0]
+        edge_index_4_transpose[0] = edge_index_4[1]
         edges = [edge_index_1,
                  edge_index_2,
                  edge_index_3,
+                 edge_index_4
                  ]
         for i, edge in enumerate(edges):
             edge = torch.tensor(edge, dtype=torch.long, device=device)

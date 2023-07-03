@@ -70,13 +70,13 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
         if env.now % (decision_timestep) <= 0.00001:
             avail_action_blue, target_distance_blue, air_alert_blue = env.get_avail_actions_temp(side='blue')
             avail_action_yellow, target_distance_yellow, air_alert_yellow = env.get_avail_actions_temp(side='yellow')
-            if cfg.GNN == 'FastGTN':
-                edge_index_ssm_to_ship = env.get_ssm_to_ship_edge_index()
-                edge_index_ssm_to_ssm = env.get_ssm_to_ssm_edge_index()
-                edge_index_sam_to_ssm =  env.get_sam_to_ssm_edge_index()
-                heterogeneous_edges = (edge_index_ssm_to_ship, edge_index_ssm_to_ssm, edge_index_sam_to_ssm)
-            else:
-                pass
+
+            edge_index_ssm_to_ship = env.get_ssm_to_ship_edge_index()
+            edge_index_ssm_to_ssm = env.get_ssm_to_ssm_edge_index()
+            edge_index_sam_to_ssm =  env.get_sam_to_ssm_edge_index()
+            edge_index_ship_to_sam = env.get_ship_to_sam_edge_index()
+            heterogeneous_edges = (edge_index_ssm_to_ship, edge_index_ssm_to_ssm, edge_index_sam_to_ssm, edge_index_ship_to_sam)
+
 
             ship_feature = env.get_ship_feature()
             missile_node_feature = env.get_missile_node_feature()
@@ -227,13 +227,13 @@ def evaluation(agent, env, with_noise = False):
         if env.now % (decision_timestep) <= 0.00001:
             avail_action_blue, target_distance_blue, air_alert_blue = env.get_avail_actions_temp(side='blue')
             avail_action_yellow, target_distance_yellow, air_alert_yellow = env.get_avail_actions_temp(side='yellow')
-            if cfg.GNN == 'FastGTN':
-                edge_index_ssm_to_ship = env.get_ssm_to_ship_edge_index()
-                edge_index_ssm_to_ssm = env.get_ssm_to_ssm_edge_index()
-                edge_index_sam_to_ssm =  env.get_sam_to_ssm_edge_index()
-                heterogeneous_edges = (edge_index_ssm_to_ship, edge_index_ssm_to_ssm, edge_index_sam_to_ssm)
-            else:
-                pass
+
+            edge_index_ssm_to_ship = env.get_ssm_to_ship_edge_index()
+            edge_index_ssm_to_ssm = env.get_ssm_to_ssm_edge_index()
+            edge_index_sam_to_ssm =  env.get_sam_to_ssm_edge_index()
+            edge_index_ship_to_sam = env.get_ship_to_sam_edge_index()
+            heterogeneous_edges = (edge_index_ssm_to_ship, edge_index_ssm_to_ssm, edge_index_sam_to_ssm, edge_index_ship_to_sam)
+
 
 
             ship_feature = env.get_ship_feature()
