@@ -738,7 +738,7 @@ class Agent:
                 node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
 
                 missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float).to(device)
-                missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float).to(device)  # batch_size, num_node, node_feature
+#                missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float).to(device)  # batch_size, num_node, node_feature
                 empty = list()
                 for i in range(n_node_features_missile):
                     node_embedding_missile_node = self.node_representation(missile_node_feature[:, i, :], missile=True)

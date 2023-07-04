@@ -100,7 +100,6 @@ class FastGTN(nn.Module):
         self.layers = nn.ModuleList(layers)
 
         self.Ws = []
-
         for i in range(self.num_channels):
             self.Ws.append(nn.Parameter(torch.Tensor(self.w_in, self.w_out)))
         self.Ws = nn.ParameterList(self.Ws)
@@ -108,11 +107,16 @@ class FastGTN(nn.Module):
         self.linear1 = nn.Linear(self.w_out * self.num_channels, self.w_out)
 
 
+        # self.Rs = []
+        # for i in range(self.num_channels):
+        #     self.Rs.append(nn.GRU(input_size = self.w_in,hidden_size = self.w_in,num_layers=1))
+        # self.Rs = nn.ParameterList(self.Rs)
+        # [glorot(R) for W in self.Ws]
+
+
 
 
     def forward(self, A, X, num_nodes, mini_batch):
-
-
         if mini_batch == False:
             H = [X @ W for W in self.Ws]  # GCNConv와 input의 matrix multiplication
             H = torch.stack(H, dim=0)
@@ -142,7 +146,6 @@ class FastGTN(nn.Module):
             # start = time.time()
 
             H = [torch.einsum('bij, jk->bik', X, W) for W in self.Ws]  # GCNConv와 input의 matrix multiplication
-
             H = torch.stack(H, dim=0)
             H = torch.einsum('cbik -> bcik', H)
             X_ = H.clone().detach().requires_grad_(True)
