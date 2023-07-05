@@ -243,7 +243,8 @@ class FastGTLayer(nn.Module):
                     mat_a[b][i].copy_(torch.sparse_coo_tensor(A[b][i][0], A[b][i][1], (num_nodes, num_nodes)).to(device).to_dense())
             mat_a = torch.stack(mat_a, dim=0)
             Hs = torch.einsum('bcij, bcjk-> bcik', torch.einsum('bijk, ci  -> bcjk', mat_a, filter), H_)
-
+            # del mat_a
+            # torch.cuda.empty_cache()
 
 
 

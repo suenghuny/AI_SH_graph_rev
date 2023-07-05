@@ -33,7 +33,7 @@ def get_cfg():
     parser.add_argument("--iqn_N", type=int, default=48, help="")
     parser.add_argument("--n_cos", type=int, default=36, help="")
     parser.add_argument("--buffer_size", type=int, default=50000, help="")
-    parser.add_argument("--batch_size", type=int, default=32, help="")
+    parser.add_argument("--batch_size", type=int, default=350, help="")
     parser.add_argument("--teleport_probability", type=float, default=1.0, help="teleport_probability")
     parser.add_argument("--gtn_beta", type=float, default=0.05, help="teleport_probability")
     parser.add_argument("--gamma", type=float, default=.99, help="discount ratio")
