@@ -822,7 +822,7 @@ class Agent:
         """
         if target == False:
             mask = torch.tensor(avail_actions, device=device).bool()
-            action_features = obs_graph[:, 1:self.action_size+1, :]
+            action_features = obs_graph[:, :self.action_size, :]
             action_index = action_index.unsqueeze(1).unsqueeze(2).expand(-1, -1, action_features.size(2))
             action_feature = torch.gather(action_features, 1, action_index).squeeze(1)
             obs_n_action = torch.cat([obs, action_feature], dim = 1)
@@ -847,7 +847,7 @@ class Agent:
         else:
             with torch.no_grad():
                 mask = torch.tensor(avail_actions, device=device).bool()
-                action_features = obs_graph[:, 1:self.action_size+1, :]
+                action_features = obs_graph[:, :self.action_size, :]
                 batch_size = action_features.shape[0]
 
                 obs_expand = obs.unsqueeze(1)
@@ -907,7 +907,7 @@ class Agent:
 
         #print(action_feature.shape, node_representation_graph[1:self.action_size+1, :].shape)
 
-        node_embedding_action = node_representation_graph[1:self.action_size + 1, :]
+        node_embedding_action = node_representation_graph[0:self.action_size, :]
 
 
 
