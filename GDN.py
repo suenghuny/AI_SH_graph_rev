@@ -2,7 +2,6 @@ from torch.optim.lr_scheduler import StepLR
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from ada_hessian import AdaHessian
 import torch.cuda.amp as amp
-import GPUtil
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -1071,7 +1070,6 @@ class Agent:
             print("OOM", torch.cuda.memory_reserved() / 1e-9)
             print("OOM", torch.cuda.memory_reserved() / 1e-9)
             print("OOM", torch.cuda.memory_reserved() / 1e-9)
-            print( GPUtil.showUtilization())
             torch.cuda.reset_max_memory_allocated()
             gc.collect()
             torch.cuda.empty_cache()
