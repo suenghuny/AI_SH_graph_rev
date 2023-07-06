@@ -569,7 +569,7 @@ class Environment:
                         f6 += 1/ship.air_engagement_limit
 
             empty0 = [f1,f2,f3,f4,f5,f6,f7]
-            n = self.discr_n
+            n = cfg.discr_n
             empty1 = [0] * n
             for enemy_ssm in ship.ssm_detections:
                 for k in range(n):
@@ -754,6 +754,7 @@ class Environment:
         # if ship.surface_tracking_limit+ship.air_tracking_limit+1-len(node_features) >0:
         #     for _ in range(ship.surface_tracking_limit+ship.air_tracking_limit+1-len(node_features)):
         #         node_features.append(dummy)
+
         return node_features
 
     def get_missile_node_feature(self, rad_coordinate = True):
@@ -781,6 +782,7 @@ class Environment:
                 original_target = missile.original_target
                 f1, f2, f3, f4, f5, f6 = self.get_feature(original_target, missile)
                 node_features.append([f1, f2, f3, f4, f5, f6])
+
         return node_features
 
 

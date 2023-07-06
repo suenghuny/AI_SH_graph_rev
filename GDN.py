@@ -850,10 +850,14 @@ class Agent:
             action_feature = torch.gather(action_features, 1, action_index).squeeze(1)
             obs_n_action = torch.cat([obs, action_feature], dim = 1)
             A_a = self.Q.advantage_forward(obs_n_action, cos, mini_batch=True)
+
             obs_expand = obs.unsqueeze(1)
             obs_expand = obs_expand.expand([self.batch_size, self.action_size, obs_expand.shape[2]])  # batch-size, action_size, obs_size
+
             obs_n_action = torch.cat([obs_expand, action_features], dim=2)
             obs_n_action_flat = obs_n_action.reshape(self.action_size*self.batch_size, obs_n_action.size(-1))
+
+
             cos1 = cos.expand([self.action_size, self.batch_size, self.iqn_N, self.n_cos])
             cos1 = cos1.reshape(self.action_size*self.batch_size, self.iqn_N, self.n_cos)
             q_values_flat = self.Q.advantage_forward(obs_n_action_flat, cos1, mini_batch=True)
