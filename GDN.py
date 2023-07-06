@@ -654,7 +654,7 @@ class Agent:
         if cfg.optimizer == 'LBFGS':
             self.optimizer = optim.LBFGS(self.eval_params, lr=learning_rate)
         if cfg.optimizer == 'ADAM':
-            self.optimizer = optim.Adam(self.eval_params, lr=learning_rate)
+            self.optimizer = optim.Adam(self.eval_params, lr=learning_rate) #
         #print(type(self.optimizer)==AdaHessian)
         #self.scaler = amp.GradScaler()
         self.scheduler = StepLR(optimizer=self.optimizer, step_size=cfg.scheduler_step, gamma=cfg.scheduler_ratio)
