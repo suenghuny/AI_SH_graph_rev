@@ -253,8 +253,8 @@ class Environment:
     def get_env_info(self):
         ship=self.friendlies[0]
         env_info = {"n_agents" : 1,
-                    "ship_feature_shape": 7 + cfg.discr_n+cfg.num_action_history*8+8,  # + self.n_agents,
-                    "missile_feature_shape" : 6,  #9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
+                    "ship_feature_shape": 7 + cfg.discr_n+cfg.num_action_history*5+8,  # + self.n_agents,
+                    "missile_feature_shape" : 4,  #9 + num_jobs + max_ops_length+ len(workcenter)+3+len(ops_name_list) + 1+3-12, # + self.n_agents,
                     "enemy_feature_shape": 12,
                     "action_feature_shape": 8,
                     "n_actions": (1 + self.ship_friendly_action_space + self.air_friendly_action_space)
@@ -594,16 +594,16 @@ class Environment:
                     target = ship.action_history[i]
                     if target.cla == 'ship':
                         if target.status != 'destroyed':
-                            z.append([x1, x2, x3, x4, x5, x6, 1, 0])
+                            z.append([x1, x2, x3, x4, 1])
                         else:
-                            z.append([0,0,0,0,0,0,0,0])
+                            z.append([0,0,0,0,0])
                     else:
                         if target.status != 'destroyed':
-                            z.append([x1, x2, x3, x4, x5, x6, 0, 1])
+                            z.append([x1, x2, x3, x4, 1])
                         else:
-                            z.append([0,0,0,0,0,0,0,0])
+                            z.append([0,0,0,0,0])
                 else:
-                    z.append([0,0,0,0,0,0,0,0])
+                    z.append([0,0,0,0,0])
             ship_feature.append(np.concatenate(z).tolist())
         return ship_feature
 
@@ -686,13 +686,16 @@ class Environment:
 
     def get_ship_to_enemy_edge_index(self): # 변경 완료
         edge_index = [[],[]]
+        ship = self.friendlies_fixed_list[0]
+        len_enemies = len(self.enemies_fixed_list)
         for j in range(len(self.enemies_fixed_list)):
             enemy = self.enemies_fixed_list[j]
-            if enemy.status != 'destroyed':
-                edge_index[0].append(0)
-                edge_index[1].append(j+1)
-                edge_index[1].append(0)
-                edge_index[0].append(j+1)
+            for k in range(len(ship.ssm_detections)):
+                if enemy.status != 'destroyed':
+                    edge_index[0].append(k+len_enemies+1)
+                    edge_index[1].append(j+1)
+                    edge_index[1].append(k+len_enemies+1)
+                    edge_index[0].append(j+1)
         return edge_index
 
 
@@ -761,8 +764,6 @@ class Environment:
         dummy =[0,
                 0,
                 0,
-                0,
-                0,
                 0]
 
         node_features = [dummy]
@@ -771,17 +772,17 @@ class Environment:
             for enemy in self.enemies_fixed_list:
                 if enemy.status != 'destroyed':
                     f1, f2, f3, f4, f5, f6 = self.get_feature(ship, enemy)
-                    node_features.append([f1, f2, f3, f4, f5, f6])
+                    node_features.append([f1, f2, f3, f4])
                 else:
                     node_features.append(dummy)
             for missile in ship.ssm_detections:
                 f1, f2, f3, f4, f5, f6 = self.get_feature(ship, missile)
-                node_features.append([f1, f2, f3, f4, f5, f6])
+                node_features.append([f1, f2, f3, f4])
             for j in range(len_flying_sams_friendly):
                 missile = self.flying_sams_friendly[j]
                 original_target = missile.original_target
                 f1, f2, f3, f4, f5, f6 = self.get_feature(original_target, missile)
-                node_features.append([f1, f2, f3, f4, f5, f6])
+                node_features.append([f1, f2, f3, f4])
 
         return node_features
 
