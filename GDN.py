@@ -649,8 +649,11 @@ class Agent:
                                list(self.func_meta_path.parameters())
 
 
-
-        self.optimizer =AdaHessian(self.eval_params, lr=learning_rate)
+        if cfg.optimizer == 'AdaHessian':
+            self.optimizer =AdaHessian(self.eval_params, lr=learning_rate)
+        if cfg.optimizer == 'Adam':
+            self.optimizer = optim.Adam(self.eval_params, lr=learning_rate)
+        #print(type(self.optimizer)==AdaHessian)
         #self.scaler = amp.GradScaler()
         self.scheduler = StepLR(optimizer=self.optimizer, step_size=cfg.scheduler_step, gamma=cfg.scheduler_ratio)
 
@@ -1043,8 +1046,10 @@ class Agent:
         #print("후1", torch.cuda.memory_reserved()/1e-9)
 
         self.optimizer.zero_grad()
-
-        loss.backward(create_graph=True)
+        if type(self.optimizer) == AdaHessian:
+            loss.backward(create_graph=True)
+        else:
+            loss.backward()
         del loss
         gc.collect()
         torch.cuda.empty_cache()
