@@ -33,7 +33,7 @@ def get_cfg():
     parser.add_argument("--iqn_N", type=int, default=48, help="")
     parser.add_argument("--n_cos", type=int, default=36, help="")
     parser.add_argument("--buffer_size", type=int, default=50000, help="")
-    parser.add_argument("--batch_size", type=int, default=350, help="")
+    parser.add_argument("--batch_size", type=int, default=17, help="")
     parser.add_argument("--teleport_probability", type=float, default=1.0, help="teleport_probability")
     parser.add_argument("--gtn_beta", type=float, default=0.05, help="teleport_probability")
     parser.add_argument("--gamma", type=float, default=.99, help="discount ratio")
@@ -53,7 +53,7 @@ def get_cfg():
     parser.add_argument("--interval_constant_blue", type=float, default=1, help="interval_constant_blue")
     parser.add_argument("--action_history_step", type=int, default=4, help="action_history_step")
 
-    parser.add_argument("--graph_distance", type=float, default=20, help="graph distance")
+
 
     parser.add_argument("--grad_clip", type=float, default=0.5, help="gradient clipping")
     parser.add_argument("--grad_clip_step", type=int, default=50000, help="gradient clipping step")
@@ -69,11 +69,12 @@ def get_cfg():
     parser.add_argument("--channels", type=int, default=1, help="channels")
     parser.add_argument("--num_layers", type=int, default=2, help="num layers")
     parser.add_argument("--embedding_train_stop", type=int, default=100, help="embedding_train_stop")
-    parser.add_argument("--n_eval", type=int, default=1, help="number of evaluation")
+    parser.add_argument("--n_eval", type=int, default=0, help="number of evaluation")
     parser.add_argument("--with_noise", type=bool, default=False, help="")
     parser.add_argument("--temp_constant", type=float, default=1, help="")
     parser.add_argument("--init_constant", type=int, default=10000, help="")
     parser.add_argument("--cuda", type=str, default='cuda:0', help="")
     parser.add_argument("--num_action_history", type=int, default=10, help="")
     parser.add_argument("--discr_n", type=int, default=10, help="")
+    parser.add_argument("--graph_distance", type=float, default=20, help="graph distance")
     return parser.parse_args()

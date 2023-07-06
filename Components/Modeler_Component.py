@@ -280,6 +280,7 @@ class Environment:
                 " 수상표적은 빠르지 않으며, (유도탄에 비해) 수가 빠르게 변화하지는 않기 때문에 action-index에 one-to-one 매핑되도록함"
                 if len(ship.surface_prelaunching_managing_list) < ship.surface_engagement_limit:
                     num_of_idle_ssms = len([1 for missile in ship.ssm_launcher if missile.status == 'idle'])
+
                     if num_of_idle_ssms > 0:  # 보유 ssm 대수가 1발 이상이어야 수상표적 공격 가능
                         for i in range(len(enemies_fixed_list)):              # 함정 표적은 feature index가 정해져 있음
                             enemy_ship = enemies_fixed_list[i]
@@ -606,18 +607,7 @@ class Environment:
             ship_feature.append(np.concatenate(z).tolist())
         return ship_feature
 
-    def get_ssm_to_ship_edge_index(self):
-        edge_index = [[],[]]
-        ship = self.friendlies_fixed_list[0]
-        len_ssm_detections = len(ship.ssm_detections)
-        len_flying_sams_friendly = len(self.flying_sams_friendly)
-        for i in range(1, len_ssm_detections+1):
-            edge_index[0].append(0)
-            edge_index[1].append(i)
 
-            edge_index[0].append(i)
-            edge_index[1].append(0)
-        return edge_index
     def range_checking(self, missile):
         ship = self.friendlies_fixed_list[0]
         range1 = ship.l_sam_max_range
@@ -634,131 +624,78 @@ class Environment:
         if distance <= range3:
             return 4
 
-
-    def get_ssm_to_ssm_edge_index(self):
+    def get_ssm_to_ship_edge_index(self): # 변경 완료
         edge_index = [[],[]]
         ship = self.friendlies_fixed_list[0]
         len_ssm_detections = len(ship.ssm_detections)
-        len_flying_sams_friendly = len(self.flying_sams_friendly)
+        len_enemies = len(self.enemies_fixed_list)
+        for i in range(0, len_ssm_detections):
+            edge_index[0].append(0)
+            edge_index[1].append(i+len_enemies+1)
+            edge_index[1].append(0)
+            edge_index[0].append(i+len_enemies+1)
 
+        return edge_index
+    def get_ssm_to_ssm_edge_index(self):  #변경 완료
+        edge_index = [[],[]]
+        ship = self.friendlies_fixed_list[0]
+        len_ssm_detections = len(ship.ssm_detections)
+        len_enemies = len(self.enemies_fixed_list)
         for j in range(len_ssm_detections-1, -1, -1):
             for k in range(j-1, -1, -1):
                 missile_j = ship.ssm_detections[j]
                 missile_k = ship.ssm_detections[k]
-                # r_j = self.range_checking(missile_j)
-                # r_k = self.range_checking(missile_k)
-
-
-                if cal_distance(missile_j, missile_k)<=20 :
-                    edge_index[0].append(j+1)
-                    edge_index[1].append(k+1)
-                    edge_index[0].append(k+1)
-                    edge_index[1].append(j+1)
+                if cal_distance(missile_j, missile_k)<=cfg.graph_distance:
+                    edge_index[0].append(j+len_enemies+1)
+                    edge_index[1].append(k+len_enemies+1)
+                    edge_index[1].append(j+len_enemies+1)
+                    edge_index[0].append(k+len_enemies+1)
 
 
         return edge_index
-    def get_sam_to_ssm_edge_index(self):
+
+    def get_sam_to_ssm_edge_index(self): # 변경 완료
         edge_index = [[],[]]
         ship = self.friendlies_fixed_list[0]
         len_ssm_detections = len(ship.ssm_detections)
         len_flying_sams_friendly = len(self.flying_sams_friendly)
-        for i in range(1, len_ssm_detections+1):
+        len_enemies = len(self.enemies_fixed_list)
+        for i in range(len_ssm_detections):
             for j in range(len_flying_sams_friendly):
-                ssm_i = ship.ssm_detections[i-1]
+                ssm_i = ship.ssm_detections[i]
                 sam_j = self.flying_sams_friendly[j]
                 if sam_j.original_target==ssm_i:
-                    edge_index[0].append(i)
-                    edge_index[1].append(len_ssm_detections+j+1)
-                    edge_index[1].append(i)
-                    edge_index[0].append(len_ssm_detections + j + 1)
+                    edge_index[0].append(i+len_enemies+1)
+                    edge_index[1].append(j+len_enemies+len_ssm_detections+1)
+                    edge_index[1].append(i+len_enemies+1)
+                    edge_index[0].append(j+len_enemies+len_ssm_detections+1)
         return edge_index
 
-    def get_ship_to_sam_edge_index(self):
+    def get_ship_to_sam_edge_index(self): #변경 완료
         edge_index = [[],[]]
         ship = self.friendlies_fixed_list[0]
         len_ssm_detections = len(ship.ssm_detections)
         len_flying_sams_friendly = len(self.flying_sams_friendly)
+        len_enemies = len(self.enemies_fixed_list)
         for j in range(len_flying_sams_friendly):
             edge_index[0].append(0)
-            edge_index[1].append(len_ssm_detections+j+1)
+            edge_index[1].append(j+len_enemies+len_ssm_detections+1)
             edge_index[1].append(0)
-            edge_index[0].append(len_ssm_detections+j+1)
+            edge_index[0].append(j+len_enemies+len_ssm_detections+1)
         return edge_index
 
-
-    def get_edge_index(self):
+    def get_ship_to_enemy_edge_index(self): # 변경 완료
         edge_index = [[],[]]
-        ship = self.friendlies_fixed_list[0]
-        len_ssm_detections = len(ship.ssm_detections)
-        len_flying_sams_friendly = len(self.flying_sams_friendly)
-        for i in range(1, len_ssm_detections+1):
-            edge_index[0].append(0)
-            edge_index[1].append(i)
-            edge_index[0].append(i)
-            edge_index[1].append(0)
-
-        for j in range(len_ssm_detections-1, -1, -1):
-            for k in range(j-1, -1, -1):
-                missile_j = ship.ssm_detections[j]
-                missile_k = ship.ssm_detections[k]
-                #print(cal_distance(missile_j, missile_k))
-                if cal_distance(missile_j, missile_k) <= cfg.graph_distance:
-                    edge_index[0].append(j+1)
-                    edge_index[1].append(k+1)
-                    edge_index[0].append(k+1)
-                    edge_index[1].append(j+1)
-
-
-        for i in range(1, len_ssm_detections+1):
-            for j in range(len_flying_sams_friendly):
-                ssm_i = ship.ssm_detections[i-1]
-                sam_j = self.flying_sams_friendly[j]
-                if sam_j.original_target==ssm_i:
-                    edge_index[0].append(i)
-                    edge_index[1].append(len_ssm_detections+j+1)
-                    edge_index[0].append(len_ssm_detections+j+1)
-                    edge_index[1].append(i)
-
+        for j in range(len(self.enemies_fixed_list)):
+            enemy = self.enemies_fixed_list[j]
+            if enemy.status != 'destroyed':
+                edge_index[0].append(0)
+                edge_index[1].append(j+1)
+                edge_index[1].append(0)
+                edge_index[0].append(j+1)
         return edge_index
 
-    def get_enemy_edge_index(self):
-        edge_index = [[],[]]
-        for ship in self.friendlies_fixed_list:
-            for j in range(len(self.enemies_fixed_list)):
-                enemy= self.enemies_fixed_list[j]
-                if enemy.status != 'destroyed':
-                    edge_index[0].append(0)
-                    edge_index[1].append(j+1)
-        return edge_index
 
-    def get_enemy_node_feature(self, rad_coordinate = True):
-        node_features = [[0, 0, 0, 0, 0]]
-        for ship in self.friendlies_fixed_list:
-            for enemy in self.enemies_fixed_list:
-                if enemy.status != 'destroyed':
-                    if rad_coordinate == True:
-                        r = ((enemy.position_x - ship.position_x) ** 2 + (enemy.position_y - ship.position_y) ** 2) ** 0.5 / (enemy.attack_range - ship.detection_range)
-                        v = ((enemy.v_x - ship.v_x) ** 2 + (enemy.v_y - ship.v_y) ** 2) ** 0.5 / (self.missile_speed_scaler - ship.speed)
-                        theta_r = math.atan2(enemy.position_y - ship.position_y, enemy.position_x - ship.position_x)
-                        theta_v = math.atan2(ship.v_y - enemy.v_y, ship.v_x - enemy.v_x)
-                        a = ((enemy.a_x - ship.a_x) ** 2 + (enemy.a_y - ship.a_y) ** 2) ** 0.5
-                        theta_a = math.atan2(ship.a_y - enemy.a_y, ship.a_x - enemy.a_x)
-                        if a <= 0.01:
-                            a = 0
-                            theta_a = 0
-                        node_features.append([r, v, a, theta_r - theta_v, theta_v - theta_a])
-                    else:
-                        px = enemy.position_x - ship.position_x
-                        py = enemy.position_y - ship.position_y
-                        vx = enemy.v_x - ship.v_x
-                        vy = enemy.v_y - ship.v_y
-                        ax = (enemy.a_x - ship.a_x)*10
-                        ay = (enemy.a_y - ship.a_y)*10
-                        node_features.append([px / enemy.attack_range, py / enemy.attack_range, vx / enemy.speed, vy / enemy.speed, ax, ay])
-        if ship.surface_tracking_limit+1-len(node_features)>0:
-            for _ in range(ship.surface_tracking_limit+1-len(node_features)):
-                node_features.append([0, 0, 0, 0, 0])
-        return node_features
 
     def get_feature(self, ship, target, action_feature = False):
         if action_feature == False:
@@ -828,33 +765,23 @@ class Environment:
                 0]
 
         node_features = [dummy]
+        len_flying_sams_friendly = len(self.flying_sams_friendly)
         for ship in self.friendlies_fixed_list:
-            for missile in ship.ssm_detections:
-                if rad_coordinate == True:
-                    f1, f2, f3, f4, f5, f6 = self.get_feature(ship, missile)
+            for enemy in self.enemies_fixed_list:
+                if enemy.status != 'destroyed':
+                    f1, f2, f3, f4, f5, f6 = self.get_feature(ship, enemy)
                     node_features.append([f1, f2, f3, f4, f5, f6])
                 else:
-                    px = missile.position_x - ship.position_x
-                    py = missile.position_y - ship.position_y
-                    vx = missile.v_x - ship.v_x
-                    vy = missile.v_y - ship.v_y
-                    ax = missile.a_x - ship.a_x
-                    ay = missile.a_y - ship.a_y
-                    node_features.append([px/missile.attack_range, py/missile.attack_range, vx/missile.speed, vy/missile.speed, ax, ay])
+                    node_features.append(dummy)
+            for missile in ship.ssm_detections:
+                f1, f2, f3, f4, f5, f6 = self.get_feature(ship, missile)
+                node_features.append([f1, f2, f3, f4, f5, f6])
+            for j in range(len_flying_sams_friendly):
+                missile = self.flying_sams_friendly[j]
+                original_target = missile.original_target
+                f1, f2, f3, f4, f5, f6 = self.get_feature(original_target, missile)
+                node_features.append([f1, f2, f3, f4, f5, f6])
 
-
-
-        len_flying_sams_friendly = len(self.flying_sams_friendly)
-        for j in range(len_flying_sams_friendly):
-            missile = self.flying_sams_friendly[j]
-            original_target = missile.original_target
-            f1, f2, f3, f4, f5, f6 = self.get_feature(original_target, missile)
-            node_features.append([f1, f2, f3, f4, f5, f6])
-
-
-        if ship.air_tracking_limit +ship.air_engagement_limit+ship.num_m_sam+1-len(node_features) > 0:
-            for _ in range(ship.air_tracking_limit +ship.air_engagement_limit+ship.num_m_sam+1-len(node_features)):
-                node_features.append(dummy)
         return node_features
 
 

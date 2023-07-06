@@ -603,7 +603,7 @@ class Agent:
         self.node_representation = NodeEmbedding(feature_size=feature_size_missile,
                                                  n_representation_obs=n_representation_missile,
                                                  layers = node_embedding_layers_missile).to(device)  # 수정사항
-        self.func_meta_path = FastGTNs(num_edge_type=5,
+        self.func_meta_path = FastGTNs(num_edge_type=6,
                                            feature_size=n_representation_missile,
                                            num_nodes=self.num_nodes,
                                            num_FastGTN_layers=cfg.num_GT_layers,
@@ -655,6 +655,11 @@ class Agent:
         self.scheduler = StepLR(optimizer=self.optimizer, step_size=cfg.scheduler_step, gamma=cfg.scheduler_ratio)
 
         self.time_check = [[], []]
+
+        self.dummy_node = [
+                          [[0]*feature_size_missile for _ in range(i)]
+
+                            for i in range(n_node_feature_missile)]
 
 
     def save_model(self, e, t, epsilon, path):
@@ -727,25 +732,34 @@ class Agent:
                     node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
                     missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float,device=device).clone().detach()
                     node_embedding_missile_node = self.node_representation(missile_node_feature, missile=True)
-                    edge_index_1, edge_index_2, edge_index_3, edge_index_4 = edge_index_missile
-                    A = self.get_heterogeneous_adjacency_matrix(edge_index_1, edge_index_2, edge_index_3,edge_index_4, n_node_features = n_node_features_missile)
+                    edge_index_1, edge_index_2, edge_index_3, edge_index_4, edge_index_5 = edge_index_missile
+
+                    n_node_features_missile = missile_node_feature.shape[0]
+                    num_nodes = missile_node_feature.shape[0]
+                    A = self.get_heterogeneous_adjacency_matrix(edge_index_1, edge_index_2, edge_index_3,edge_index_4,edge_index_5, n_node_features = num_nodes)
                     node_representation_graph = self.func_meta_path(A, node_embedding_missile_node, num_nodes=n_node_features_missile, mini_batch=mini_batch)
                     node_representation = torch.cat([node_embedding_ship_features, node_representation_graph[0].unsqueeze(0)],dim=1)
             else:
                 ship_features = torch.tensor(ship_features,dtype=torch.float).to(device).squeeze(1)
                 node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
 
-                missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float).to(device)
-#                missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float).to(device)  # batch_size, num_node, node_feature
+
+                max_len = np.max([len(mnf) for mnf in missile_node_feature])
+                if max_len <= self.action_size:
+                    max_len = self.action_size
+                temp = list()
+                for mnf in missile_node_feature:
+                    temp.append(torch.cat([torch.tensor(mnf), torch.tensor(self.dummy_node[max_len - len(mnf)])], dim=0).tolist())
+                missile_node_feature = torch.tensor(temp, dtype=torch.float).to(device)
                 empty = list()
-                for i in range(n_node_features_missile):
+                for i in range(max_len):
                     node_embedding_missile_node = self.node_representation(missile_node_feature[:, i, :], missile=True)
                     empty.append(node_embedding_missile_node)
                 node_embedding_missile_node = torch.stack(empty)
                 node_embedding_missile_node = torch.einsum('ijk->jik', node_embedding_missile_node)
                 A = [self.get_heterogeneous_adjacency_matrix(edge_index_missile[m][0], edge_index_missile[m][1],
-                                                             edge_index_missile[m][2], edge_index_missile[m][3], n_node_features_missile) for m in
-                     range(self.batch_size)]
+                                                             edge_index_missile[m][2], edge_index_missile[m][3],
+                                                             edge_index_missile[m][4],n_node_features=max_len) for m in range(self.batch_size)]
                 node_representation_graph = self.func_meta_path(A, node_embedding_missile_node, num_nodes=n_node_features_missile,
                                                           mini_batch=mini_batch)
                 node_representation = torch.cat([node_embedding_ship_features, node_representation_graph[:, 0, :],  ], dim=1)
@@ -775,7 +789,7 @@ class Agent:
         return node_representation
 
 
-    def get_heterogeneous_adjacency_matrix(self, edge_index_1, edge_index_2, edge_index_3, edge_index_4, n_node_features):
+    def get_heterogeneous_adjacency_matrix(self, edge_index_1, edge_index_2, edge_index_3, edge_index_4, edge_index_5, n_node_features=None):
         A = []
         edge_index_1_transpose = deepcopy(edge_index_1)
         edge_index_1_transpose[1] = edge_index_1[0]
@@ -793,11 +807,16 @@ class Agent:
         edge_index_4_transpose = deepcopy(edge_index_4)
         edge_index_4_transpose[1] = edge_index_4[0]
         edge_index_4_transpose[0] = edge_index_4[1]
+
+        edge_index_5_transpose = deepcopy(edge_index_5)
+        edge_index_5_transpose[1] = edge_index_5[0]
+        edge_index_5_transpose[0] = edge_index_5[1]
         edges = [edge_index_1,
                  edge_index_2,
                  edge_index_3,
-                 edge_index_4
-                 ]
+                 edge_index_4,
+                 edge_index_5]
+
         for i, edge in enumerate(edges):
             edge = torch.tensor(edge, dtype=torch.long, device=device)
             value = torch.ones(edge.shape[1], dtype=torch.float, device=device)
@@ -851,6 +870,7 @@ class Agent:
 
                 obs_expand = obs.unsqueeze(1)
                 obs_expand = obs_expand.expand([self.batch_size, self.action_size, obs_expand.shape[2]])
+                #print(obs_expand.shape, action_features.shape, self.action_size)
                 obs_n_action = torch.cat([obs_expand, action_features], dim=2)
                 # obs_n_action : Q(s,a) -> Q(s||a)
 
@@ -890,15 +910,6 @@ class Agent:
         action_feature 차원      : action_size X n_action_feature
         avail_action 차원        : n_agents X action_size
         """
-        if cfg.epsilon_greedy == False:
-            if training == True:
-                self.Q.reset_noise_net()
-            else:
-                if with_noise == True:
-                    self.Q.reset_noise_net()
-                else:
-                    self.Q.remove_noise_net()
-
         action_feature_dummy = action_feature
 
         # action_feature = torch.tensor(action_feature, dtype = torch.float).to(device)
@@ -907,39 +918,109 @@ class Agent:
         #print(action_feature.shape, node_representation_graph[1:self.action_size+1, :].shape)
 
         node_embedding_action = node_representation_graph[0:self.action_size, :]
-
-
-
-
         obs_n_action = torch.cat([node_representation.expand(node_embedding_action.shape[0],node_representation.shape[1]),node_embedding_action], dim = 1)
         mask = torch.tensor(avail_action, device=device).bool()
-        action = []
+        "Dueling Q값을 계산하는 부분"
         cos, taus = self.Q.calc_cos(1)
         V = self.Q.value_forward(node_representation, cos, mini_batch=False)
-        A = torch.stack([self.Q.advantage_forward(obs_n_action[i].unsqueeze(0), cos, mini_batch=False) for i in range(self.action_size)]).squeeze(1).squeeze(1).unsqueeze(0)
+        action_size = obs_n_action.shape[0]
+        if action_size >= self.action_size:
+             action_size = self.action_size
+        A = torch.stack([self.Q.advantage_forward(obs_n_action[i].unsqueeze(0), cos, mini_batch=False) for i in range(action_size)]).squeeze(1).squeeze(1).unsqueeze(0)
+        remain_action = torch.tensor([float('-inf') for _ in range(self.action_size-action_size)], device = device).unsqueeze(0)
+        A = torch.cat([A, remain_action], dim = 1)
         Q = self.DuelingQ(V, A, mask)
         greedy_u = torch.argmax(Q)
-        if cfg.epsilon_greedy == True:
-            if np.random.uniform(0, 1) >= epsilon:
-                u = greedy_u.detach().item()
-            else:
-                mask_n = np.array(avail_action[0], dtype=np.float64)
-                u = np.random.choice(self.action_space, p=mask_n / np.sum(mask_n))
+        if np.random.uniform(0, 1) >= epsilon:
+            u = greedy_u.detach().item()
+        else:
+            mask_n = np.array(avail_action[0], dtype=np.float64)
+            u = np.random.choice(self.action_space, p=mask_n / np.sum(mask_n))
         action_blue = action_feature_dummy[u]
 
-        if cfg.epsilon_greedy == False:
-            if training == True:
-                self.Q.reset_noise_net()
-            else:
-                if with_noise == True:
-                    self.Q.reset_noise_net()
-                else:
-                    self.Q.remove_noise_net()
+
         return action_blue, u
 
     def learn(self, regularizer, episode, vdn = False, grad_clip = None):
-        try:
-            node_features_missile, \
+        node_features_missile, \
+        ship_features, \
+        edge_indices_missile, \
+        actions, \
+        rewards, \
+        dones, \
+        node_features_missile_next, \
+        ship_features_next, \
+        edge_indices_missile_next, \
+        avail_actions, \
+        avail_actions_next, \
+        status, \
+        status_next,\
+        priority,\
+        batch_index, \
+            p_sampled, action_feature, action_features, action_features_next, heterogenous_edges,heterogenous_edges_next,\
+            action_index= self.buffer.sample(vdn = vdn)
+
+
+
+
+
+        weight = ((len(self.buffer.buffer[10])-self.n_step)*torch.tensor(priority, dtype=torch.float, device = device))**(-self.beta)
+        action_index = torch.tensor(action_index, device = device, dtype = torch.long)
+        weight /= weight.max()
+        """
+        node_features : batch_size x num_nodes x feature_size
+        actions : batch_size x num_agents
+        action_feature :     batch_size x action_size x action_feature_size
+        avail_actions_next : batch_size x num_agents x action_size 
+        """
+        n_node_features_missile = self.n_node_feature_missile
+        dones = torch.tensor(dones, device=device, dtype=torch.float)
+        rewards = torch.tensor(rewards, device=device, dtype=torch.float)
+        cos, taus = self.Q.calc_cos(self.batch_size)
+
+
+        self.eval_check(eval=True)
+        obs_next, obs_next_graph = self.get_node_representation(
+            node_features_missile_next,
+            ship_features_next,
+            heterogenous_edges_next,
+            n_node_features_missile,
+            mini_batch=True)
+        q_tot_tar = self.cal_Q(obs=obs_next,
+                           obs_graph = obs_next_graph,
+                        action_feature=None,
+                        action_features=action_features_next,
+                        avail_actions=avail_actions_next,
+                        agent_id=0,
+                        target=True,
+                        cos=cos, vdn = vdn)
+        self.eval_check(eval = False)
+        obs, obs_graph = self.get_node_representation(
+            node_features_missile,
+            ship_features,
+            heterogenous_edges,
+            n_node_features_missile,
+            mini_batch=True)
+        q_tot = self.cal_Q(obs=obs,
+                       obs_graph = obs_graph,
+                       action_feature=action_feature,
+                       action_features=action_features,
+                       avail_actions=avail_actions,
+                       agent_id=0,
+                       target=False,
+                       cos=cos, vdn=vdn, action_index = action_index)
+
+
+        rewards_1_step = rewards[:, 0].unsqueeze(1)
+        rewards_k_step = rewards[:, 1:]
+        masked_n_step_bootstrapping = (1-dones)*torch.cat([rewards_k_step, q_tot_tar], dim = 1)
+        discounted_n_step_bootstrapping = self.gamma_n_step*torch.cat([rewards_1_step, masked_n_step_bootstrapping], dim = 1)
+        td_target = discounted_n_step_bootstrapping.sum(dim=1, keepdims = True)
+        delta = (td_target - q_tot).detach().tolist()
+        self.buffer.update_transition_priority(batch_index = batch_index, delta = delta)
+        loss = F.huber_loss(weight * q_tot, weight * td_target)
+        #print("전",  torch.cuda.memory_reserved()/1e-9)
+        del node_features_missile, \
             ship_features, \
             edge_indices_missile, \
             actions, \
@@ -951,138 +1032,59 @@ class Agent:
             avail_actions, \
             avail_actions_next, \
             status, \
-            status_next,\
-            priority,\
+            status_next, \
+            priority, \
             batch_index, \
-                p_sampled, action_feature, action_features, action_features_next, heterogenous_edges,heterogenous_edges_next,\
-                action_index= self.buffer.sample(vdn = vdn)
+            p_sampled, action_feature, action_features, action_features_next, heterogenous_edges, heterogenous_edges_next, \
+            action_index,cos, taus, q_tot, q_tot_tar, rewards_1_step, rewards_k_step,masked_n_step_bootstrapping, discounted_n_step_bootstrapping, td_target
+        #print("후0",  torch.cuda.memory_reserved() / 1e-9)
+        gc.collect()
+        torch.cuda.empty_cache()
+        #print("후1", torch.cuda.memory_reserved()/1e-9)
 
+        self.optimizer.zero_grad()
 
+        loss.backward(create_graph=True)
+        del loss
+        gc.collect()
+        torch.cuda.empty_cache()
+        # print("후2",  torch.cuda.memory_reserved() / 1e-9)
+        # print( GPUtil.showUtilization())
+        torch.nn.utils.clip_grad_norm_(self.eval_params, grad_clip)
+        self.optimizer.step()
+        self.scheduler.step()
 
+        # gc.collect()
+        # torch.cuda.empty_cache()
+        #print("후3",   torch.cuda.memory_reserved() / 1e-9)
 
-
-            weight = ((len(self.buffer.buffer[10])-self.n_step)*torch.tensor(priority, dtype=torch.float, device = device))**(-self.beta)
-
-            action_index = torch.tensor(action_index, device = device, dtype = torch.long)
-            weight /= weight.max()
-            """
-            node_features : batch_size x num_nodes x feature_size
-            actions : batch_size x num_agents
-            action_feature :     batch_size x action_size x action_feature_size
-            avail_actions_next : batch_size x num_agents x action_size 
-            """
-            n_node_features_missile = self.n_node_feature_missile
-            dones = torch.tensor(dones, device=device, dtype=torch.float)
-            rewards = torch.tensor(rewards, device=device, dtype=torch.float)
-            cos, taus = self.Q.calc_cos(self.batch_size)
-
-
-            self.eval_check(eval=True)
-            obs_next, obs_next_graph = self.get_node_representation(
-                node_features_missile_next,
-                ship_features_next,
-                heterogenous_edges_next,
-                n_node_features_missile,
-                mini_batch=True)
-            q_tot_tar = self.cal_Q(obs=obs_next,
-                               obs_graph = obs_next_graph,
-                            action_feature=None,
-                            action_features=action_features_next,
-                            avail_actions=avail_actions_next,
-                            agent_id=0,
-                            target=True,
-                            cos=cos, vdn = vdn)
-            self.eval_check(eval = False)
-            obs, obs_graph = self.get_node_representation(
-                node_features_missile,
-                ship_features,
-                heterogenous_edges,
-                n_node_features_missile,
-                mini_batch=True)
-            q_tot = self.cal_Q(obs=obs,
-                           obs_graph = obs_graph,
-                           action_feature=action_feature,
-                           action_features=action_features,
-                           avail_actions=avail_actions,
-                           agent_id=0,
-                           target=False,
-                           cos=cos, vdn=vdn, action_index = action_index)
-
-
-            rewards_1_step = rewards[:, 0].unsqueeze(1)
-            rewards_k_step = rewards[:, 1:]
-            masked_n_step_bootstrapping = (1-dones)*torch.cat([rewards_k_step, q_tot_tar], dim = 1)
-            discounted_n_step_bootstrapping = self.gamma_n_step*torch.cat([rewards_1_step, masked_n_step_bootstrapping], dim = 1)
-            td_target = discounted_n_step_bootstrapping.sum(dim=1, keepdims = True)
-            delta = (td_target - q_tot).detach().tolist()
-            self.buffer.update_transition_priority(batch_index = batch_index, delta = delta)
-            loss = F.huber_loss(weight * q_tot, weight * td_target)
-            #print("전",  torch.cuda.memory_reserved()/1e-9)
-            del node_features_missile, \
-                ship_features, \
-                edge_indices_missile, \
-                actions, \
-                rewards, \
-                dones, \
-                node_features_missile_next, \
-                ship_features_next, \
-                edge_indices_missile_next, \
-                avail_actions, \
-                avail_actions_next, \
-                status, \
-                status_next, \
-                priority, \
-                batch_index, \
-                p_sampled, action_feature, action_features, action_features_next, heterogenous_edges, heterogenous_edges_next, \
-                action_index,cos, taus, q_tot, q_tot_tar, rewards_1_step, rewards_k_step,masked_n_step_bootstrapping, discounted_n_step_bootstrapping, td_target
-            #print("후0",  torch.cuda.memory_reserved() / 1e-9)
-            gc.collect()
-            torch.cuda.empty_cache()
-            #print("후1", torch.cuda.memory_reserved()/1e-9)
-
-            self.optimizer.zero_grad()
-
-            loss.backward(create_graph=True)
-            del loss
-            gc.collect()
-            torch.cuda.empty_cache()
-            # print("후2",  torch.cuda.memory_reserved() / 1e-9)
-            # print( GPUtil.showUtilization())
-            torch.nn.utils.clip_grad_norm_(self.eval_params, grad_clip)
-            self.optimizer.step()
-            self.scheduler.step()
-
-            # gc.collect()
-            # torch.cuda.empty_cache()
-            #print("후3",   torch.cuda.memory_reserved() / 1e-9)
-
-            tau = 5e-4
-            for target_param, local_param in zip(self.Q_tar.parameters(), self.Q.parameters()):
-                target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
-            for target_param, local_param in zip(self.DuelingQtar.parameters(), self.DuelingQ.parameters()):
-                target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
-        except:
-
-            print("OOM",  torch.cuda.memory_reserved() / 1e-9)
-            print("OOM", torch.cuda.memory_reserved() / 1e-9)
-            print("OOM", torch.cuda.memory_reserved() / 1e-9)
-            print("OOM", torch.cuda.memory_reserved() / 1e-9)
-            print("OOM", torch.cuda.memory_reserved() / 1e-9)
-            print("OOM", torch.cuda.memory_reserved() / 1e-9)
-            print("OOM", torch.cuda.memory_reserved() / 1e-9)
-            torch.cuda.reset_max_memory_allocated()
-            gc.collect()
-            torch.cuda.empty_cache()
-
-            self.optimizer.zero_grad()
-
-            print("OOM1",  torch.cuda.memory_reserved() / 1e-9)
-            print("OOM1", torch.cuda.memory_reserved() / 1e-9)
-            print("OOM1", torch.cuda.memory_reserved() / 1e-9)
-            print("OOM1", torch.cuda.memory_reserved() / 1e-9)
-            print("OOM1", torch.cuda.memory_reserved() / 1e-9)
-            print("OOM1", torch.cuda.memory_reserved() / 1e-9)
-            print("OOM1", torch.cuda.memory_reserved() / 1e-9)
+        tau = 5e-4
+        for target_param, local_param in zip(self.Q_tar.parameters(), self.Q.parameters()):
+            target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
+        for target_param, local_param in zip(self.DuelingQtar.parameters(), self.DuelingQ.parameters()):
+            target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
+        # except:
+        #
+        #     print("OOM",  torch.cuda.memory_reserved() / 1e-9)
+        #     print("OOM", torch.cuda.memory_reserved() / 1e-9)
+        #     print("OOM", torch.cuda.memory_reserved() / 1e-9)
+        #     print("OOM", torch.cuda.memory_reserved() / 1e-9)
+        #     print("OOM", torch.cuda.memory_reserved() / 1e-9)
+        #     print("OOM", torch.cuda.memory_reserved() / 1e-9)
+        #     print("OOM", torch.cuda.memory_reserved() / 1e-9)
+        #     torch.cuda.reset_max_memory_allocated()
+        #     gc.collect()
+        #     torch.cuda.empty_cache()
+        #
+        #     self.optimizer.zero_grad()
+        #
+        #     print("OOM1",  torch.cuda.memory_reserved() / 1e-9)
+        #     print("OOM1", torch.cuda.memory_reserved() / 1e-9)
+        #     print("OOM1", torch.cuda.memory_reserved() / 1e-9)
+        #     print("OOM1", torch.cuda.memory_reserved() / 1e-9)
+        #     print("OOM1", torch.cuda.memory_reserved() / 1e-9)
+        #     print("OOM1", torch.cuda.memory_reserved() / 1e-9)
+        #     print("OOM1", torch.cuda.memory_reserved() / 1e-9)
 #        print("전", torch.cuda.memory_allocated(), torch.cuda.memory_reserved()/1e-9
         #start = torch.cuda.memory_reserved()/1e-9
         #node_features_missile = node_features_missile.tolist()

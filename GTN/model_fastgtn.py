@@ -62,9 +62,14 @@ class FastGTNs(nn.Module):
         -------
 
         """
+        if mini_batch == False:
+            num_nodes = X.shape[0]
+        else:
+            num_nodes = X.shape[1]
+        # if num_nodes == None:
+        #     num_nodes = self.num_nodes
 
-        if num_nodes == None:
-            num_nodes = self.num_nodes
+
 
         """
         GNN layer의 층수를 의미
@@ -125,6 +130,7 @@ class FastGTN(nn.Module):
             for i in range(self.num_layers):
                 # H가 모든 channel에 대한 X@W를 답고 있음
                 # self.layers[i]는 GTLayer를 담고 있음
+
                 H = self.layers[i](H, A, num_nodes, layer=i + 1,mini_batch = mini_batch)  # self.layers 내부에서 channel별로 연산이 수행됨(출력된 H의 길이는 channel 길이와 동일함)
 
 
@@ -223,7 +229,6 @@ class FastGTLayer(nn.Module):
                     else:
                         total_edge_index = torch.cat((total_edge_index, edge_index), dim=1)
                         total_edge_value = torch.cat((total_edge_value, edge_value * filter[i][j]))
-
                 mat_a = torch.sparse_coo_tensor(total_edge_index.detach(), total_edge_value, (num_nodes, num_nodes)).to(
                     total_edge_value.device)
                 mat_a = mat_a.coalesce()
@@ -240,6 +245,7 @@ class FastGTLayer(nn.Module):
 
             for b in range(batch_size):
                 for i in range(self.num_edge_type):
+
                     mat_a[b][i].copy_(torch.sparse_coo_tensor(A[b][i][0], A[b][i][1], (num_nodes, num_nodes)).to(device).to_dense())
             mat_a = torch.stack(mat_a, dim=0)
             Hs = torch.einsum('bcij, bcjk-> bcik', torch.einsum('bijk, ci  -> bcjk', mat_a, filter), H_)

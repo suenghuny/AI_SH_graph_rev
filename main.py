@@ -75,7 +75,8 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
             edge_index_ssm_to_ssm = env.get_ssm_to_ssm_edge_index()
             edge_index_sam_to_ssm =  env.get_sam_to_ssm_edge_index()
             edge_index_ship_to_sam = env.get_ship_to_sam_edge_index()
-            heterogeneous_edges = (edge_index_ssm_to_ship, edge_index_ssm_to_ssm, edge_index_sam_to_ssm, edge_index_ship_to_sam)
+            edge_index_ship_to_enemy = env.get_ship_to_enemy_edge_index()
+            heterogeneous_edges = (edge_index_ssm_to_ship, edge_index_ssm_to_ssm, edge_index_sam_to_ssm, edge_index_ship_to_sam, edge_index_ship_to_enemy)
 
 
             ship_feature = env.get_ship_feature()
@@ -160,7 +161,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                     n_step_action_feature.append(np.zeros_like(action_blue))
                     n_step_action_features.append(np.zeros_like(action_feature))
 
-                    heterogeneous_edges = ([[], []], [[], []], [[], []])
+                    heterogeneous_edges = ([[], []], [[], []], [[], []], [[], []],[[], []])
                     n_step_heterogeneous_edges.append(heterogeneous_edges)
                     n_step_action_index.append(0)
 
@@ -191,7 +192,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                     n_step_action_feature.append(np.zeros_like(action_blue))
                     n_step_action_features.append(np.zeros_like(action_feature))
 
-                    heterogeneous_edges = ([[], []], [[], []], [[], []])
+                    heterogeneous_edges = ([[], []], [[], []], [[], []],[[], []],[[], []])
                     n_step_heterogeneous_edges.append(heterogeneous_edges)
                     n_step_action_index.append(0)
                     agent.buffer.memory(n_step_missile_node_features[0],
@@ -232,7 +233,9 @@ def evaluation(agent, env, with_noise = False):
             edge_index_ssm_to_ssm = env.get_ssm_to_ssm_edge_index()
             edge_index_sam_to_ssm =  env.get_sam_to_ssm_edge_index()
             edge_index_ship_to_sam = env.get_ship_to_sam_edge_index()
-            heterogeneous_edges = (edge_index_ssm_to_ship, edge_index_ssm_to_ssm, edge_index_sam_to_ssm, edge_index_ship_to_sam)
+            edge_index_ship_to_enemy = env.get_ship_to_enemy_edge_index()
+            heterogeneous_edges = (edge_index_ssm_to_ship, edge_index_ssm_to_ssm, edge_index_sam_to_ssm, edge_index_ship_to_sam,edge_index_ship_to_enemy)
+
 
 
 
