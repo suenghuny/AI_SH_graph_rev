@@ -617,15 +617,15 @@ class Agent:
         self.DuelingQ = DuelingDQN().to(device)
         self.DuelingQtar = DuelingDQN().to(device)
 
-        self.Q = IQN(state_size_advantage = n_representation_ship+cfg.hidden_size_meta_path*2,
-                     state_size_value = n_representation_ship + cfg.hidden_size_meta_path,
+        self.Q = IQN(state_size_advantage = n_representation_ship+cfg.hidden_size_meta_path,
+                     state_size_value = n_representation_ship,
                      action_size = self.action_size,
                      batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos = n_cos, layers = iqn_layers).to(device)
 
 
         self.Q_tar = IQN(
-            state_size_advantage=n_representation_ship+cfg.hidden_size_meta_path*2,
-            state_size_value=n_representation_ship + cfg.hidden_size_meta_path,
+            state_size_advantage=n_representation_ship+cfg.hidden_size_meta_path,
+            state_size_value=n_representation_ship,
             action_size=self.action_size,
             batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos=n_cos, layers=iqn_layers).to(
             device)
@@ -734,6 +734,8 @@ class Agent:
                     ship_features = torch.tensor(ship_features, dtype=torch.float, device=device)
                     node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
                     missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float,device=device).clone().detach()
+                    # if missile_node_feature.shape[0]> 10:
+                    #     print("전", missile_node_feature[9])
                     node_embedding_missile_node = self.node_representation(missile_node_feature, missile=True)
                     edge_index_1, edge_index_2, edge_index_3, edge_index_4, edge_index_5 = edge_index_missile
 
@@ -741,7 +743,7 @@ class Agent:
                     num_nodes = missile_node_feature.shape[0]
                     A = self.get_heterogeneous_adjacency_matrix(edge_index_1, edge_index_2, edge_index_3,edge_index_4,edge_index_5, n_node_features = num_nodes)
                     node_representation_graph = self.func_meta_path(A, node_embedding_missile_node, num_nodes=n_node_features_missile, mini_batch=mini_batch)
-                    node_representation = torch.cat([node_embedding_ship_features, node_representation_graph[0].unsqueeze(0)],dim=1)
+                    node_representation = torch.cat([node_embedding_ship_features],dim=1)
             else:
                 ship_features = torch.tensor(ship_features,dtype=torch.float).to(device).squeeze(1)
                 node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
@@ -765,7 +767,7 @@ class Agent:
                                                              edge_index_missile[m][4],n_node_features=max_len) for m in range(self.batch_size)]
                 node_representation_graph = self.func_meta_path(A, node_embedding_missile_node, num_nodes=n_node_features_missile,
                                                           mini_batch=mini_batch)
-                node_representation = torch.cat([node_embedding_ship_features, node_representation_graph[:, 0, :],  ], dim=1)
+                node_representation = torch.cat([node_embedding_ship_features], dim=1)
 
                 # del A, node_embedding_missile_node, empty, missile_node_feature, node_embedding_ship_features, ship_features
                 # torch.cuda.empty_cache()
@@ -940,6 +942,10 @@ class Agent:
             mask_n = np.array(avail_action[0], dtype=np.float64)
             u = np.random.choice(self.action_space, p=mask_n / np.sum(mask_n))
         action_blue = action_feature_dummy[u]
+        #print(action_blue)
+        #
+        # if node_representation_graph.shape[0] > 10:
+        #     print("후", action_feature_dummy[9])
 
 
         return action_blue, u
