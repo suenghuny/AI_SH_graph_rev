@@ -2,9 +2,9 @@ id						    1		2		3       4
 speed						25		25		25      25
 course					    90		90		90      90
 surface_tracking_limit		3		3		3       3
-surface_engagement_limit	12		10		10      10
-air_tracking_limit			24		24		24      24
-air_engagement_limit		24		16		16      16
+surface_engagement_limit	3		3		3       3
+air_tracking_limit			7		7		7       7
+air_engagement_limit		5		5		5       5
 evading_course				20		20		20      20
 type_m_sam					3		3		3       3
 num_m_sam					3		3		3       3

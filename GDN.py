@@ -640,7 +640,7 @@ class Agent:
 
         if cfg.optimizer == 'AdaHessian':
             self.optimizer =AdaHessian(self.eval_params, lr=learning_rate)
-        if cfg.optimizer == 'LFBGS':
+        if cfg.optimizer == 'LBFGS':
             self.optimizer = optim.LBFGS(self.eval_params, lr=learning_rate)
         if cfg.optimizer == 'ADAM':
             self.optimizer = optim.Adam(self.eval_params, lr=learning_rate) #
@@ -1008,8 +1008,6 @@ class Agent:
             heterogenous_edges,
             n_node_features_missile,
             mini_batch=True)
-        import time
-        start = time.time()
         q_tot = self.cal_Q(obs=obs,
                        obs_graph = obs_graph,
                        action_feature=action_feature,
@@ -1018,7 +1016,6 @@ class Agent:
                        agent_id=0,
                        target=False,
                        cos=cos,  action_index = action_index)
-        print("전", time.time()-start)
 
 
         rewards_1_step = rewards[:, 0].unsqueeze(1)
@@ -1056,9 +1053,7 @@ class Agent:
         if type(self.optimizer) == AdaHessian:
             loss.backward(create_graph=True)
         else:
-            start = time.time()
             loss.backward()
-            print("후", time.time() - start)
 
 
         gc.collect()
@@ -1070,7 +1065,11 @@ class Agent:
 
         return loss
     def learn(self):
-        self.optimizer.step(closure = self.closure)
+        if cfg.optimizer == 'LBFGS':
+            self.optimizer.step(closure = self.closure)
+        else:
+            self.closure()
+            self.optimizer.step()
         self.scheduler.step()
         tau = 5e-4
         for target_param, local_param in zip(self.Q_tar.parameters(), self.Q.parameters()):
