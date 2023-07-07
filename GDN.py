@@ -740,12 +740,15 @@ class Agent:
                 node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
 
 
+                #print(missile_node_feature)
                 max_len = np.max([len(mnf) for mnf in missile_node_feature])
+
                 if max_len <= self.action_size:
                     max_len = self.action_size
                 temp = list()
                 for mnf in missile_node_feature:
                     temp.append(torch.cat([torch.tensor(mnf), torch.tensor(self.dummy_node[max_len - len(mnf)])], dim=0).tolist())
+
                 missile_node_feature = torch.tensor(temp, dtype=torch.float).to(device)
                 empty = list()
                 for i in range(max_len):
@@ -1005,6 +1008,8 @@ class Agent:
             heterogenous_edges,
             n_node_features_missile,
             mini_batch=True)
+        import time
+        start = time.time()
         q_tot = self.cal_Q(obs=obs,
                        obs_graph = obs_graph,
                        action_feature=action_feature,
@@ -1013,6 +1018,7 @@ class Agent:
                        agent_id=0,
                        target=False,
                        cos=cos,  action_index = action_index)
+        print("전", time.time()-start)
 
 
         rewards_1_step = rewards[:, 0].unsqueeze(1)
@@ -1050,7 +1056,10 @@ class Agent:
         if type(self.optimizer) == AdaHessian:
             loss.backward(create_graph=True)
         else:
+            start = time.time()
             loss.backward()
+            print("후", time.time() - start)
+
 
         gc.collect()
         torch.cuda.empty_cache()
@@ -1061,9 +1070,6 @@ class Agent:
 
         return loss
     def learn(self):
-        # gc.collect()
-        # torch.cuda.empty_cache()
-        #print("후3",   torch.cuda.memory_reserved() / 1e-9)
         self.optimizer.step(closure = self.closure)
         self.scheduler.step()
         tau = 5e-4
