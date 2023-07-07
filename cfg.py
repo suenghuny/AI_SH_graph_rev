@@ -77,5 +77,5 @@ def get_cfg():
     parser.add_argument("--num_action_history", type=int, default=10, help="")
     parser.add_argument("--discr_n", type=int, default=10, help="")
     parser.add_argument("--graph_distance", type=float, default=20, help="graph distance")
-    parser.add_argument("--optimizer", type=str, default='AdaHessian', help="optimizer")
+    parser.add_argument("--optimizer", type=str, default='LFBGS', help="optimizer")
     return parser.parse_args()

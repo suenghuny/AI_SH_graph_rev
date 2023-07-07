@@ -142,7 +142,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                     agent.beta -= anneal_step
                 agent.eval_check(eval=False)
                 if e <= cfg.embedding_train_stop:
-                    agent.learn(regularizer=0, vdn=vdn, episode = e, grad_clip = grad_clip)
+                    agent.learn()
                 else:
                     epsilon = 0
         else:

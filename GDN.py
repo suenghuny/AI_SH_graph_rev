@@ -388,30 +388,22 @@ class Replay_Buffer:
         self.buffer[10]= deque(priority, maxlen=self.buffer_size)
 
 
-    def sample(self, vdn):
+    def sample(self):
         step_count_list = self.step_count_list[:]
-        if vdn == False:
-            priority_point = list(self.buffer[9])[:]
-            priority_point.pop()
-            one_ratio = priority_point.count(1)/len(priority_point)
-            if np.random.uniform(0, 1) <= one_ratio:
-                sampled_batch_idx =np.random.choice(step_count_list, p = np.array(priority_point)/np.sum(priority_point), size = self.batch_size)
-            else:
-                sampled_batch_idx = np.random.choice(step_count_list, size=self.batch_size)
-        else:
-            priority = list(deepcopy(self.buffer[10]))[:-self.n_step]
 
-            p = np.array(priority)**self.alpha
-            p /= p.sum()
-            p_sampled = p
-            p = p.tolist()
-            try:
-                sampled_batch_idx = np.random.choice(step_count_list[:-self.n_step], size=self.batch_size, p = p)
-            except ValueError as VE:
-                sampled_batch_idx = np.random.choice(step_count_list[:-self.n_step], size=self.batch_size)
-                print("value error 발생 중")
+        priority = list(deepcopy(self.buffer[10]))[:-self.n_step]
 
-            p_sampled = p_sampled[sampled_batch_idx]
+        p = np.array(priority)**self.alpha
+        p /= p.sum()
+        p_sampled = p
+        p = p.tolist()
+        try:
+            sampled_batch_idx = np.random.choice(step_count_list[:-self.n_step], size=self.batch_size, p = p)
+        except ValueError as VE:
+            sampled_batch_idx = np.random.choice(step_count_list[:-self.n_step], size=self.batch_size)
+            print("value error 발생 중")
+
+        p_sampled = p_sampled[sampled_batch_idx]
 
 
         node_feature_missile = self.generating_mini_batch(self.buffer, sampled_batch_idx, cat='node_feature_missile')
@@ -578,10 +570,7 @@ class Agent:
         self.agent_id = np.eye(self.num_agent).tolist()
         self.agent_index = [i for i in range(self.num_agent)]
         self.max_norm = 10
-        self.VDN = VDN().to(device)
-        self.VDN_target = VDN().to(device)
 
-        self.VDN_target.load_state_dict(self.VDN.state_dict())
         self.buffer_size = buffer_size
         self.batch_size = batch_size
 
@@ -651,7 +640,7 @@ class Agent:
 
         if cfg.optimizer == 'AdaHessian':
             self.optimizer =AdaHessian(self.eval_params, lr=learning_rate)
-        if cfg.optimizer == 'LBFGS':
+        if cfg.optimizer == 'LFBGS':
             self.optimizer = optim.LBFGS(self.eval_params, lr=learning_rate)
         if cfg.optimizer == 'ADAM':
             self.optimizer = optim.Adam(self.eval_params, lr=learning_rate) #
@@ -839,7 +828,7 @@ class Agent:
         A.append((edge, value))
         return A
 
-    def cal_Q(self, obs, obs_graph, action_feature, action_features, avail_actions, agent_id, cos, vdn, target=False, action_index = None):
+    def cal_Q(self, obs, obs_graph, action_feature, action_features, avail_actions, agent_id, cos, target=False, action_index = None):
         """
         node_representation
         - training 시        : batch_size X num_nodes X feature_size
@@ -956,7 +945,7 @@ class Agent:
 
         return action_blue, u
 
-    def learn(self, regularizer, episode, vdn = False, grad_clip = None):
+    def closure(self):
         node_features_missile, \
         ship_features, \
         edge_indices_missile, \
@@ -973,7 +962,7 @@ class Agent:
         priority,\
         batch_index, \
             p_sampled, action_feature, action_features, action_features_next, heterogenous_edges,heterogenous_edges_next,\
-            action_index= self.buffer.sample(vdn = vdn)
+            action_index= self.buffer.sample()
 
 
 
@@ -1008,7 +997,7 @@ class Agent:
                         avail_actions=avail_actions_next,
                         agent_id=0,
                         target=True,
-                        cos=cos, vdn = vdn)
+                        cos=cos)
         self.eval_check(eval = False)
         obs, obs_graph = self.get_node_representation(
             node_features_missile,
@@ -1023,7 +1012,7 @@ class Agent:
                        avail_actions=avail_actions,
                        agent_id=0,
                        target=False,
-                       cos=cos, vdn=vdn, action_index = action_index)
+                       cos=cos,  action_index = action_index)
 
 
         rewards_1_step = rewards[:, 0].unsqueeze(1)
@@ -1052,7 +1041,7 @@ class Agent:
             batch_index, \
             p_sampled, action_feature, action_features, action_features_next, heterogenous_edges, heterogenous_edges_next, \
             action_index,cos, taus, q_tot, q_tot_tar, rewards_1_step, rewards_k_step,masked_n_step_bootstrapping, discounted_n_step_bootstrapping, td_target
-        #print("후0",  torch.cuda.memory_reserved() / 1e-9)
+            #print("후0",  torch.cuda.memory_reserved() / 1e-9)
         gc.collect()
         torch.cuda.empty_cache()
         #print("후1", torch.cuda.memory_reserved()/1e-9)
@@ -1062,19 +1051,21 @@ class Agent:
             loss.backward(create_graph=True)
         else:
             loss.backward()
-        del loss
+
         gc.collect()
         torch.cuda.empty_cache()
         # print("후2",  torch.cuda.memory_reserved() / 1e-9)
         # print( GPUtil.showUtilization())
-        torch.nn.utils.clip_grad_norm_(self.eval_params, grad_clip)
-        self.optimizer.step()
-        self.scheduler.step()
+        torch.nn.utils.clip_grad_norm_(self.eval_params, cfg.grad_clip)
 
+
+        return loss
+    def learn(self):
         # gc.collect()
         # torch.cuda.empty_cache()
         #print("후3",   torch.cuda.memory_reserved() / 1e-9)
-
+        self.optimizer.step(closure = self.closure)
+        self.scheduler.step()
         tau = 5e-4
         for target_param, local_param in zip(self.Q_tar.parameters(), self.Q.parameters()):
             target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
