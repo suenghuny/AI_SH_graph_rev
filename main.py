@@ -5,7 +5,8 @@ from collections import deque
 from cfg import get_cfg
 from GDN import Agent
 import numpy as np
-
+fix_l = 0.01
+fix_u = 30
 from scipy.stats import randint
 
 def preprocessing(scenarios):
@@ -33,7 +34,7 @@ def preprocessing(scenarios):
     return data
 
 def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, initializer, output_dir, vdn, n_step, anneal_epsilon):
-    temp = random.uniform(0, 20)
+    temp = random.uniform(fix_l, fix_u)
     agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
     done = False
     episode_reward = 0
@@ -213,7 +214,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
 
 
 def evaluation(agent, env, with_noise = False):
-    temp = random.uniform(0, 20)
+    temp = random.uniform(fix_l,fix_u)
     agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
     done = False
     episode_reward = 0

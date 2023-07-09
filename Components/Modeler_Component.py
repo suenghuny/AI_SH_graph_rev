@@ -18,7 +18,7 @@ def modeler(data, visualize, size, detection_by_height, tick, simtime_per_framer
             interval_constant_blue = [10,10]
             ):
 
-    interval_constant_yellow = random.uniform(1, 3)
+    interval_constant_yellow = random.uniform(30,3)
     interval_constant_yellow = [interval_constant_yellow, interval_constant_yellow]
     env = Environment(data,
                       visualize,
@@ -503,14 +503,14 @@ class Environment:
             else:
                 if side == 'blue':
                     if air_alert == True:
-                        distance_list.insert(0, np.mean(distance_list)/self.interval_constant_blue[0])
+                        distance_list.insert(0, np.min(distance_list)/self.interval_constant_blue[0])
                     else:
-                        distance_list.insert(0, np.mean(distance_list)/self.interval_constant_blue[1])
+                        distance_list.insert(0, np.min(distance_list)/self.interval_constant_blue[1])
                 else:
                     if air_alert == True:
-                        distance_list.insert(0, np.mean(distance_list)/self.interval_constant_yellow[0])
+                        distance_list.insert(0, np.min(distance_list)/self.interval_constant_yellow[0])
                     else:
-                        distance_list.insert(0, np.mean(distance_list)/self.interval_constant_yellow[1])
+                        distance_list.insert(0, np.min(distance_list)/self.interval_constant_yellow[1])
             target_distance_list.append(distance_list)
         return avail_actions, target_distance_list, air_alert
 
@@ -1031,14 +1031,14 @@ class Environment:
                         self.last_check_lose = True
                     elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):  # win
                         done = True
-                        reward += 0
+                        reward += 10
                         win_tag = 'win'
                         self.last_check_win = True
                         #print(reward, len(self.friendlies), len(self.enemies))
                     elif (False not in done_checker_A) and (False not in done_checker_B): # draw
                         done = True
                         win_tag = 'draw'
-                        reward += 0
+                        reward += 10
                     else: pass
                     leaker = len(self.enemies_fixed_list) - len(self.enemies)
 
@@ -1059,18 +1059,18 @@ class Environment:
                         self.last_check_lose = True
                     elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):  # win
                         done = True
-                        reward += 0
+                        reward += 10
                         win_tag = 'win'
                         self.last_check_win = True
                         #print(reward, len(self.friendlies), len(self.enemies))
                     elif (False not in done_checker_A) and (False not in done_checker_B): # draw
                         done = True
                         win_tag = 'draw'
-                        reward += 0
+                        reward += 10
                     else:
                         done = True
                         win_tag = 'draw'
-                        reward += 0
+                        reward += 10
                     leaker = len(self.enemies_fixed_list) - len(self.enemies)
 
 

@@ -44,11 +44,16 @@ def get_target_bearing(own, target, noise, reverse = False):
 def softmax(z, temperature, reverse = True):
     if reverse == True:
         z = np.array([1/(i/10)*temperature for i in z])
+        logits = np.exp(z)
+        probs = logits / np.sum(logits)
+        isnan = np.isnan(probs)
+        print(probs)
     else:
         z = np.array([i / (10 * temperature) for i in z])
-    logits = np.exp(z)
-    probs = logits / np.sum(logits)
-    isnan = np.isnan(probs)
+        logits = np.exp(z)
+        probs = logits / np.sum(logits)
+        isnan = np.isnan(probs)
+
     if True in isnan:
         probs = [1 if i == True else 0 for i in isnan]
         sum_probs = sum(probs)
