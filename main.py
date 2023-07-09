@@ -33,7 +33,7 @@ def preprocessing(scenarios):
     return data
 
 def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, initializer, output_dir, vdn, n_step, anneal_epsilon):
-    temp = random.uniform(0, 50)
+    temp = random.uniform(0, 20)
     agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
     done = False
     episode_reward = 0
@@ -213,7 +213,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
 
 
 def evaluation(agent, env, with_noise = False):
-    temp = random.uniform(0, 50)
+    temp = random.uniform(0, 20)
     agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
     done = False
     episode_reward = 0

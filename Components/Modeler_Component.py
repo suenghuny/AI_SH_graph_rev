@@ -18,7 +18,7 @@ def modeler(data, visualize, size, detection_by_height, tick, simtime_per_framer
             interval_constant_blue = [10,10]
             ):
 
-    interval_constant_yellow = random.uniform(2, 4)
+    interval_constant_yellow = random.uniform(1, 3)
     interval_constant_yellow = [interval_constant_yellow, interval_constant_yellow]
     env = Environment(data,
                       visualize,
