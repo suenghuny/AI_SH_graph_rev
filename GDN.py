@@ -589,19 +589,9 @@ class Agent:
         self.node_representation_ship_feature = NodeEmbedding(feature_size=feature_size_ship,
                                                          n_representation_obs=n_representation_ship,
                                                          layers = node_embedding_layers_ship).to(device)  # 수정사항
-        self.node_representation = NodeEmbedding(feature_size=feature_size_missile,
-                                                 n_representation_obs=n_representation_missile,
-                                                 layers = node_embedding_layers_missile).to(device)  # 수정사항
-        self.func_meta_path = FastGTNs(num_edge_type=6,
-                                           feature_size=n_representation_missile,
-                                           num_nodes=self.num_nodes,
-                                           num_FastGTN_layers=cfg.num_GT_layers,
-                                           hidden_size=cfg.hidden_size_meta_path,
-                                           num_channels=cfg.channels,
-                                           num_layers=cfg.num_layers,
-                                           teleport_probability=self.teleport_probability,
-                                           gtn_beta=cfg.gtn_beta
-                                           ).to(device)
+
+
+
 
         self.DuelingQ = DuelingDQN().to(device)
         self.DuelingQtar = DuelingDQN().to(device)
@@ -624,18 +614,38 @@ class Agent:
         self.Q_tar.load_state_dict(self.Q.state_dict())
         self.DuelingQtar.load_state_dict(self.DuelingQtar.state_dict())
 
-        if cfg.GNN == 'GAT':
+        if cfg.GNN == 'HGNN':
+            from HGNN.model import HGNN
+            self.func_meta_path = HGNN(feature_size=feature_size_missile,
+                                       embedding_size=n_representation_missile,
+                                       graph_embedding_size=cfg.hidden_size_meta_path,
+                                       layers=node_embedding_layers_missile,
+                                       num_node_cat=4,
+                                       num_edge_cat=5)
             self.eval_params = list(self.DuelingQ.parameters()) + \
                                list(self.Q.parameters()) + \
                                list(self.node_representation_ship_feature.parameters()) + \
-                               list(self.node_representation.parameters()) + \
-                               list(self.func_missile_obs.parameters())
+                               list(self.func_meta_path.parameters())
         else:
+            self.node_representation = NodeEmbedding(feature_size=feature_size_missile,
+                                                     n_representation_obs=n_representation_missile,
+                                                     layers=node_embedding_layers_missile).to(device)  # 수정사항
+            self.func_meta_path = FastGTNs(num_edge_type=6,
+                                           feature_size=n_representation_missile,
+                                           num_nodes=self.num_nodes,
+                                           num_FastGTN_layers=cfg.num_GT_layers,
+                                           hidden_size=cfg.hidden_size_meta_path,
+                                           num_channels=cfg.channels,
+                                           num_layers=cfg.num_layers,
+                                           teleport_probability=self.teleport_probability,
+                                           gtn_beta=cfg.gtn_beta
+                                           ).to(device)
             self.eval_params = list(self.DuelingQ.parameters()) + \
                                list(self.Q.parameters()) + \
                                list(self.node_representation_ship_feature.parameters()) + \
                                list(self.node_representation.parameters()) + \
                                list(self.func_meta_path.parameters())
+
 
 
         if cfg.optimizer == 'AdaHessian':
@@ -674,12 +684,19 @@ class Agent:
 
     def eval_check(self, eval):
         if eval == True:
-            self.DuelingQ.eval()
-            self.node_representation_ship_feature.eval()
-            self.node_representation.eval()
-            self.func_meta_path.eval()
-            self.Q.eval()
-            self.Q_tar.eval()
+            if cfg.GNN != 'HGNN':
+                self.DuelingQ.eval()
+                self.node_representation_ship_feature.eval()
+                self.node_representation.eval()
+                self.func_meta_path.eval()
+                self.Q.eval()
+                self.Q_tar.eval()
+            else:
+                self.DuelingQ.eval()
+                self.node_representation_ship_feature.eval()
+                self.func_meta_path.eval()
+                self.Q.eval()
+                self.Q_tar.eval()
         else:
             self.DuelingQ.train()
             self.node_representation_ship_feature.train()
@@ -719,53 +736,58 @@ class Agent:
                                 edge_index_missile,
                                 n_node_features_missile,
                                 mini_batch=False):
-        if cfg.GNN == 'FastGTN':
-            if mini_batch == False:
-                with torch.no_grad():
-                    ship_features = torch.tensor(ship_features, dtype=torch.float, device=device)
-                    node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
-                    missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float,device=device).clone().detach()
-                    # if missile_node_feature.shape[0]> 10:
-                    #     print("전", missile_node_feature[9])
+
+        if mini_batch == False:
+            with torch.no_grad():
+                ship_features = torch.tensor(ship_features, dtype=torch.float, device=device)
+                node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
+                missile_node_feature = torch.tensor(missile_node_feature, dtype=torch.float,device=device).clone().detach()
+                if cfg.GNN == 'FastGTN':
                     node_embedding_missile_node = self.node_representation(missile_node_feature, missile=True)
                     edge_index_1, edge_index_2, edge_index_3, edge_index_4, edge_index_5 = edge_index_missile
-
                     n_node_features_missile = missile_node_feature.shape[0]
                     num_nodes = missile_node_feature.shape[0]
                     A = self.get_heterogeneous_adjacency_matrix(edge_index_1, edge_index_2, edge_index_3,edge_index_4,edge_index_5, n_node_features = num_nodes)
                     node_representation_graph = self.func_meta_path(A, node_embedding_missile_node, num_nodes=n_node_features_missile, mini_batch=mini_batch)
                     node_representation = torch.cat([node_embedding_ship_features],dim=1)
-            else:
-                ship_features = torch.tensor(ship_features,dtype=torch.float).to(device).squeeze(1)
-                node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
+                    return node_representation, node_representation_graph
+                else:
+
+                    node_representation_graph = self.func_meta_path(A=edge_index_missile,X=missile_node_feature, mini_batch=mini_batch)
+                    node_representation = torch.cat([node_embedding_ship_features], dim=1)
+                    return node_representation, node_representation_graph
+        else:
+            ship_features = torch.tensor(ship_features,dtype=torch.float).to(device).squeeze(1)
+            node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
 
 
-                #print(missile_node_feature)
-                max_len = np.max([len(mnf) for mnf in missile_node_feature])
+            #print(missile_node_feature)
+            max_len = np.max([len(mnf) for mnf in missile_node_feature])
 
-                if max_len <= self.action_size:
-                    max_len = self.action_size
-                temp = list()
-                for mnf in missile_node_feature:
-                    temp.append(torch.cat([torch.tensor(mnf), torch.tensor(self.dummy_node[max_len - len(mnf)])], dim=0).tolist())
+            if max_len <= self.action_size:
+                max_len = self.action_size
+            temp = list()
+            for mnf in missile_node_feature:
+                temp.append(torch.cat([torch.tensor(mnf), torch.tensor(self.dummy_node[max_len - len(mnf)])], dim=0).tolist())
 
-                missile_node_feature = torch.tensor(temp, dtype=torch.float).to(device)
-                empty = list()
-                for i in range(max_len):
-                    node_embedding_missile_node = self.node_representation(missile_node_feature[:, i, :], missile=True)
-                    empty.append(node_embedding_missile_node)
-                node_embedding_missile_node = torch.stack(empty)
-                node_embedding_missile_node = torch.einsum('ijk->jik', node_embedding_missile_node)
-                A = [self.get_heterogeneous_adjacency_matrix(edge_index_missile[m][0], edge_index_missile[m][1],
-                                                             edge_index_missile[m][2], edge_index_missile[m][3],
-                                                             edge_index_missile[m][4],n_node_features=max_len) for m in range(self.batch_size)]
-                node_representation_graph = self.func_meta_path(A, node_embedding_missile_node, num_nodes=n_node_features_missile,
-                                                          mini_batch=mini_batch)
-                node_representation = torch.cat([node_embedding_ship_features], dim=1)
+            missile_node_feature = torch.tensor(temp, dtype=torch.float).to(device)
+            empty = list()
+            for i in range(max_len):
+                node_embedding_missile_node = self.node_representation(missile_node_feature[:, i, :], missile=True)
+                empty.append(node_embedding_missile_node)
+            node_embedding_missile_node = torch.stack(empty)
+            node_embedding_missile_node = torch.einsum('ijk->jik', node_embedding_missile_node)
+            A = [self.get_heterogeneous_adjacency_matrix(edge_index_missile[m][0], edge_index_missile[m][1],
+                                                         edge_index_missile[m][2], edge_index_missile[m][3],
+                                                         edge_index_missile[m][4],n_node_features=max_len) for m in range(self.batch_size)]
+            node_representation_graph = self.func_meta_path(A, node_embedding_missile_node, num_nodes=n_node_features_missile,
+                                                      mini_batch=mini_batch)
+            node_representation = torch.cat([node_embedding_ship_features], dim=1)
 
-                # del A, node_embedding_missile_node, empty, missile_node_feature, node_embedding_ship_features, ship_features
-                # torch.cuda.empty_cache()
-        return node_representation, node_representation_graph
+            # del A, node_embedding_missile_node, empty, missile_node_feature, node_embedding_ship_features, ship_features
+            # torch.cuda.empty_cache()
+            return node_representation, node_representation_graph
+
 
     def get_node_representation_hetero(self,
                                        missile_node_feature,

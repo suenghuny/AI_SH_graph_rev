@@ -5,9 +5,11 @@ import torch.nn.functional as F
 from torch.nn import Parameter
 from GTN.inits import glorot, zeros
 
-
-
-device = f'cuda' if torch.cuda.is_available() else 'cpu'
+import sys
+sys.path.append("..")  # 상위 폴더를 import할 수 있도록 경로 추가
+from cfg import get_cfg
+cfg = get_cfg()
+device = torch.device(cfg.cuda if torch.cuda.is_available() else "cpu")
 
 """
  num_FastGTN_layers = 1,
@@ -43,6 +45,7 @@ class FastGTNs(nn.Module):
                             teleport_probability= self.teleport_probability))
         self.fastGTNs = nn.ModuleList(fastGTNs)
         self.loss = nn.CrossEntropyLoss()
+
 
 
     def forward(self, A, X, num_nodes=None, mini_batch = False):
