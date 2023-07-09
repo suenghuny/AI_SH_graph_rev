@@ -18,7 +18,7 @@ def modeler(data, visualize, size, detection_by_height, tick, simtime_per_framer
             interval_constant_blue = [10,10]
             ):
 
-    interval_constant_yellow = random.uniform(30,3)
+    interval_constant_yellow = random.uniform(0,3)
     interval_constant_yellow = [interval_constant_yellow, interval_constant_yellow]
     env = Environment(data,
                       visualize,
@@ -1059,7 +1059,7 @@ class Environment:
                         self.last_check_lose = True
                     elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):  # win
                         done = True
-                        reward += 10
+                        reward += 0
                         win_tag = 'win'
                         self.last_check_win = True
                         #print(reward, len(self.friendlies), len(self.enemies))
@@ -1070,7 +1070,7 @@ class Environment:
                     else:
                         done = True
                         win_tag = 'draw'
-                        reward += 10
+                        reward += 0
                     leaker = len(self.enemies_fixed_list) - len(self.enemies)
 
 
