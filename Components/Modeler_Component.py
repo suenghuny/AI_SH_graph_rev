@@ -1059,7 +1059,7 @@ class Environment:
                         self.last_check_lose = True
                     elif (len(self.enemies) == 0) and (len(self.friendlies) != 0):  # win
                         done = True
-                        reward += 0
+                        reward += 10
                         win_tag = 'win'
                         self.last_check_win = True
                         #print(reward, len(self.friendlies), len(self.enemies))
@@ -1070,7 +1070,7 @@ class Environment:
                     else:
                         done = True
                         win_tag = 'draw'
-                        reward += 0
+                        reward += 10
                     leaker = len(self.enemies_fixed_list) - len(self.enemies)
 
 
