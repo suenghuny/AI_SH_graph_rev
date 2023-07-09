@@ -47,7 +47,6 @@ def softmax(z, temperature, reverse = True):
         logits = np.exp(z)
         probs = logits / np.sum(logits)
         isnan = np.isnan(probs)
-        print(probs)
     else:
         z = np.array([i / (10 * temperature) for i in z])
         logits = np.exp(z)
