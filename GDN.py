@@ -610,45 +610,8 @@ class Agent:
 
 
 
-        if cfg.GNN == 'HGNN':
-            from HGNN.model import HGNN
-            num_node_cat = 4
-            self.DuelingQ = DuelingDQN().to(device)
-            self.DuelingQtar = DuelingDQN().to(device)
 
-            self.Q = IQN(state_size_advantage=n_representation_ship + cfg.n_representation_action2,
-                         state_size_value=n_representation_ship,
-                         action_size=self.action_size,
-                         batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos=n_cos,
-                         layers=iqn_layers).to(device)
-
-            self.Q_tar = IQN(
-                state_size_advantage=n_representation_ship + cfg.n_representation_action2,
-                state_size_value=n_representation_ship,
-                action_size=self.action_size,
-                batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos=n_cos, layers=iqn_layers).to(
-                device)
-
-            self.Q_tar.load_state_dict(self.Q.state_dict())
-            self.DuelingQtar.load_state_dict(self.DuelingQtar.state_dict())
-            self.func_meta_path = HGNN(feature_size=feature_size_missile,
-                                       embedding_size=cfg.n_representation_action,
-                                       graph_embedding_size=cfg.hidden_size_meta_path,
-                                       layers=node_embedding_layers_missile,
-                                       num_node_cat=num_node_cat,
-                                       num_edge_cat=5).to(device)
-            self.func_meta_path2 = HGNN(feature_size=cfg.n_representation_action,
-                                       embedding_size=cfg.n_representation_action2,
-                                       graph_embedding_size=cfg.hidden_size_meta_path2,
-                                       layers=node_embedding_layers_missile,
-                                       num_node_cat=num_node_cat,
-                                       num_edge_cat=5).to(device)
-            self.eval_params = list(self.DuelingQ.parameters()) + \
-                               list(self.Q.parameters()) + \
-                               list(self.node_representation_ship_feature.parameters()) + \
-                               list(self.func_meta_path.parameters())+ \
-                               list(self.func_meta_path2.parameters())
-        else:
+        if cfg.GNN == 'FastGTN':
             self.DuelingQ = DuelingDQN().to(device)
             self.DuelingQtar = DuelingDQN().to(device)
             self.Q = IQN(state_size_advantage=n_representation_ship + cfg.hidden_size_meta_path,
@@ -684,6 +647,64 @@ class Agent:
                                list(self.node_representation_ship_feature.parameters()) + \
                                list(self.node_representation.parameters()) + \
                                list(self.func_meta_path.parameters())
+        else:
+            if cfg.GNN == 'HGNN':
+                num_node_cat = 4
+                from HGNN.model import HGNN
+                self.func_meta_path = HGNN(feature_size=feature_size_missile,
+                                           embedding_size=cfg.n_representation_action,
+                                           graph_embedding_size=cfg.hidden_size_meta_path,
+                                           layers=node_embedding_layers_missile,
+                                           num_node_cat=num_node_cat,
+                                           num_edge_cat=5).to(device)
+                self.func_meta_path2 = HGNN(feature_size=cfg.n_representation_action,
+                                            embedding_size=cfg.n_representation_action2,
+                                            graph_embedding_size=cfg.hidden_size_meta_path2,
+                                            layers=node_embedding_layers_missile,
+                                            num_node_cat=num_node_cat,
+                                            num_edge_cat=5).to(device)
+            if cfg.GNN == 'GCRN':
+                num_node_cat = 4
+                from GCRN.model import GCRN
+                self.func_meta_path = GCRN(feature_size=feature_size_missile,
+                                           embedding_size=cfg.n_representation_action,
+                                           graph_embedding_size=cfg.hidden_size_meta_path,
+                                           layers=node_embedding_layers_missile,
+                                           num_node_cat=num_node_cat,
+                                           num_edge_cat=5).to(device)
+                self.func_meta_path2 = GCRN(feature_size=cfg.n_representation_action,
+                                            embedding_size=cfg.n_representation_action2,
+                                            graph_embedding_size=cfg.hidden_size_meta_path2,
+                                            layers=node_embedding_layers_missile,
+                                            num_node_cat=num_node_cat,
+                                            num_edge_cat=5).to(device)
+
+
+            self.DuelingQ = DuelingDQN().to(device)
+            self.DuelingQtar = DuelingDQN().to(device)
+
+            self.Q = IQN(state_size_advantage=n_representation_ship + cfg.n_representation_action2,
+                         state_size_value=n_representation_ship,
+                         action_size=self.action_size,
+                         batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos=n_cos,
+                         layers=iqn_layers).to(device)
+
+            self.Q_tar = IQN(
+                state_size_advantage=n_representation_ship + cfg.n_representation_action2,
+                state_size_value=n_representation_ship,
+                action_size=self.action_size,
+                batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos=n_cos, layers=iqn_layers).to(
+                device)
+
+            self.Q_tar.load_state_dict(self.Q.state_dict())
+            self.DuelingQtar.load_state_dict(self.DuelingQtar.state_dict())
+
+            self.eval_params = list(self.DuelingQ.parameters()) + \
+                               list(self.Q.parameters()) + \
+                               list(self.node_representation_ship_feature.parameters()) + \
+                               list(self.func_meta_path.parameters())+ \
+                               list(self.func_meta_path2.parameters())
+
 
 
 

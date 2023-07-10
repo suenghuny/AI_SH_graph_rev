@@ -65,8 +65,8 @@ class GCRN(nn.Module):
     #def forward(self, A, X, num_nodes=None, mini_batch=False):
     def _prepare_attentional_mechanism_input(self, Wh, mini_batch):
         if mini_batch == False:
-            Wh1 = Wh       # Wh.shape      : (n_node, hidden_size), self.a : (hidden_size, 1)
-            Wh2 = Wh       # Wh1 & 2.shape : (n_node, 1)
+            Wh1 = Wh      # Wh.shape      : (n_node, hidden_size), self.a : (hidden_size, 1)
+            Wh2 = Wh      # Wh1 & 2.shape : (n_node, 1)
             e = Wh1 + Wh2.T                                         # e.shape       : (n_node, n_node)
         else:
             batch_size = Wh.shape[0]                                # Wh.shape      : (batch_size, n_node, out_feature)

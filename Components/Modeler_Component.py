@@ -1087,7 +1087,7 @@ class Environment:
             #print(reward, len(self.friendlies), len(self.enemies))
             #print(win_tag,len(self.friendlies), len(self.enemies), reward)
 
-            reward = reward/2
+            reward = reward/5
 
 
 
