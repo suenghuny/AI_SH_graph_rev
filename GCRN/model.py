@@ -50,12 +50,13 @@ class NodeEmbedding(nn.Module):
         return node_representation
 
 class GCRN(nn.Module):
-    def __init__(self, feature_size, embedding_size, graph_embedding_size, layers, num_node_cat, num_edge_cat):
+    def __init__(self, feature_size, embedding_size, graph_embedding_size, layers, num_node_cat, num_edge_cat, attention = False):
         super(GCRN, self).__init__()
         self.num_edge_cat = num_edge_cat
         self.graph_embedding_size = graph_embedding_size
         self.embedding_size = embedding_size
         self.Ws = []
+        self.attention = attention
         for i in range(num_edge_cat):
             self.Ws.append(nn.Parameter(torch.Tensor(feature_size, graph_embedding_size)))
         self.Ws = nn.ParameterList(self.Ws)
@@ -68,8 +69,12 @@ class GCRN(nn.Module):
 
     #def forward(self, A, X, num_nodes=None, mini_batch=False):
     def _prepare_attentional_mechanism_input(self, Wh, A, e, mini_batch):
-        Wh1 = torch.mm(Wh, self.a[e][:self.graph_embedding_size, :].to(device))      # Wh.shape      : (n_node, hidden_size), self.a : (hidden_size, 1)
-        Wh2 = torch.mm(Wh, self.a[e][self.graph_embedding_size:, :].to(device))      # Wh1 & 2.shape : (n_node, 1)
+        if self.attention == True:
+            Wh1 = torch.mm(Wh, self.a[e][:self.graph_embedding_size, :].to(device))      # Wh.shape      : (n_node, hidden_size), self.a : (hidden_size, 1)
+            Wh2 = torch.mm(Wh, self.a[e][self.graph_embedding_size:, :].to(device))      # Wh1 & 2.shape : (n_node, 1)
+        else:
+            Wh1 = Wh
+            Wh2 = Wh
         e = Wh1 + Wh2.T
         return e*A
     def forward(self, A, X, mini_batch, layer = 0):
