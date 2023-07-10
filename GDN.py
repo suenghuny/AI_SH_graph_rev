@@ -616,14 +616,14 @@ class Agent:
             self.DuelingQ = DuelingDQN().to(device)
             self.DuelingQtar = DuelingDQN().to(device)
 
-            self.Q = IQN(state_size_advantage=n_representation_ship + cfg.n_representation_action,
+            self.Q = IQN(state_size_advantage=n_representation_ship + cfg.n_representation_action2,
                          state_size_value=n_representation_ship,
                          action_size=self.action_size,
                          batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos=n_cos,
                          layers=iqn_layers).to(device)
 
             self.Q_tar = IQN(
-                state_size_advantage=n_representation_ship + cfg.n_representation_action,
+                state_size_advantage=n_representation_ship + cfg.n_representation_action2,
                 state_size_value=n_representation_ship,
                 action_size=self.action_size,
                 batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos=n_cos, layers=iqn_layers).to(
@@ -637,15 +637,20 @@ class Agent:
                                        layers=node_embedding_layers_missile,
                                        num_node_cat=num_node_cat,
                                        num_edge_cat=5).to(device)
+            self.func_meta_path2 = HGNN(feature_size=cfg.n_representation_action,
+                                       embedding_size=cfg.n_representation_action2,
+                                       graph_embedding_size=cfg.hidden_size_meta_path2,
+                                       layers=node_embedding_layers_missile,
+                                       num_node_cat=num_node_cat,
+                                       num_edge_cat=5).to(device)
             self.eval_params = list(self.DuelingQ.parameters()) + \
                                list(self.Q.parameters()) + \
                                list(self.node_representation_ship_feature.parameters()) + \
-                               list(self.func_meta_path.parameters())
+                               list(self.func_meta_path.parameters())+ \
+                               list(self.func_meta_path2.parameters())
         else:
-
             self.DuelingQ = DuelingDQN().to(device)
             self.DuelingQtar = DuelingDQN().to(device)
-
             self.Q = IQN(state_size_advantage=n_representation_ship + cfg.hidden_size_meta_path,
                          state_size_value=n_representation_ship,
                          action_size=self.action_size,
@@ -682,6 +687,7 @@ class Agent:
 
 
 
+
         if cfg.optimizer == 'AdaHessian':
             self.optimizer =AdaHessian(self.eval_params, lr=learning_rate)
         if cfg.optimizer == 'LBFGS':
@@ -712,6 +718,7 @@ class Agent:
                 'node_representation_ship_feature': self.node_representation_ship_feature.state_dict(),
                 'node_representation': self.node_representation.state_dict(),
                 'func_meta_path': self.func_meta_path.state_dict(),
+                'func_meta_path2': self.func_meta_path2.state_dict(),
                 'dueling_Q': self.DuelingQ.state_dict(),
                 'optimizer': self.optimizer.state_dict()}, "{}".format(path))
         else:
@@ -735,6 +742,7 @@ class Agent:
                 self.node_representation_ship_feature.eval()
                 self.node_representation.eval()
                 self.func_meta_path.eval()
+                self.func_meta_path2.eval()
                 self.Q.eval()
                 self.Q_tar.eval()
             else:
@@ -749,6 +757,7 @@ class Agent:
                 self.node_representation_ship_feature.train()
                 self.node_representation.train()
                 self.func_meta_path.train()
+                self.func_meta_path2.train()
                 self.Q.train()
                 self.Q_tar.train()
             else:
@@ -807,6 +816,8 @@ class Agent:
                     return node_representation, node_representation_graph
                 else:
                     node_representation_graph = self.func_meta_path(A=edge_index_missile,X=missile_node_feature, mini_batch=mini_batch)
+                    node_representation_graph = self.func_meta_path2(A=edge_index_missile, X=node_representation_graph,
+                                                                    mini_batch=mini_batch)
                     node_representation = torch.cat([node_embedding_ship_features], dim=1)
                     return node_representation, node_representation_graph
         else:
@@ -839,6 +850,8 @@ class Agent:
             else:
                 missile_node_feature = torch.tensor(temp, dtype=torch.float).to(device)
                 node_representation_graph = self.func_meta_path(A=edge_index_missile, X=missile_node_feature, mini_batch=mini_batch)
+                node_representation_graph = self.func_meta_path2(A=edge_index_missile, X=node_representation_graph,
+                                                                mini_batch=mini_batch)
                 node_representation = torch.cat([node_embedding_ship_features], dim=1)
                 return node_representation, node_representation_graph
             return node_representation, node_representation_graph
