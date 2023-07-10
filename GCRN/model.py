@@ -64,16 +64,12 @@ class GCRN(nn.Module):
 
     #def forward(self, A, X, num_nodes=None, mini_batch=False):
     def _prepare_attentional_mechanism_input(self, Wh, mini_batch):
-        if mini_batch == False:
-            Wh1 = Wh      # Wh.shape      : (n_node, hidden_size), self.a : (hidden_size, 1)
-            Wh2 = Wh      # Wh1 & 2.shape : (n_node, 1)
-            e = Wh1 + Wh2.T                                         # e.shape       : (n_node, n_node)
-        else:
-            batch_size = Wh.shape[0]                                # Wh.shape      : (batch_size, n_node, out_feature)
-            Wh1 = Wh        # Wh1 & 2.shape : (batch_size, n_node, 1)
-            Wh2 = Wh
-            e = Wh1 + Wh2.view([batch_size, 1, -1])                 # e.shape       : (batch_size, n_node, n_node)
-        return self.leakyrelu(e)
+
+        Wh1 = Wh      # Wh.shape      : (n_node, hidden_size), self.a : (hidden_size, 1)
+        Wh2 = Wh      # Wh1 & 2.shape : (n_node, 1)
+        e = Wh1 @ Wh2.T                                         # e.shape       : (n_node, n_node)
+
+        return e
     def forward(self, A, X, mini_batch, layer = 0):
         if mini_batch == False:
             temp = list()
@@ -81,7 +77,10 @@ class GCRN(nn.Module):
                 E = A[e]
                 num_nodes = X.shape[0]
                 E = torch.sparse_coo_tensor(E, torch.ones(torch.tensor(E).shape[1]), (num_nodes, num_nodes)).to(device).to_dense()
-                H = E@X@self.Ws[e]
+                Wh = X@self.Ws[e]
+                a = self._prepare_attentional_mechanism_input(Wh, mini_batch = mini_batch)
+                a = F.softmax(a, dim = 1)
+                H = a*E@Wh
                 temp.append(H)
             H = torch.cat(temp, dim = 1)
             #print(H.shape)
@@ -98,7 +97,10 @@ class GCRN(nn.Module):
                     E = torch.sparse_coo_tensor(A[b][e],
                                             torch.ones(torch.tensor(torch.tensor(A[b][e]).shape[1])),
                                             (num_nodes, num_nodes)).to(device).to_dense()
-                    H = E@X[b]@self.Ws[e]
+                    Wh = X[b] @ self.Ws[e]
+                    a = self._prepare_attentional_mechanism_input(Wh, mini_batch=mini_batch)
+                    a = F.softmax(a, dim=1)
+                    H = a*E@Wh
                     empty[b, :, e, :].copy_(H)
 
             H = empty.reshape(batch_size, num_nodes, self.num_edge_cat*self.graph_embedding_size)
@@ -106,9 +108,6 @@ class GCRN(nn.Module):
             H = self.embedding_layers(H)
             H = H.reshape(batch_size, num_nodes, self.embedding_size)
             return H
-
-
-            #Hs = torch.einsum('bcij, bcjk-> bcik', torch.einsum('bijk, ci  -> bcjk', mat_a, filter), H_)
 
 
 

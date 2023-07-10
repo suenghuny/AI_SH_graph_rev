@@ -729,7 +729,7 @@ class Agent:
 
     def save_model(self, e, t, epsilon, path):
 
-        if cfg.GNN != 'HGNN':
+        if cfg.GNN == 'HGNN' or cfg.GNN == 'GCRN':
             torch.save({
                 'e': e,
                 't': t,
@@ -737,7 +737,6 @@ class Agent:
                 'Q': self.Q.state_dict(),
                 'Q_tar': self.Q_tar.state_dict(),
                 'node_representation_ship_feature': self.node_representation_ship_feature.state_dict(),
-                'node_representation': self.node_representation.state_dict(),
                 'func_meta_path': self.func_meta_path.state_dict(),
                 'func_meta_path2': self.func_meta_path2.state_dict(),
                 'dueling_Q': self.DuelingQ.state_dict(),
@@ -758,31 +757,33 @@ class Agent:
 
     def eval_check(self, eval):
         if eval == True:
-            if cfg.GNN != 'HGNN':
+            if cfg.GNN == 'HGNN' or cfg.GNN == 'GCRN':
                 self.DuelingQ.eval()
                 self.node_representation_ship_feature.eval()
-                self.node_representation.eval()
+
                 self.func_meta_path.eval()
                 self.func_meta_path2.eval()
                 self.Q.eval()
                 self.Q_tar.eval()
             else:
                 self.DuelingQ.eval()
+                self.node_representation.eval()
                 self.node_representation_ship_feature.eval()
                 self.func_meta_path.eval()
                 self.Q.eval()
                 self.Q_tar.eval()
         else:
-            if cfg.GNN != 'HGNN':
+            if cfg.GNN == 'HGNN' or cfg.GNN == 'GCRN':
                 self.DuelingQ.train()
                 self.node_representation_ship_feature.train()
-                self.node_representation.train()
+
                 self.func_meta_path.train()
                 self.func_meta_path2.train()
                 self.Q.train()
                 self.Q_tar.train()
             else:
                 self.DuelingQ.train()
+                self.node_representation.train()
                 self.node_representation_ship_feature.train()
                 self.func_meta_path.train()
                 self.Q.train()
