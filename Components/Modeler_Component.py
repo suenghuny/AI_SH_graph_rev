@@ -768,23 +768,31 @@ class Environment:
 
         node_features = [dummy]
         len_flying_sams_friendly = len(self.flying_sams_friendly)
+        node_cats = [[0],[],[],[] ]
+        idx = 0
         for ship in self.friendlies_fixed_list:
             for enemy in self.enemies_fixed_list:
                 if enemy.status != 'destroyed':
                     f1, f2, f3, f4, f5, f6 = self.get_feature(ship, enemy)
                     node_features.append([f1, f2, f3, f4])
+                    idx += 1
                 else:
                     node_features.append(dummy)
+                    idx += 1
+                node_cats[1].append(idx)
             for missile in ship.ssm_detections:
                 f1, f2, f3, f4, f5, f6 = self.get_feature(ship, missile)
                 node_features.append([f1, f2, f3, f4])
+                idx += 1
+                node_cats[2].append(idx)
             for j in range(len_flying_sams_friendly):
                 missile = self.flying_sams_friendly[j]
                 original_target = missile.original_target
                 f1, f2, f3, f4, f5, f6 = self.get_feature(original_target, missile)
                 node_features.append([f1, f2, f3, f4])
-
-        return node_features
+                idx += 1
+                node_cats[3].append(idx)
+        return node_features, node_cats
 
 
 

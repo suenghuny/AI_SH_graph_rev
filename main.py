@@ -56,7 +56,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
     n_step_action_features = deque(maxlen=n_step)
     n_step_heterogeneous_edges = deque(maxlen=n_step)
     n_step_action_index = deque(maxlen=n_step)
-
+    n_step_node_cats = deque(maxlen=n_step)
     if t < cfg.grad_clip_step:
         grad_clip = cfg.grad_clip
     else:
@@ -81,7 +81,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
 
 
             ship_feature = env.get_ship_feature()
-            missile_node_feature = env.get_missile_node_feature()
+            missile_node_feature, node_cats = env.get_missile_node_feature()
             action_feature = env.get_action_feature()
 
 
@@ -91,6 +91,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
 
             node_representation, node_representation_graph = agent.get_node_representation(missile_node_feature, ship_feature, heterogeneous_edges,
                                                                     n_node_feature_missile,
+                                                                    node_cats=node_cats,
                                                                     mini_batch=False)  # 차원 : n_agents X n_representation_comm
             action_blue, u = agent.sample_action(node_representation, node_representation_graph, avail_action_blue, epsilon, action_feature, step = t)
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
@@ -108,7 +109,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
             n_step_action_features.append(action_feature)
             n_step_action_index.append(u)
             n_step_heterogeneous_edges.append(heterogeneous_edges)
-
+            n_step_node_cats.append(node_cats)
             status = None
             step_checker += 1
             if e >= train_start:
@@ -132,7 +133,8 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                                     n_step_action_feature[idx],
                                     n_step_action_features[idx],
                                     n_step_heterogeneous_edges[idx],
-                                    n_step_action_index[idx]
+                                    n_step_action_index[idx],
+                                    n_step_node_cats[idx]
                                     )
 
 
@@ -165,6 +167,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                     heterogeneous_edges = ([[], []], [[], []], [[], []], [[], []],[[], []])
                     n_step_heterogeneous_edges.append(heterogeneous_edges)
                     n_step_action_index.append(0)
+                    n_step_node_cats.append([[],[],[],[]])
 
                 agent.buffer.memory(n_step_missile_node_features[0],
                                     n_step_ship_feature[0],
@@ -180,7 +183,8 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                                     n_step_action_feature[0],
                                     n_step_action_features[0],
                                     n_step_heterogeneous_edges[0],
-                                    n_step_action_index[0]
+                                    n_step_action_index[0],
+                                    n_step_node_cats[0]
                                     )
             else:
                 for i in range(step):
@@ -196,6 +200,7 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                     heterogeneous_edges = ([[], []], [[], []], [[], []],[[], []],[[], []])
                     n_step_heterogeneous_edges.append(heterogeneous_edges)
                     n_step_action_index.append(0)
+                    n_step_node_cats.append([[],[],[],[]])
                     agent.buffer.memory(n_step_missile_node_features[0],
                                         n_step_ship_feature[0],
                                         None,
@@ -207,7 +212,8 @@ def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, init
                                         n_step_action_feature[0],
                                         n_step_action_features[0],
                                         n_step_heterogeneous_edges[0],
-                                        n_step_action_index[0]
+                                        n_step_action_index[0],
+                                        n_step_node_cats[0]
                                         )
             break
     return episode_reward, epsilon, t, eval, win_tag, leakers
@@ -241,10 +247,11 @@ def evaluation(agent, env, with_noise = False):
 
 
             ship_feature = env.get_ship_feature()
-            missile_node_feature = env.get_missile_node_feature()
+            missile_node_feature, node_cats = env.get_missile_node_feature()
             action_feature = env.get_action_feature()
             agent.eval_check(eval=True)
-            node_representation, node_representation_graph = agent.get_node_representation(missile_node_feature, ship_feature, heterogeneous_edges,n_node_feature_missile,mini_batch=False)  # 차원 : n_agents X n_representation_comm
+            node_representation, node_representation_graph = agent.get_node_representation(missile_node_feature, ship_feature, heterogeneous_edges,n_node_feature_missile,
+                                                                                           node_cats = node_cats,mini_batch=False)  # 차원 : n_agents X n_representation_comm
             action_blue, u = agent.sample_action(node_representation, node_representation_graph, avail_action_blue, epsilon=0, action_feature=action_feature, training = False, with_noise = with_noise)
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
             reward, win_tag, done, leakers = env.step(action_blue, action_yellow)

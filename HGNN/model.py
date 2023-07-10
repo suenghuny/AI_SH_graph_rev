@@ -52,47 +52,54 @@ class NodeEmbedding(nn.Module):
 class HGNN(nn.Module):
     def __init__(self, feature_size, embedding_size, graph_embedding_size, layers, num_node_cat, num_edge_cat):
         super(HGNN, self).__init__()
-        embedding_layers = [NodeEmbedding(feature_size, embedding_size, layers) for _ in range(num_node_cat)]
-        self.embedding_layers = nn.ModuleList(embedding_layers)
-
-
+        self.num_edge_cat = num_edge_cat
+        self.graph_embedding_size = graph_embedding_size
+        self.embedding_size = embedding_size
         self.Ws = []
         for i in range(num_edge_cat):
-            self.Ws.append(nn.Parameter(torch.Tensor(embedding_size, graph_embedding_size)))
+            self.Ws.append(nn.Parameter(torch.Tensor(feature_size, graph_embedding_size)))
         self.Ws = nn.ParameterList(self.Ws)
         [glorot(W) for W in self.Ws]
+        self.embedding_layers = NodeEmbedding(graph_embedding_size*num_edge_cat, embedding_size, layers).to(device)
 
     #def forward(self, A, X, num_nodes=None, mini_batch=False):
 
     def forward(self, A, X, mini_batch, layer = 0):
         if mini_batch == False:
-            for E in range(len(A)):
+            temp = list()
+            for e in range(len(A)):
+                E = A[e]
                 num_nodes = X.shape[0]
-                print(torch.ones(torch.tensor(E).shape[0]))
-                E = torch.sparse_coo_tensor(E, torch.ones(torch.tensor(E).shape[0]), (num_nodes, num_nodes)).to(device).to_dense()
-                print(X@E.shape)
-
-            print(X.shape, len(A))
+                E = torch.sparse_coo_tensor(E, torch.ones(torch.tensor(E).shape[1]), (num_nodes, num_nodes)).to(device).to_dense()
+                H = E@X@self.Ws[e]
+                temp.append(H)
+            H = torch.cat(temp, dim = 1)
+            #print(H.shape)
+            H = self.embedding_layers(H)
+            return H
         else:
-            mat_a = [torch.zeros(self.num_edge_type, num_nodes, num_nodes).to(device) for _ in range(batch_size)]
+            batch_size = X.shape[0]
+            num_nodes = X.shape[1]
+            #mat_a = [torch.zeros(self.num_edge_cat, num_nodes, num_nodes).to(device) for _ in range(batch_size)]
+            empty = torch.zeros(batch_size, num_nodes, self.num_edge_cat, self.graph_embedding_size).to(device)
+
             for b in range(batch_size):
-                for i in range(self.num_edge_type):
+                for e in range(self.num_edge_cat):
+                    E = torch.sparse_coo_tensor(A[b][e],
+                                            torch.ones(torch.tensor(torch.tensor(A[b][e]).shape[1])),
+                                            (num_nodes, num_nodes)).to(device).to_dense()
+                    H = E@X[b]@self.Ws[e]
+                    empty[b, :, e, :].copy_(H)
 
-                    mat_a[b][i].copy_(torch.sparse_coo_tensor(A[b][i][0], A[b][i][1], (num_nodes, num_nodes)).to(device).to_dense())
-            mat_a = torch.stack(mat_a, dim=0)
-            Hs = torch.einsum('bcij, bcjk-> bcik', torch.einsum('bijk, ci  -> bcjk', mat_a, filter), H_)
+            H = empty.reshape(batch_size, num_nodes, self.num_edge_cat*self.graph_embedding_size)
+            H = H.reshape(batch_size*num_nodes, self.num_edge_cat*self.graph_embedding_size)
+            H = self.embedding_layers(H)
+            H = H.reshape(batch_size, num_nodes, self.embedding_size)
+            return H
 
-            # empty = list()
-            # for i in range(len(node_cats)):
-            #     if i == 0:
-            #         start_idx = 0
-            #         end_idx = node_cats[0]
-            #     else:
-            #         start_idx = node_cats[i-1]+1
-            #         end_idx = node_cats[i]
-            #     embedding = self.embedding_layers(X[start_idx:end_idx, :])
-            #     empty.append(embedding)
-            # torch.cat(empty, dim = 1)
+
+            #Hs = torch.einsum('bcij, bcjk-> bcik', torch.einsum('bijk, ci  -> bcjk', mat_a, filter), H_)
+
 
 
 

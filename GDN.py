@@ -255,7 +255,7 @@ class Replay_Buffer:
         self.buffer = deque()
         self.alpha = per_alpha
         self.step_count_list = list()
-        for _ in range(17):
+        for _ in range(18):
             self.buffer.append(deque(maxlen=buffer_size))
         self.buffer_size = buffer_size
         self.n_node_feature_missile = n_node_feature_missile
@@ -286,7 +286,8 @@ class Replay_Buffer:
                action_feature,
                action_features,
                heterogeneous_edges,
-               action_index
+               action_index,
+               node_cats
                ):
 
         self.buffer[1].append(node_feature_missile)
@@ -314,6 +315,7 @@ class Replay_Buffer:
         self.buffer[14].append(action_features)
         self.buffer[15].append(heterogeneous_edges)
         self.buffer[16].append(action_index)
+        self.buffer[17].append(node_cats)
 
         if self.step_count < self.buffer_size:
             self.step_count_list.append(self.step_count)
@@ -323,6 +325,7 @@ class Replay_Buffer:
 
 #ship_features
     def generating_mini_batch(self, datas, batch_idx, cat):
+
         for s in batch_idx:
             if cat == 'node_feature_missile':
                 yield datas[1][s]
@@ -376,6 +379,11 @@ class Replay_Buffer:
                 yield datas[15][s + self.n_step]
             if cat == 'action_index':
                 yield datas[16][s]
+
+            if cat == 'node_cats':
+                yield datas[17][s]
+            if cat == 'node_cats':
+                yield datas[17][s+self.n_step]
 
     def update_transition_priority(self, batch_index, delta):
 
@@ -473,6 +481,14 @@ class Replay_Buffer:
                                                              cat='action_index')
         action_index = list(action_index)
 
+        node_cats= self.generating_mini_batch(self.buffer, sampled_batch_idx,
+                                                             cat='node_cats')
+        node_cats = list(node_cats)
+
+        node_cats_next= self.generating_mini_batch(self.buffer, sampled_batch_idx,
+                                                             cat='node_cats_next')
+        node_cats_next = list(node_cats_next)
+
         return node_features_missile, \
                ship_features, \
                edge_indices_missile, \
@@ -491,7 +507,7 @@ class Replay_Buffer:
                p_sampled,\
                action_feature, \
                action_features, \
-               action_features_next,heterogenous_edges,heterogenous_edges_next, action_index
+               action_features_next,heterogenous_edges,heterogenous_edges_next, action_index, node_cats, node_cats_next
 
 
 
@@ -593,40 +609,58 @@ class Agent:
 
 
 
-        self.DuelingQ = DuelingDQN().to(device)
-        self.DuelingQtar = DuelingDQN().to(device)
-
-        self.Q = IQN(state_size_advantage = n_representation_ship+cfg.hidden_size_meta_path,
-                     state_size_value = n_representation_ship,
-                     action_size = self.action_size,
-                     batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos = n_cos, layers = iqn_layers).to(device)
-
-
-        self.Q_tar = IQN(
-            state_size_advantage=n_representation_ship+cfg.hidden_size_meta_path,
-            state_size_value=n_representation_ship,
-            action_size=self.action_size,
-            batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos=n_cos, layers=iqn_layers).to(
-            device)
-
-
-
-        self.Q_tar.load_state_dict(self.Q.state_dict())
-        self.DuelingQtar.load_state_dict(self.DuelingQtar.state_dict())
 
         if cfg.GNN == 'HGNN':
             from HGNN.model import HGNN
+            num_node_cat = 4
+            self.DuelingQ = DuelingDQN().to(device)
+            self.DuelingQtar = DuelingDQN().to(device)
+
+            self.Q = IQN(state_size_advantage=n_representation_ship + cfg.n_representation_action,
+                         state_size_value=n_representation_ship,
+                         action_size=self.action_size,
+                         batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos=n_cos,
+                         layers=iqn_layers).to(device)
+
+            self.Q_tar = IQN(
+                state_size_advantage=n_representation_ship + cfg.n_representation_action,
+                state_size_value=n_representation_ship,
+                action_size=self.action_size,
+                batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos=n_cos, layers=iqn_layers).to(
+                device)
+
+            self.Q_tar.load_state_dict(self.Q.state_dict())
+            self.DuelingQtar.load_state_dict(self.DuelingQtar.state_dict())
             self.func_meta_path = HGNN(feature_size=feature_size_missile,
-                                       embedding_size=n_representation_missile,
+                                       embedding_size=cfg.n_representation_action,
                                        graph_embedding_size=cfg.hidden_size_meta_path,
                                        layers=node_embedding_layers_missile,
-                                       num_node_cat=4,
-                                       num_edge_cat=5)
+                                       num_node_cat=num_node_cat,
+                                       num_edge_cat=5).to(device)
             self.eval_params = list(self.DuelingQ.parameters()) + \
                                list(self.Q.parameters()) + \
                                list(self.node_representation_ship_feature.parameters()) + \
                                list(self.func_meta_path.parameters())
         else:
+
+            self.DuelingQ = DuelingDQN().to(device)
+            self.DuelingQtar = DuelingDQN().to(device)
+
+            self.Q = IQN(state_size_advantage=n_representation_ship + cfg.hidden_size_meta_path,
+                         state_size_value=n_representation_ship,
+                         action_size=self.action_size,
+                         batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos=n_cos,
+                         layers=iqn_layers).to(device)
+
+            self.Q_tar = IQN(
+                state_size_advantage=n_representation_ship + cfg.hidden_size_meta_path,
+                state_size_value=n_representation_ship,
+                action_size=self.action_size,
+                batch_size=self.batch_size, layer_size=iqn_layer_size, N=iqn_N, n_cos=n_cos, layers=iqn_layers).to(
+                device)
+
+            self.Q_tar.load_state_dict(self.Q.state_dict())
+            self.DuelingQtar.load_state_dict(self.DuelingQtar.state_dict())
             self.node_representation = NodeEmbedding(feature_size=feature_size_missile,
                                                      n_representation_obs=n_representation_missile,
                                                      layers=node_embedding_layers_missile).to(device)  # 수정사항
@@ -668,18 +702,30 @@ class Agent:
 
     def save_model(self, e, t, epsilon, path):
 
+        if cfg.GNN != 'HGNN':
+            torch.save({
+                'e': e,
+                't': t,
+                'epsilon': epsilon,
+                'Q': self.Q.state_dict(),
+                'Q_tar': self.Q_tar.state_dict(),
+                'node_representation_ship_feature': self.node_representation_ship_feature.state_dict(),
+                'node_representation': self.node_representation.state_dict(),
+                'func_meta_path': self.func_meta_path.state_dict(),
+                'dueling_Q': self.DuelingQ.state_dict(),
+                'optimizer': self.optimizer.state_dict()}, "{}".format(path))
+        else:
+            torch.save({
+                'e': e,
+                't': t,
+                'epsilon': epsilon,
+                'Q': self.Q.state_dict(),
+                'Q_tar': self.Q_tar.state_dict(),
+                'node_representation_ship_feature': self.node_representation_ship_feature.state_dict(),
+                'func_meta_path': self.func_meta_path.state_dict(),
+                'dueling_Q': self.DuelingQ.state_dict(),
+                'optimizer': self.optimizer.state_dict()}, "{}".format(path))
 
-        torch.save({
-            'e': e,
-            't': t,
-            'epsilon': epsilon,
-            'Q': self.Q.state_dict(),
-            'Q_tar': self.Q_tar.state_dict(),
-            'node_representation_ship_feature': self.node_representation_ship_feature.state_dict(),
-            'node_representation': self.node_representation.state_dict(),
-            'func_meta_path': self.func_meta_path.state_dict(),
-            'dueling_Q': self.DuelingQ.state_dict(),
-            'optimizer': self.optimizer.state_dict()}, "{}".format(path))
 
 
     def eval_check(self, eval):
@@ -698,12 +744,19 @@ class Agent:
                 self.Q.eval()
                 self.Q_tar.eval()
         else:
-            self.DuelingQ.train()
-            self.node_representation_ship_feature.train()
-            self.node_representation.train()
-            self.func_meta_path.train()
-            self.Q.train()
-            self.Q_tar.train()
+            if cfg.GNN != 'HGNN':
+                self.DuelingQ.train()
+                self.node_representation_ship_feature.train()
+                self.node_representation.train()
+                self.func_meta_path.train()
+                self.Q.train()
+                self.Q_tar.train()
+            else:
+                self.DuelingQ.train()
+                self.node_representation_ship_feature.train()
+                self.func_meta_path.train()
+                self.Q.train()
+                self.Q_tar.train()
 
     #node_feature_enemy, edge_index_enemy, node_feature_enemy_next, edge_index_enemy_next
     # feature_size_action,
@@ -735,6 +788,7 @@ class Agent:
                                 ship_features,
                                 edge_index_missile,
                                 n_node_features_missile,
+                                node_cats,
                                 mini_batch=False):
 
         if mini_batch == False:
@@ -752,16 +806,15 @@ class Agent:
                     node_representation = torch.cat([node_embedding_ship_features],dim=1)
                     return node_representation, node_representation_graph
                 else:
-
                     node_representation_graph = self.func_meta_path(A=edge_index_missile,X=missile_node_feature, mini_batch=mini_batch)
                     node_representation = torch.cat([node_embedding_ship_features], dim=1)
                     return node_representation, node_representation_graph
         else:
+            """ship feature 만드는 부분"""
             ship_features = torch.tensor(ship_features,dtype=torch.float).to(device).squeeze(1)
             node_embedding_ship_features = self.node_representation_ship_feature(ship_features)
 
 
-            #print(missile_node_feature)
             max_len = np.max([len(mnf) for mnf in missile_node_feature])
 
             if max_len <= self.action_size:
@@ -769,23 +822,25 @@ class Agent:
             temp = list()
             for mnf in missile_node_feature:
                 temp.append(torch.cat([torch.tensor(mnf), torch.tensor(self.dummy_node[max_len - len(mnf)])], dim=0).tolist())
-
-            missile_node_feature = torch.tensor(temp, dtype=torch.float).to(device)
-            empty = list()
-            for i in range(max_len):
-                node_embedding_missile_node = self.node_representation(missile_node_feature[:, i, :], missile=True)
-                empty.append(node_embedding_missile_node)
-            node_embedding_missile_node = torch.stack(empty)
-            node_embedding_missile_node = torch.einsum('ijk->jik', node_embedding_missile_node)
-            A = [self.get_heterogeneous_adjacency_matrix(edge_index_missile[m][0], edge_index_missile[m][1],
-                                                         edge_index_missile[m][2], edge_index_missile[m][3],
-                                                         edge_index_missile[m][4],n_node_features=max_len) for m in range(self.batch_size)]
-            node_representation_graph = self.func_meta_path(A, node_embedding_missile_node, num_nodes=n_node_features_missile,
-                                                      mini_batch=mini_batch)
-            node_representation = torch.cat([node_embedding_ship_features], dim=1)
-
-            # del A, node_embedding_missile_node, empty, missile_node_feature, node_embedding_ship_features, ship_features
-            # torch.cuda.empty_cache()
+            if cfg.GNN == 'FastGTN':
+                missile_node_feature = torch.tensor(temp, dtype=torch.float).to(device)
+                empty = list()
+                for i in range(max_len):
+                    node_embedding_missile_node = self.node_representation(missile_node_feature[:, i, :], missile=True)
+                    empty.append(node_embedding_missile_node)
+                node_embedding_missile_node = torch.stack(empty)
+                node_embedding_missile_node = torch.einsum('ijk->jik', node_embedding_missile_node)
+                A = [self.get_heterogeneous_adjacency_matrix(edge_index_missile[m][0], edge_index_missile[m][1],
+                                                             edge_index_missile[m][2], edge_index_missile[m][3],
+                                                             edge_index_missile[m][4],n_node_features=max_len) for m in range(self.batch_size)]
+                node_representation_graph = self.func_meta_path(A, node_embedding_missile_node, num_nodes=n_node_features_missile,
+                                                          mini_batch=mini_batch)
+                node_representation = torch.cat([node_embedding_ship_features], dim=1)
+            else:
+                missile_node_feature = torch.tensor(temp, dtype=torch.float).to(device)
+                node_representation_graph = self.func_meta_path(A=edge_index_missile, X=missile_node_feature, mini_batch=mini_batch)
+                node_representation = torch.cat([node_embedding_ship_features], dim=1)
+                return node_representation, node_representation_graph
             return node_representation, node_representation_graph
 
 
@@ -970,7 +1025,9 @@ class Agent:
 
         return action_blue, u
 
-    def closure(self):
+
+    def learn(self):
+
         node_features_missile, \
         ship_features, \
         edge_indices_missile, \
@@ -986,8 +1043,7 @@ class Agent:
         status_next,\
         priority,\
         batch_index, \
-            p_sampled, action_feature, action_features, action_features_next, heterogenous_edges,heterogenous_edges_next,\
-            action_index= self.buffer.sample()
+        p_sampled, action_feature, action_features, action_features_next, heterogenous_edges,heterogenous_edges_next,action_index, node_cats, node_cats_next = self.buffer.sample()
 
 
 
@@ -1014,6 +1070,7 @@ class Agent:
             ship_features_next,
             heterogenous_edges_next,
             n_node_features_missile,
+            node_cats = node_cats_next,
             mini_batch=True)
         q_tot_tar = self.cal_Q(obs=obs_next,
                            obs_graph = obs_next_graph,
@@ -1029,6 +1086,7 @@ class Agent:
             ship_features,
             heterogenous_edges,
             n_node_features_missile,
+            node_cats=node_cats,
             mini_batch=True)
         q_tot = self.cal_Q(obs=obs,
                        obs_graph = obs_graph,
@@ -1076,21 +1134,13 @@ class Agent:
             loss.backward(create_graph=True)
         else:
             loss.backward()
-
-
         gc.collect()
         torch.cuda.empty_cache()
-        # print("후2",  torch.cuda.memory_reserved() / 1e-9)
-        # print( GPUtil.showUtilization())
         torch.nn.utils.clip_grad_norm_(self.eval_params, cfg.grad_clip)
 
-
-        return loss
-    def learn(self):
         if cfg.optimizer == 'LBFGS':
             self.optimizer.step(closure = self.closure)
         else:
-            self.closure()
             self.optimizer.step()
         self.scheduler.step()
         tau = 5e-4
@@ -1098,46 +1148,4 @@ class Agent:
             target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
         for target_param, local_param in zip(self.DuelingQtar.parameters(), self.DuelingQ.parameters()):
             target_param.data.copy_(tau * local_param.data + (1 - tau) * target_param.data)
-        # except:
-        #
-        #     print("OOM",  torch.cuda.memory_reserved() / 1e-9)
-        #     print("OOM", torch.cuda.memory_reserved() / 1e-9)
-        #     print("OOM", torch.cuda.memory_reserved() / 1e-9)
-        #     print("OOM", torch.cuda.memory_reserved() / 1e-9)
-        #     print("OOM", torch.cuda.memory_reserved() / 1e-9)
-        #     print("OOM", torch.cuda.memory_reserved() / 1e-9)
-        #     print("OOM", torch.cuda.memory_reserved() / 1e-9)
-        #     torch.cuda.reset_max_memory_allocated()
-        #     gc.collect()
-        #     torch.cuda.empty_cache()
-        #
-        #     self.optimizer.zero_grad()
-        #
-        #     print("OOM1",  torch.cuda.memory_reserved() / 1e-9)
-        #     print("OOM1", torch.cuda.memory_reserved() / 1e-9)
-        #     print("OOM1", torch.cuda.memory_reserved() / 1e-9)
-        #     print("OOM1", torch.cuda.memory_reserved() / 1e-9)
-        #     print("OOM1", torch.cuda.memory_reserved() / 1e-9)
-        #     print("OOM1", torch.cuda.memory_reserved() / 1e-9)
-        #     print("OOM1", torch.cuda.memory_reserved() / 1e-9)
-#        print("전", torch.cuda.memory_allocated(), torch.cuda.memory_reserved()/1e-9
-        #start = torch.cuda.memory_reserved()/1e-9
-        #node_features_missile = node_features_missile.tolist()
-
-
-
-        #device.reset()
-
-        #print("후", torch.cuda.memory_reserved(), start-torch.cuda.memory_reserved()/1e-9)
-        # except:#
-        #     print("outofmemoryerror")
-        #     print("outofmemoryerror")
-        #     print("outofmemoryerror")
-        #     print("outofmemoryerror")
-        #     print("outofmemoryerror")
-        #     print("outofmemoryerror")
-        #     self.optimizer.zero_grad()
-        #     gc.collect()
-        #     torch.cuda.empty_cache()
-        #print("6 update 계산", time.time() - start)
 
