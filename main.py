@@ -5,8 +5,8 @@ from collections import deque
 from cfg import get_cfg
 from GDN import Agent
 import numpy as np
-fix_l = 0.01
-fix_u = 30
+fix_l = 0
+fix_u =17
 from scipy.stats import randint
 
 def preprocessing(scenarios):

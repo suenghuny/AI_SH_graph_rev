@@ -18,7 +18,7 @@ def modeler(data, visualize, size, detection_by_height, tick, simtime_per_framer
             interval_constant_blue = [10,10]
             ):
 
-    interval_constant_yellow = random.uniform(0,3)
+    interval_constant_yellow = random.uniform(0.8,1.5)
     interval_constant_yellow = [interval_constant_yellow, interval_constant_yellow]
     env = Environment(data,
                       visualize,
@@ -503,14 +503,14 @@ class Environment:
             else:
                 if side == 'blue':
                     if air_alert == True:
-                        distance_list.insert(0, np.min(distance_list)/self.interval_constant_blue[0])
+                        distance_list.insert(0, np.min(distance_list)*self.interval_constant_blue[0])
                     else:
-                        distance_list.insert(0, np.min(distance_list)/self.interval_constant_blue[1])
+                        distance_list.insert(0, np.min(distance_list)*self.interval_constant_blue[0])
                 else:
                     if air_alert == True:
-                        distance_list.insert(0, np.min(distance_list)/self.interval_constant_yellow[0])
+                        distance_list.insert(0, np.min(distance_list)*self.interval_constant_yellow[0])
                     else:
-                        distance_list.insert(0, np.min(distance_list)/self.interval_constant_yellow[1])
+                        distance_list.insert(0, np.min(distance_list)*self.interval_constant_yellow[0])
             target_distance_list.append(distance_list)
         return avail_actions, target_distance_list, air_alert
 

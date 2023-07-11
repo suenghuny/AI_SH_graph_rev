@@ -62,7 +62,6 @@ class GCRN(nn.Module):
         self.Ws = nn.ParameterList(self.Ws)
         [glorot(W) for W in self.Ws]
         self.embedding_layers = NodeEmbedding(graph_embedding_size*num_edge_cat, embedding_size, layers).to(device)
-
         self.a = [nn.Parameter(torch.empty(size=(2 * graph_embedding_size, 1))) for i in range(num_edge_cat)]
         [nn.init.xavier_uniform_(self.a[e].data, gain=1.414) for e in range(num_edge_cat)]
 
@@ -72,10 +71,12 @@ class GCRN(nn.Module):
         if self.attention == True:
             Wh1 = torch.mm(Wh, self.a[e][:self.graph_embedding_size, :].to(device))      # Wh.shape      : (n_node, hidden_size), self.a : (hidden_size, 1)
             Wh2 = torch.mm(Wh, self.a[e][self.graph_embedding_size:, :].to(device))      # Wh1 & 2.shape : (n_node, 1)
+            e = Wh1 + Wh2.T
         else:
             Wh1 = Wh
             Wh2 = Wh
-        e = Wh1 + Wh2.T
+            e = Wh1 @ Wh2.T
+
         return e*A
     def forward(self, A, X, mini_batch, layer = 0):
         if mini_batch == False:
