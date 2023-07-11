@@ -1046,7 +1046,7 @@ class Environment:
                     elif (False not in done_checker_A) and (False not in done_checker_B): # draw
                         done = True
                         win_tag = 'draw'
-                        reward += 10
+                        reward += 0
                     else: pass
                     leaker = len(self.enemies_fixed_list) - len(self.enemies)
 
