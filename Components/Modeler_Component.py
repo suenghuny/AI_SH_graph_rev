@@ -1077,8 +1077,12 @@ class Environment:
                         reward += 10
                     else:
                         done = True
-                        win_tag = 'draw_4502'
-                        reward += 0
+                        if False not in done_checker_A:
+                            win_tag = 'draw'
+                            reward += 10
+                        else:
+                            win_tag = 'draw_4502'
+                            reward += 0
 
                     leaker = len(self.enemies_fixed_list) - len(self.enemies)
 
