@@ -42,8 +42,8 @@ def get_target_bearing(own, target, noise, reverse = False):
     return theta
 
 def softmax(z, temperature, reverse = True, debug = False):
-    # if debug == True:
-    #     print("소맥 전", z)
+    if debug == True:
+        print("소맥 전", z)
     if reverse == True:
         z = np.array([-i*temperature/100 for i in z]) # 가까우면 거리가 커져
         logits = np.exp(z)
@@ -54,8 +54,8 @@ def softmax(z, temperature, reverse = True, debug = False):
         logits = np.exp(z)
         probs = logits / np.sum(logits)
         isnan = np.isnan(probs)
-    # if debug == True:
-    #     print("소맥 후", probs)
+    if debug == True:
+        print("소맥 후", probs)
 
     if True in isnan:
         probs = [1 if i == True else 0 for i in isnan]
