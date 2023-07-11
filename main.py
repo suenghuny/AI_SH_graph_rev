@@ -418,7 +418,7 @@ if __name__ == "__main__":
                 episode_reward, win_tag, leakers = evaluation(agent, env, with_noise =cfg.with_noise)
                 print('전', win_tag, episode_reward, env.now)
                 leakers_rate += leakers/n
-                if win_tag != 'lose':
+                if win_tag == 'draw' or win_tag == 'win':
                     non_lose_rate += 1/n
 
             if vessl_on == True:
