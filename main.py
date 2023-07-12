@@ -225,7 +225,7 @@ def evaluation(agent, env, with_noise = False):
     done = False
     episode_reward = 0
     eval = False
-
+    over = False
     enemy_action_for_transition =    [0] * len(env.enemies_fixed_list)
     friendly_action_for_transition = [0] * len(env.friendlies_fixed_list)
 
@@ -256,12 +256,18 @@ def evaluation(agent, env, with_noise = False):
             action_yellow = agent_yellow.get_action(avail_action_yellow, target_distance_yellow, air_alert_yellow)
             reward, win_tag, done, leakers = env.step(action_blue, action_yellow)
             episode_reward += reward
+            if (np.abs(episode_reward - 11.0)<= 0.0001) and (over ==False):
+                overtime =env.now
+                over =True
+            else:
+                overtime = None
+
         else:
             pass_transition = True
             env.step(action_blue=[0,0,0,0,0,0,0,0],action_yellow=enemy_action_for_transition, pass_transition = pass_transition)
 
 
-    return episode_reward, win_tag, leakers
+    return episode_reward, win_tag, leakers,overtime
 
 
 if __name__ == "__main__":
@@ -415,8 +421,8 @@ if __name__ == "__main__":
                               ciws_threshold=ciws_threshold,
                               action_history_step = cfg.action_history_step
                               )
-                episode_reward, win_tag, leakers = evaluation(agent, env, with_noise =cfg.with_noise)
-                print('전', win_tag, episode_reward, env.now)
+                episode_reward, win_tag, leakers,overtime = evaluation(agent, env, with_noise =cfg.with_noise)
+                print('전', win_tag, episode_reward, env.now, overtime)
                 leakers_rate += leakers/n
                 if win_tag == 'draw' or win_tag == 'win':
                     non_lose_rate += 1/n
