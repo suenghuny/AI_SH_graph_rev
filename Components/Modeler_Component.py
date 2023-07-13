@@ -1052,7 +1052,7 @@ class Environment:
 
 
 
-                if self.now > 4500:
+                if self.now > 1000:
                     done_checker_A = [True if (len(enemy.ssm_launcher) == 0) else False for enemy in self.enemies]
                     done_checker_B = [True if (len(ship.ssm_launcher) == 0) else False for ship in self.friendlies]
                     if (len(self.friendlies) == 0) and (len(self.enemies) != 0):  # lose
