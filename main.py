@@ -228,7 +228,7 @@ def evaluation(agent, env, with_noise = False):
     over = False
     enemy_action_for_transition =    [0] * len(env.enemies_fixed_list)
     friendly_action_for_transition = [0] * len(env.friendlies_fixed_list)
-
+    overtime = None
 
     while not done:
         #print(env.now % (decision_timestep))
@@ -259,8 +259,8 @@ def evaluation(agent, env, with_noise = False):
             if (np.abs(episode_reward - 11.0)<= 0.0001) and (over ==False):
                 overtime =env.now
                 over =True
-            else:
-                overtime = None
+                print([ship.status for ship in env.enemies_fixed_list], [[ssm.status for ssm in ship.ssm_launcher] for ship in env.enemies_fixed_list], [ship.status for ship in env.friendlies_fixed_list], [[ssm.status for ssm in ship.ssm_launcher] for ship in env.friendlies_fixed_list], )
+
 
         else:
             pass_transition = True
