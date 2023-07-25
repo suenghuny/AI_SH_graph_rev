@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import random
 import sys
 sys.path.append("..")  # 상위 폴더를 import할 수 있도록 경로 추가
 from cfg import get_cfg
@@ -10,6 +10,13 @@ cfg = get_cfg()
 print(torch.cuda.device_count())
 device =torch.device(cfg.cuda if torch.cuda.is_available() else "cpu")
 print(device)
+
+cfg = get_cfg()
+np.random.seed(cfg.seed)
+random.seed(cfg.seed)
+torch.manual_seed(cfg.seed)
+torch.cuda.manual_seed_all(cfg.seed)
+torch.backends.cudnn.deterministic = True
 class GraphAttentionLayer(nn.Module):
     """
     Simple GAT layer, similar to https://arxiv.org/abs/1710.10903

@@ -13,6 +13,17 @@ print(torch.cuda.device_count())
 device =torch.device(cfg.cuda if torch.cuda.is_available() else "cpu")
 print(device)
 
+from cfg import get_cfg
+import numpy as np
+import random
+cfg = get_cfg()
+np.random.seed(cfg.seed)
+random.seed(cfg.seed)
+torch.manual_seed(cfg.seed)
+torch.cuda.manual_seed_all(cfg.seed)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+
 def weight_init_xavier_uniform(submodule):
     if isinstance(submodule, torch.nn.Conv2d):
         torch.nn.init.xavier_uniform_(submodule.weight)

@@ -6,12 +6,23 @@ import torch.nn.functional as F
 from collections import OrderedDict
 import sys
 sys.path.append("..")  # 상위 폴더를 import할 수 있도록 경로 추가
+import random
 from cfg import get_cfg
+cfg = get_cfg()
+np.random.seed(cfg.seed)
+random.seed(cfg.seed)
+torch.manual_seed(cfg.seed)
+torch.cuda.manual_seed_all(cfg.seed)
+torch.backends.cudnn.deterministic = True
+
 from GTN.inits import glorot
 cfg = get_cfg()
 print(torch.cuda.device_count())
 device =torch.device(cfg.cuda if torch.cuda.is_available() else "cpu")
 print(device)
+
+
+
 
 def weight_init_xavier_uniform(submodule):
     if isinstance(submodule, torch.nn.Conv2d):
@@ -68,6 +79,7 @@ class GCRN(nn.Module):
 
     #def forward(self, A, X, num_nodes=None, mini_batch=False):
     def _prepare_attentional_mechanism_input(self, Wh, A, e, mini_batch):
+
         if self.attention == True:
             Wh1 = torch.mm(Wh, self.a[e][:self.graph_embedding_size, :].to(device))      # Wh.shape      : (n_node, hidden_size), self.a : (hidden_size, 1)
             Wh2 = torch.mm(Wh, self.a[e][self.graph_embedding_size:, :].to(device))      # Wh1 & 2.shape : (n_node, 1)

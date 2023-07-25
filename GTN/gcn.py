@@ -3,7 +3,20 @@ from torch.nn import Parameter
 from torch_scatter import scatter_add
 from torch_geometric.nn.conv.message_passing import MessagePassing
 from torch_geometric.utils import add_self_loops
+
+from cfg import get_cfg
+import numpy as np
+import random
+cfg = get_cfg()
+np.random.seed(cfg.seed)
+random.seed(cfg.seed)
+torch.manual_seed(cfg.seed)
+torch.cuda.manual_seed_all(cfg.seed)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+
 from GTN.inits import glorot, zeros
+
 
 class GCNConv(MessagePassing):
     r"""The graph convolutional operator from the `"Semi-supervised

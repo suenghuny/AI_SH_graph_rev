@@ -3,6 +3,17 @@ import torch.nn as nn
 import torch.nn.functional as F
 from GAT.layers import GraphAttentionLayer, device
 
+from cfg import get_cfg
+import numpy as np
+import random
+cfg = get_cfg()
+np.random.seed(cfg.seed)
+random.seed(cfg.seed)
+torch.manual_seed(cfg.seed)
+torch.cuda.manual_seed_all(cfg.seed)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+
 class GAT(nn.Module):
     def __init__(self, nfeat, nhid, nclass, dropout, alpha, nheads, teleport_probability,  batch_size, mode = 'observation'):
         """Dense version of GAT."""

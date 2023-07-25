@@ -23,10 +23,8 @@ from NoisyLinear import NoisyLinear
 
 from cfg import get_cfg
 
-
 cfg = get_cfg()
 
-#import torch.cuda.OutOfMemoryError
 
 def weight_init_xavier_uniform(submodule):
     if isinstance(submodule, torch.nn.Conv2d):
@@ -562,8 +560,15 @@ class Agent:
                  num_nodes
 
                  ):
-        from cfg import get_cfg
         cfg = get_cfg()
+
+
+        np.random.seed(cfg.seed)
+        random.seed(cfg.seed)
+        torch.manual_seed(cfg.seed)
+        torch.cuda.manual_seed_all(cfg.seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
         self.n_step = n_step
         self.num_agent = num_agent
         self.num_nodes = num_nodes
@@ -1025,6 +1030,7 @@ class Agent:
         action_feature 차원      : action_size X n_action_feature
         avail_action 차원        : n_agents X action_size
         """
+
         action_feature_dummy = action_feature
 
         # action_feature = torch.tensor(action_feature, dtype = torch.float).to(device)
@@ -1046,6 +1052,7 @@ class Agent:
         A = torch.cat([A, remain_action], dim = 1)
         Q = self.DuelingQ(V, A, mask)
         greedy_u = torch.argmax(Q)
+
         if np.random.uniform(0, 1) >= epsilon:
             u = greedy_u.detach().item()
         else:

@@ -8,6 +8,19 @@ import torch.optim as optim
 import torch.autograd as autograd
 import torch.nn.functional as F
 from cfg import get_cfg
+
+
+from cfg import get_cfg
+import numpy as np
+import random
+cfg = get_cfg()
+np.random.seed(cfg.seed)
+random.seed(cfg.seed)
+torch.manual_seed(cfg.seed)
+torch.cuda.manual_seed_all(cfg.seed)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+
 cfg = get_cfg()
 Variable = lambda *args, **kwargs: autograd.Variable(*args, **kwargs)
 class NoisyLinear(nn.Module):

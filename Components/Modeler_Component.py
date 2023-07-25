@@ -4,6 +4,9 @@ from Components.Adapter_Component import *
 from Components.Simulation_Component import *
 from collections import deque
 import random
+import torch
+
+
 import sys
 sys.path.append("..")  # 상위 폴더를 import할 수 있도록 경로 추가
 record_theta_r = list()
@@ -14,10 +17,12 @@ record_theta_rva = list()
 record_theta_vaa = list()
 
 
+
+
+
 def modeler(data, visualize, size, detection_by_height, tick, simtime_per_framerate, ciws_threshold, action_history_step, epsilon = 20, discr_n = 10, air_alert_distance = 20,
             interval_constant_blue = [10,10]
             ):
-
     interval_constant_yellow = random.uniform(0.8,5)
     interval_constant_yellow = [interval_constant_yellow, interval_constant_yellow]
     env = Environment(data,
@@ -1023,10 +1028,11 @@ class Environment:
                 win_tag = "lose"
                 leaker = len(self.enemies_fixed_list) - len(self.enemies)
             else:
-
                 if (len(self.flying_ssms_enemy) == 0) and (len(self.flying_ssms_friendly) == 0):
-                    done_checker_A = [True if (len(enemy.ssm_launcher) == 0) else False for enemy in self.enemies]
-                    done_checker_B = [True if (len(ship.ssm_launcher) == 0) else False for ship in self.friendlies]
+                    done_checker_A = [True if (len(enemy.ssm_launcher) == 0)
+                                      else False for enemy in self.enemies]
+                    done_checker_B = [True if (len(ship.ssm_launcher) == 0)
+                                      else False for ship in self.friendlies]
                     if (len(self.friendlies) == 0) and (len(self.enemies) != 0):  # lose
                         done = True
                         reward += 0
@@ -1070,7 +1076,6 @@ class Environment:
                         reward += 10
                         win_tag = 'win'
                         self.last_check_win = True
-                        #print(reward, len(self.friendlies), len(self.enemies))
                     elif (False not in done_checker_A) and (False not in done_checker_B): # draw
                         done = True
                         win_tag = 'draw'

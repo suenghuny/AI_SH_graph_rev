@@ -7,6 +7,14 @@ import subprocess
 import torch.nn.functional as F
 from torch.distributions.uniform import Uniform
 import time
+from cfg import get_cfg
+cfg = get_cfg()
+np.random.seed(cfg.seed)
+random.seed(cfg.seed)
+torch.manual_seed(cfg.seed)
+torch.cuda.manual_seed_all(cfg.seed)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 
 def accuracy(pred, target):

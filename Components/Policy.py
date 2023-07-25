@@ -1,5 +1,17 @@
 import numpy as np
 from utils import *
+from cfg import get_cfg
+cfg = get_cfg()
+import torch
+import random
+
+np.random.seed(cfg.seed)
+random.seed(cfg.seed)
+torch.manual_seed(cfg.seed)
+torch.cuda.manual_seed_all(cfg.seed)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+
 
 class Policy:
 

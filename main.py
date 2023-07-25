@@ -1,10 +1,23 @@
+import numpy as np
+import torch, random
+from cfg import get_cfg
+cfg = get_cfg()
+np.random.seed(cfg.seed)
+random.seed(cfg.seed)
+torch.manual_seed(cfg.seed)
+torch.cuda.manual_seed_all(cfg.seed)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+
+
 from Components.Modeler_Component import *
 from Components.Adapter_Component import *
 from Components.Policy import *
 from collections import deque
-from cfg import get_cfg
 from GDN import Agent
-import numpy as np
+
+
+
 fix_l = 0
 fix_u =17
 from scipy.stats import randint
@@ -34,6 +47,9 @@ def preprocessing(scenarios):
     return data
 
 def train(agent, env, e, t, train_start, epsilon, min_epsilon, anneal_step, initializer, output_dir, vdn, n_step, anneal_epsilon):
+
+
+
     temp = random.uniform(fix_l, fix_u)
     agent_yellow = Policy(env, rule='rule2', temperatures=[temp, temp])
     done = False
@@ -271,7 +287,7 @@ def evaluation(agent, env, with_noise = False):
 
 
 if __name__ == "__main__":
-    cfg = get_cfg()
+
     vessl_on = cfg.vessl
     if vessl_on == True:
         import vessl
@@ -319,11 +335,6 @@ if __name__ == "__main__":
     #scenario = np.random.choice(scenarios)
     episode_polar_chart = polar_chart[0]
     records = list()
-    import torch, random
-    seed = 1234
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    random.seed(seed)
 
     data = preprocessing(scenarios)
     t = 0
@@ -433,7 +444,6 @@ if __name__ == "__main__":
             else:
                 eval_win_ratio.append(leakers_rate)
                 eval_lose_ratio.append(non_lose_rate)
-
 
         env = modeler(data,
                       visualize=visualize,
