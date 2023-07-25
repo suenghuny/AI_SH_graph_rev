@@ -80,5 +80,6 @@ def get_cfg():
     parser.add_argument("--discr_n", type=int, default=10, help="")
     parser.add_argument("--graph_distance", type=float, default=20, help="graph distance")
     parser.add_argument("--optimizer", type=str, default='ADAM', help="optimizer")
+
     parser.add_argument("--seed", type=int, default=123456, help="seed")
     return parser.parse_args()
